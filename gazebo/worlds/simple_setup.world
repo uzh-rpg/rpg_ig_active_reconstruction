@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <sdf version='1.5'>
   <world name='default'>
     <model name='ground_plane'>
@@ -68,7 +69,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>file://../models/wooden_chair/Offcut Natural StoolDAE.DAE</uri>
+              <uri>model://wooden_chair/Offcut Natural StoolDAE.DAE</uri>
               <scale>0.439774 0.439774 0.439774</scale>
             </mesh>
           </geometry>
@@ -89,7 +90,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <uri>file://../models/santa/santa.dae</uri>
+              <uri>model://santa/santa.dae</uri>
               <scale>0.264629 0.264629 0.264629</scale>
             </mesh>
           </geometry>
