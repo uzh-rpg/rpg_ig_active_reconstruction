@@ -33,17 +33,16 @@ include_directories(include
   ${Boost_INCLUDE_DIRS}
 )
 
-add_executable(youbot_link_position_publisher
-  src/hand_eye_calibration/youbot_link_position_publisher.cpp
-  src/hand_eye_calibration/youbot_link_position_publisher_node.cpp
-  src/utils/ros_eigen.cpp
-  )
+add_executable(youbot_control
+  src/develop.cpp
+  src/youbot_reconstruction_controller.cpp
+)
 
-target_link_libraries(youbot_link_position_publisher
+target_link_libraries(youbot_control
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
-add_dependencies(youbot_link_position_publisher
+add_dependencies(youbot_control
  ${catkin_EXPORTED_TARGETS}
 )
