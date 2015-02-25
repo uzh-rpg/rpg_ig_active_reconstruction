@@ -34,8 +34,8 @@ include_directories(include
 )
 
 add_executable(youbot_control
-  src/develop.cpp
-  src/youbot_reconstruction_controller.cpp
+  src/dense_reconstruction/develop.cpp
+  src/dense_reconstruction/youbot_reconstruction_controller.cpp
 )
 
 target_link_libraries(youbot_control
