@@ -59,13 +59,6 @@ private:
    */
   bool planAndMove();
   
-  /// NOT WORKING IN THIS FILE; JUST TO LOOK AT AND ALTER calculates the calibration pattern coordinates in camera frame coordinates given a robot state
-  /**
-   * @param _robot robot state
-   * @return camera pose:   The transformation from calibration pattern world coordinates (O) to eye coordinates (E): the rotation R_EO and the translation vector E_t_EO,  Therefore, a transformation O->E would be carried out through: x_E = R_EO*x_O + E_t_EO
-   */
-  geometry_msgs::Pose getCameraWorldPose( robot_state::RobotState& _robot );
-  
   /// returns whether MoveIt believes the robot state represented in _robot to be free of collisions or not given the current scene (but without the calibration pattern)
   /**
    * @param _robot robot state to check

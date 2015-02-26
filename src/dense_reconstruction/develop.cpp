@@ -33,7 +33,7 @@ int main(int argc, char **argv)
   ros::Rate rate(0.2);
   while ( calibrator.runSingleIteration() && n.ok() )
   {
-    cout<<endl<<"Working: ";
+    cout<<endl<<"Working: "<<endl;
   }
   
   return 0;

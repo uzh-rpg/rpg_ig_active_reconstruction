@@ -17,6 +17,5 @@ along with geometry_pose. If not, see <http://www.gnu.org/licenses/>.
 
 st_is::GeometryPose GeometryPose::operator+( st_is::RelativeMovement& _second )
 {
-  st_is::GeometryPose copy(*this);
-  return _second.applyToBasePose(copy);
+  return _second.applyToBasePose(*this);
 }
