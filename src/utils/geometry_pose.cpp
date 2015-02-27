@@ -15,7 +15,18 @@ along with geometry_pose. If not, see <http://www.gnu.org/licenses/>.
 
 #include "utils/geometry_pose.h"
 
+namespace st_is
+{
+
 st_is::GeometryPose GeometryPose::operator+( st_is::RelativeMovement& _second )
 {
   return _second.applyToBasePose(*this);
+}
+
+GeometryPose& GeometryPose::operator+=( st_is::RelativeMovement&  _second )
+{
+  *this = _second.applyToBasePose(*this);
+  return *this;
+}
+
 }

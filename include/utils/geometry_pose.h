@@ -30,6 +30,9 @@ namespace st_is
     
     /** executes a relative movement on the pose */
     GeometryPose operator+( st_is::RelativeMovement&  _second );
+    
+    /** executes a relative movement on the pose */
+    GeometryPose& operator+=( st_is::RelativeMovement&  _second );
   };
   
 }

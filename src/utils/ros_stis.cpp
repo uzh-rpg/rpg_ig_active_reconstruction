@@ -14,9 +14,13 @@ along with ros_stis. If not, see <http://www.gnu.org/licenses/>.
 */  
 
 #include "utils/ros_stis.h"
+#include <boost/foreach.hpp>
+
+namespace st_is
+{
 
 
-geometry_msgs::Pose stisToGeometry( st_is::GeometryPose _pose )
+geometry_msgs::Pose stisToROS( st_is::GeometryPose _pose )
 {
   geometry_msgs::Pose pose;
   
@@ -33,7 +37,7 @@ geometry_msgs::Pose stisToGeometry( st_is::GeometryPose _pose )
 }
 
 
-st_is::GeometryPose geometryToStis( geometry_msgs::Pose _pose )
+st_is::GeometryPose ROSToStis( geometry_msgs::Pose _pose )
 {
   st_is::GeometryPose pose;
   
@@ -47,4 +51,26 @@ st_is::GeometryPose geometryToStis( geometry_msgs::Pose _pose )
   pose.orientation.w() = _pose.orientation.w;
   
   return pose;
+}
+
+std::vector<geometry_msgs::Pose> stisToROS( std::vector<GeometryPose> _to_convert )
+{
+  std::vector<geometry_msgs::Pose> out;
+  BOOST_FOREACH( auto pose,  _to_convert )
+  {
+    out.push_back( stisToROS(pose) );
+  }
+  return out;
+}
+
+std::vector<GeometryPose> ROSToStis( std::vector<geometry_msgs::Pose> _to_convert )
+{
+  std::vector<GeometryPose> out;
+  BOOST_FOREACH( auto pose,  _to_convert )
+  {
+    out.push_back( ROSToStis(pose) );
+  }
+  return out;
+}
+
 }

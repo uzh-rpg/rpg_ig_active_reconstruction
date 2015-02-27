@@ -20,6 +20,11 @@ along with relative_movement. If not, see <http://www.gnu.org/licenses/>.
 
 namespace st_is
 {
+
+class CombinedKinematicMovementDescription;
+class CombinedRelativeMovement;
+  
+  
 /** A class that serves as package wrapper for RelativeMovementInstances that naturally need to be moved around as pointers. The use of this class keeps the whole pointer arithmetic internal and thus easens the use.
  */
 class RelativeMovement
@@ -39,6 +44,20 @@ public:
   
   /** returns a pointer to the internally hold RelativeMovementInstance */
   boost::shared_ptr<RelativeMovementInstance> operator*();
+  
+  /** creates a relative movement event chain where the movement represented by the class object is prepended to the argument _to_add */
+  CombinedRelativeMovement operator+( RelativeMovement const& _to_add );
+  
+  /** creates a relative movement event chain where the movement represented by the class object is prepended to the argument _to_add */
+  CombinedRelativeMovement operator+( CombinedRelativeMovement const& _to_add );
+  
+  /** creates a kinematic event chain where the movement represented by the class object is prepended to the argument _to_add */
+  CombinedKinematicMovementDescription operator+( KinematicMovementDescription const& _to_add );
+  
+  /** creates a kinematic event chain where the movement represented by the class object is prepended to the argument _to_add */
+  CombinedKinematicMovementDescription operator+( CombinedKinematicMovementDescription const& _to_add );
+  
+  
 private:
   boost::shared_ptr<RelativeMovementInstance> enwrapped_relative_movement_;
 };

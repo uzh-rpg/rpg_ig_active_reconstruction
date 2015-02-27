@@ -55,12 +55,53 @@ bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::Lo
     
   return !colliding;
 }
-
+int test = 0;
 bool YoubotReconstructionController::planAndMove()
 {
   std::string end_effector_name;
   end_effector_name = robot_->getEndEffector();
   std::cout<<std::endl<<"end effector name: "<<end_effector_name<<std::endl;
+  
+  geometry_msgs::PoseStamped current_end_effector_pose = robot_->getCurrentPose();
+  std::cout<<std::endl<<current_end_effector_pose<<std::endl;
+  
+  using namespace std;
+  cout<<endl<<"goal position tolerance is: "<<robot_->getGoalPositionTolerance();
+  cout<<endl<<"goal orientation tolerance is: "<<robot_->getGoalOrientationTolerance();
+  cout<<endl;
+  
+  robot_->setGoalPositionTolerance(0.001);
+  robot_->setGoalOrientationTolerance(0.001);
+  
+  ros::Duration(2).sleep();
+  geometry_msgs::Pose target_0, target_1;
+  
+  target_0.position.x = 0.126;
+  target_0.position.y = -0.01;
+  target_0.position.z = 0.477;
+  target_0.orientation.x = 0.019;
+  target_0.orientation.y = 0.109;
+  target_0.orientation.z = -0.99378;
+  target_0.orientation.w = 0.0109;
+  
+  target_1.position.x = 0.126;
+  target_1.position.y = -0.01;
+  target_1.position.z = 0.377;
+  target_1.orientation.x = 0.019;
+  target_1.orientation.y = 0.109;
+  target_1.orientation.z = -0.99378;
+  target_1.orientation.w = 0.0109;
+  
+  std::vector<geometry_msgs::Pose> cartesian_path;
+  if( test == 0 )
+  {
+    test = 1;
+  }
+  else
+  {
+    test = 0;
+  }
+  robot_->setPoseTarget(target);
   
   std::vector<double> target_state_position;
   

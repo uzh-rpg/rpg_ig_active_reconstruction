@@ -20,5 +20,12 @@ along with ros_stis. If not, see <http://www.gnu.org/licenses/>.
 #include "geometry_msgs/Pose.h"
 #include "utils/geometry_pose.h"
 
-geometry_msgs::Pose stisToGeometry( st_is::GeometryPose _pose );
-st_is::GeometryPose geometryToStis( geometry_msgs::Pose _pose );
+namespace st_is
+{
+
+geometry_msgs::Pose stisToROS( st_is::GeometryPose _pose );
+st_is::GeometryPose ROSToStis( geometry_msgs::Pose _pose );
+std::vector<geometry_msgs::Pose> stisToROS( std::vector<GeometryPose> _to_convert );
+std::vector<GeometryPose> ROSToStis( std::vector<geometry_msgs::Pose> _to_convert );
+
+}
