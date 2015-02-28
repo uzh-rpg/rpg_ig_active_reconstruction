@@ -101,7 +101,7 @@ bool YoubotReconstructionController::planAndMove()
   {
     test = 0;
   }
-  robot_->setPoseTarget(target);
+  robot_->setPoseTarget(target_0);
   
   std::vector<double> target_state_position;
   

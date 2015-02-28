@@ -13,11 +13,13 @@ You should have received a copy of the GNU Lesser General Public License
 along with combined_kinematic_movement_description. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "utils/combined_kinematic_movement_description.h"
-#include "utils/combined_relative_movement.h"
+#include "movements/geometry_pose.h"
+#include "movements/combined_kinematic_movement_description.h"
+#include "movements/kinematic_movement_description.h"
+#include "movements/combined_relative_movement.h"
 #include <boost/foreach.hpp>
 
-namespace st_is
+namespace movements
 {
 
 CombinedKinematicMovementDescription::CombinedKinematicMovementDescription()
@@ -64,17 +66,17 @@ std::vector<CombinedRelativeMovement> CombinedKinematicMovementDescription::rela
   std::vector<CombinedRelativeMovement> relative_movement_queue;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
-    relative_movement_queue.push_back( this->(t) );
+    relative_movement_queue.push_back( (*this)(t) );
   }
   return relative_movement_queue;
 }
 
-std::vector<st_is::GeometryPose> CombinedKinematicMovementDescription::path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
+std::vector<movements::GeometryPose> CombinedKinematicMovementDescription::path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
 {
-  std::vector<st_is::GeometryPose> cartesian_path;
+  std::vector<movements::GeometryPose> cartesian_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
-    cartesian_path.push_back( _base_pose + this->(t) );
+    cartesian_path.push_back( _base_pose + (*this)(t) );
   }
   return cartesian_path;
 }
@@ -87,7 +89,7 @@ CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::oper
   
   BOOST_FOREACH( auto rel_movement, _to_equal.relative_movement_queue_ )
   {
-    relative_movement_queue_.push_back( auto(relative_movement_queue_.size(),rel_movement) );
+    relative_movement_queue_.push_back( std::pair<int,RelativeMovement>(relative_movement_queue_.size(),rel_movement) );
   }
   
   return *this;
@@ -98,7 +100,7 @@ CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::oper
   relative_movement_queue_.clear();
   kinematic_movement_queue_.clear();
   
-  relative_movement_queue_.push_back( auto(0,_to_equal) );
+  relative_movement_queue_.push_back( std::pair<int,RelativeMovement>(0,_to_equal) );
   
   return *this;
 }
@@ -108,7 +110,7 @@ CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::oper
   relative_movement_queue_.clear();
   kinematic_movement_queue_.clear();
   
-  kinematic_movement_queue_.push_back( auto(0,_to_equal) );
+  kinematic_movement_queue_.push_back( std::pair<int,KinematicMovementDescription>(0,_to_equal) );
   
   return *this;
 }
@@ -145,20 +147,20 @@ CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::oper
 {
   BOOST_FOREACH( auto rel_movement, _to_add.relative_movement_queue_ )
   {
-    relative_movement_queue_.push_back( auto(nrOfMovements(),rel_movement) );
+    relative_movement_queue_.push_back( std::pair<int,RelativeMovement>(nrOfMovements(),rel_movement) );
   }
   return *this;
 }
 
 CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::operator+=( RelativeMovement const& _to_add )
 {
-  relative_movement_queue_.push_back( auto(nrOfMovements(),_to_add) );
+  relative_movement_queue_.push_back( std::pair<int,RelativeMovement>(nrOfMovements(),_to_add) );
   return *this;
 }
 
 CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::operator+=( KinematicMovementDescription const& _to_add )
 {
-  kinematic_movement_queue_.push_back( auto(nrOfMovements(),_to_add) );
+  kinematic_movement_queue_.push_back( std::pair<int,KinematicMovementDescription>(nrOfMovements(),_to_add) );
   return *this;
 }
 
@@ -168,11 +170,11 @@ CombinedKinematicMovementDescription& CombinedKinematicMovementDescription::oper
   
   BOOST_FOREACH( auto rel_movement, _to_add.relative_movement_queue_ )
   {
-    relative_movement_queue_.push_back( auto( old_size+(*rel_movement).first, (*rel_movement).second ) );
+    relative_movement_queue_.push_back( std::pair<int,RelativeMovement>( old_size+rel_movement.first, rel_movement.second ) );
   }
   BOOST_FOREACH( auto kin_movement, _to_add.kinematic_movement_queue_ )
   {
-    kinematic_movement_queue_.push_back( auto( old_size+(*kin_movement).first, (*kin_movement).second ) );
+    kinematic_movement_queue_.push_back( std::pair<int,KinematicMovementDescription>( old_size+kin_movement.first, kin_movement.second ) );
   }
   return *this;
 }

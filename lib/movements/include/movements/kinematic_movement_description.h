@@ -15,13 +15,12 @@ along with kinematic_movement_description. If not, see <http://www.gnu.org/licen
 
 #pragma once
 
-#include "utils/relative_movement.h"
+#include "movements/relative_movement.h"
+#include "movements/combined_kinematic_movement_description.h"
 
-
-namespace st_is
+namespace movements
 {
-  
-class CombinedKinematicMovementDescription;
+
 class CombinedRelativeMovement;
 
 
@@ -32,7 +31,7 @@ public:
   class KinematicMovementDescriptionInstance;
   
   /// constructor
-  KinematicMovementDescription( KinematicMovementDescription* _to_enwrap );
+  KinematicMovementDescription( KinematicMovementDescriptionInstance* _to_enwrap );
   
   /** returns the type of the enclosed kinematic movement */
   std::string type();
@@ -41,6 +40,9 @@ public:
    * @param _time in [s]
    */
   RelativeMovement operator()( double _time );
+  
+  /** returns a pointer to the internally hold KinematicMovementDescriptionInstance */
+  boost::shared_ptr<KinematicMovementDescriptionInstance> operator*();
   
     
   /** this creates a vector filled with relative movements generated from the kinematic movement description, where the first pose in the vector equals the relative movement generated for time _start_time and the last relative movement the relative movement generated at time t_last, where t_last is the largest time step retrieved by adding _step_size to _start_time that is less or equal _end_time
@@ -58,7 +60,7 @@ public:
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  std::vector<st_is::GeometryPose> path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
+  std::vector<movements::GeometryPose> path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
   
   /** creates a relative kinematic event chain where the kinematic movement represented by the class object is prepended to the argument _to_add */
   template<class MovementT>
@@ -70,11 +72,12 @@ private:
 /** defines the interface for relative kinematic movement classes */
 class KinematicMovementDescription::KinematicMovementDescriptionInstance
 {
+public:
   /// returns the type of the enclosed kinematic movement
-  std::string type()=0;
+  virtual std::string type()=0;
   
   /** returns the relative movement at time _time */
-  RelativeMovement operator()( double _time )=0;
+  virtual RelativeMovement operator()( double _time )=0;
   
   virtual std::vector<RelativeMovement> relativePath( double _start_time, double _end_time, double _step_size );
   
@@ -85,7 +88,7 @@ class KinematicMovementDescription::KinematicMovementDescriptionInstance
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  virtual std::vector<st_is::GeometryPose> path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
+  virtual std::vector<movements::GeometryPose> path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
 };
 
 template<class MovementT>

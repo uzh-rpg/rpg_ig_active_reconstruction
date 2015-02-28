@@ -19,6 +19,10 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS system ) #accumulators bind ref)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+list(APPEND USER_LIBRARIES movements)
+add_subdirectory(lib)
+
 find_package(Eigen REQUIRED)
 
 catkin_package(
@@ -33,14 +37,17 @@ include_directories(include
   ${Boost_INCLUDE_DIRS}
 )
 
+
 add_executable(youbot_control
   src/dense_reconstruction/develop.cpp
   src/dense_reconstruction/youbot_reconstruction_controller.cpp
+  ${movement_sources}
 )
 
 target_link_libraries(youbot_control
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
+  movements
 )
 
 add_dependencies(youbot_control

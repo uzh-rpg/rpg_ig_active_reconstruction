@@ -13,14 +13,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with kinematic_movement_description. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "utils/kinematic_movement_description.h"
-#include "utils/combined_kinematic_movement_description.h"
-#include "utils/combined_relative_movement.h"
+#include "movements/geometry_pose.h"
+#include "movements/kinematic_movement_description.h"
+#include "movements/combined_kinematic_movement_description.h"
+#include "movements/combined_relative_movement.h"
 
-namespace st_is
+namespace movements
 {
  
-KinematicMovementDescription::KinematicMovementDescription( KinematicMovementDescription* _to_enwrap )
+KinematicMovementDescription::KinematicMovementDescription( KinematicMovementDescriptionInstance* _to_enwrap )
 {
   enwrapped_kinematic_movement_description_ = boost::shared_ptr<KinematicMovementDescriptionInstance>(_to_enwrap);
 }
@@ -30,7 +31,17 @@ std::string KinematicMovementDescription::type()
   return enwrapped_kinematic_movement_description_->type();
 }
 
-std::vector<RelativeMovement> relativePath( double _start_time, double _end_time, double _step_size )
+RelativeMovement KinematicMovementDescription::operator()( double _time )
+{
+  return (*enwrapped_kinematic_movement_description_)(_time);
+}
+
+boost::shared_ptr<KinematicMovementDescription::KinematicMovementDescriptionInstance> KinematicMovementDescription::operator*()
+{
+  return enwrapped_kinematic_movement_description_;
+}
+
+std::vector<RelativeMovement> KinematicMovementDescription::relativePath( double _start_time, double _end_time, double _step_size )
 {
   if( _step_size<=0 )
   {
@@ -43,7 +54,7 @@ std::vector<RelativeMovement> relativePath( double _start_time, double _end_time
   return enwrapped_kinematic_movement_description_->relativePath(_start_time,_end_time,_step_size);
 }
 
-std::vector<st_is::GeometryPose> KinematicMovementDescription::path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
+std::vector<movements::GeometryPose> KinematicMovementDescription::path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
 {
   if( _step_size<=0 )
   {
@@ -56,22 +67,22 @@ std::vector<st_is::GeometryPose> KinematicMovementDescription::path( st_is::Geom
   return enwrapped_kinematic_movement_description_->path(_base_pose,_start_time,_end_time,_step_size);
 }
 
-std::vector<RelativeMovement> relativePath( double _start_time, double _end_time, double _step_size )
+std::vector<RelativeMovement> KinematicMovementDescription::KinematicMovementDescriptionInstance::relativePath( double _start_time, double _end_time, double _step_size )
 {
   std::vector<RelativeMovement> relative_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
-    relative_path.push_back( this->(t) );
+    relative_path.push_back( (*this)(t) );
   }
   return relative_path;
 }
 
-std::vector<st_is::GeometryPose> KinematicMovementDescription::KinematicMovementDescriptionInstance::path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
+std::vector<movements::GeometryPose> KinematicMovementDescription::KinematicMovementDescriptionInstance::path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
 {
-  std::vector<st_is::GeometryPose> cartesian_path;
+  std::vector<movements::GeometryPose> cartesian_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
-    cartesian_path.push_back( _base_pose + this->(t) );
+    cartesian_path.push_back( _base_pose + (*this)(t) );
   }
   return cartesian_path;
 }

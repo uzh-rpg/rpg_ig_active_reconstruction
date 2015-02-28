@@ -17,10 +17,12 @@ along with geometry_pose. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
-#include "utils/relative_movement"
+#include "movements/relative_movement.h"
 
-namespace st_is
+namespace movements
 {
+  class CombinedRelativeMovement;
+  
   /** class to represent a geometry pose in 3d space */
   class GeometryPose
   {
@@ -29,10 +31,18 @@ namespace st_is
     Eigen::Quaterniond orientation;
     
     /** executes a relative movement on the pose */
-    GeometryPose operator+( st_is::RelativeMovement&  _second );
+    GeometryPose operator+( movements::RelativeMovement&  _second );
+    /** executes a relative movement on the pose */
+    GeometryPose operator+( movements::RelativeMovement  _second );
+    /** executes a combined relative movement on the pose */
+    GeometryPose operator+( movements::CombinedRelativeMovement&  _second );
+    /** executes a combined relative movement on the pose */
+    GeometryPose operator+( movements::CombinedRelativeMovement  _second );
     
     /** executes a relative movement on the pose */
-    GeometryPose& operator+=( st_is::RelativeMovement&  _second );
+    GeometryPose& operator+=( movements::RelativeMovement&  _second );
+    /** executes a relative movement on the pose */
+    GeometryPose& operator+=( movements::CombinedRelativeMovement&  _second );
   };
   
 }

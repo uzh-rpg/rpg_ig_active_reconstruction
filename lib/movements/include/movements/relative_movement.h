@@ -15,14 +15,15 @@ along with relative_movement. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "utils/geometry_pose.h"
 #include <boost/shared_ptr.hpp>
 
-namespace st_is
+namespace movements
 {
 
+class GeometryPose;
 class CombinedKinematicMovementDescription;
 class CombinedRelativeMovement;
+class KinematicMovementDescription;
   
   
 /** A class that serves as package wrapper for RelativeMovementInstances that naturally need to be moved around as pointers. The use of this class keeps the whole pointer arithmetic internal and thus easens the use.
@@ -40,7 +41,7 @@ public:
   
   
   /** applies the relative movement to a base pose */
-  st_is::GeometryPose applyToBasePose( st_is::GeometryPose& _base );
+  movements::GeometryPose applyToBasePose( movements::GeometryPose& _base );
   
   /** returns a pointer to the internally hold RelativeMovementInstance */
   boost::shared_ptr<RelativeMovementInstance> operator*();
@@ -65,11 +66,12 @@ private:
 /** class for for relative movements that can be applied to a base position */
 class RelativeMovement::RelativeMovementInstance
 {
+public:
   /** returns the type of the relative movement */
-  std::string type()=0;
+  virtual std::string type()=0;
   
   /** applies the relative movement to a base pose */
-  st_is::GeometryPose applyToBasePose( st_is::GeometryPose& _base )=0;
+  virtual movements::GeometryPose applyToBasePose( movements::GeometryPose const& _base )=0;
 };
 
 }

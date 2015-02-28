@@ -13,20 +13,21 @@ You should have received a copy of the GNU Lesser General Public License
 along with combined_relative_movement. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "utils/combined_relative_movement.h"
-#include "utils/combined_kinematic_movement_description.h"
+#include "movements/geometry_pose.h"
+#include "movements/combined_relative_movement.h"
+#include "movements/combined_kinematic_movement_description.h"
 #include <boost/foreach.hpp>
 
-namespace st_is
+namespace movements
 {
 
 CombinedRelativeMovement::CombinedRelativeMovement()
 {
 }
 
-st_is::GeometryPose CombinedRelativeMovement::applyToBasePose( st_is::GeometryPose& _base )
+movements::GeometryPose CombinedRelativeMovement::applyToBasePose( movements::GeometryPose& _base )
 {
-  st_is::GeometryPose end_pose = _base;
+  movements::GeometryPose end_pose = _base;
   BOOST_FOREACH( auto rel_movement, relative_movement_queue_ )
   {
     end_pose+=rel_movement;
@@ -56,14 +57,16 @@ CombinedRelativeMovement CombinedRelativeMovement::operator+( RelativeMovement c
 
 CombinedKinematicMovementDescription CombinedRelativeMovement::operator+( KinematicMovementDescription const& _to_add )
 {
-  CombinedKinematicMovementDescription kin_movement_chain = *this;
+  CombinedKinematicMovementDescription kin_movement_chain;
+  kin_movement_chain = (*this);
   kin_movement_chain+=_to_add;
   return kin_movement_chain;
 }
 
 CombinedKinematicMovementDescription CombinedRelativeMovement::operator+( CombinedKinematicMovementDescription const& _to_add )
 {
-  CombinedKinematicMovementDescription kin_movement_chain = *this;
+  CombinedKinematicMovementDescription kin_movement_chain;
+  kin_movement_chain = *this;
   kin_movement_chain+=_to_add;
   return kin_movement_chain;
 }

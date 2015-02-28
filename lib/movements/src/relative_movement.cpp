@@ -13,11 +13,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with relative_movement. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "utils/relative_movement.h"
-#include "utils/combined_relative_movement.h"
-#include "utils/combined_kinematic_movement_description.h"
+#include "movements/geometry_pose.h"
+#include "movements/relative_movement.h"
+#include "movements/combined_relative_movement.h"
+#include "movements/combined_kinematic_movement_description.h"
 
-namespace st_is
+namespace movements
 {
 
 RelativeMovement::RelativeMovement( RelativeMovementInstance* _to_enwrap )
@@ -30,40 +31,44 @@ std::string RelativeMovement::type()
   return enwrapped_relative_movement_->type();
 }
 
-st_is::GeometryPose RelativeMovement::applyToBasePose( st_is::GeometryPose& _base )
+movements::GeometryPose RelativeMovement::applyToBasePose( movements::GeometryPose& _base )
 {
   return enwrapped_relative_movement_->applyToBasePose(_base);
 }
 
-boost::shared_ptr<RelativeMovementInstance> RelativeMovement::operator*()
+boost::shared_ptr<RelativeMovement::RelativeMovementInstance> RelativeMovement::operator*()
 {
   return enwrapped_relative_movement_;
 }
 
 CombinedRelativeMovement RelativeMovement::operator+( RelativeMovement const& _to_add )
 {
-  CombinedRelativeMovement combined_movement = *this;
+  CombinedRelativeMovement combined_movement;
+  combined_movement = *this;
   combined_movement += _to_add;
   return combined_movement;
 }
 
 CombinedRelativeMovement RelativeMovement::operator+( CombinedRelativeMovement const& _to_add )
 {
-  CombinedRelativeMovement combined_movement = *this;
+  CombinedRelativeMovement combined_movement;
+  combined_movement = *this;
   combined_movement += _to_add;
   return combined_movement;
 }
 
 CombinedKinematicMovementDescription RelativeMovement::operator+( KinematicMovementDescription const& _to_add )
 {
-  CombinedKinematicMovementDescription kinematic_movement_chain = *this;
+  CombinedKinematicMovementDescription kinematic_movement_chain;
+  kinematic_movement_chain = *this;
   kinematic_movement_chain += _to_add;
   return kinematic_movement_chain;
 }
 
 CombinedKinematicMovementDescription RelativeMovement::operator+( CombinedKinematicMovementDescription const& _to_add )
 {
-  CombinedKinematicMovementDescription kinematic_movement_chain = *this;
+  CombinedKinematicMovementDescription kinematic_movement_chain;
+  kinematic_movement_chain = *this;
   kinematic_movement_chain += _to_add;
   return kinematic_movement_chain;
 }

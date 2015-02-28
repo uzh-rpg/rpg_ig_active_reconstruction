@@ -15,10 +15,11 @@ along with combined_relative_movement. If not, see <http://www.gnu.org/licenses/
 
 #pragma once
 
-#include "utils/relative_movement.h"
-#include "utils/kinematic_movement_description.h"
+#include "movements/relative_movement.h"
+#include "movements/kinematic_movement_description.h"
+#include <deque>
 
-namespace st_is
+namespace movements
 {
 class CombinedKinematicMovementDescription;
 
@@ -31,7 +32,7 @@ public:
   CombinedRelativeMovement();
   
   /** applies the relative movement queue to a base pose */
-  st_is::GeometryPose applyToBasePose( st_is::GeometryPose& _base );
+  movements::GeometryPose applyToBasePose( movements::GeometryPose& _base );
   
   /** replaces the current relative movement chain represented by the object with _to_equal as the one, single chain element */
   CombinedRelativeMovement& operator=( RelativeMovement const& _to_equal );
@@ -51,6 +52,6 @@ public:
   CombinedRelativeMovement& operator+=( RelativeMovement const& _to_add );
 private:
   std::deque< RelativeMovement > relative_movement_queue_;
-}
+};
   
 }

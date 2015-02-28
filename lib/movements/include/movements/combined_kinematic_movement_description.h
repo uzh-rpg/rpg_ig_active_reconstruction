@@ -15,17 +15,19 @@ along with combined_kinematic_movement_description. If not, see <http://www.gnu.
 
 #pragma once
 
-#include "utils/relative_movement.h"
-#include "utils/kinematic_movement_description.h"
+#include "movements/relative_movement.h"
+#include <deque>
 
-namespace st_is
+namespace movements
 {
   
 class CombinedRelativeMovement;
+class KinematicMovementDescription;
 
 /// class to hold a series of fixed and kinematic relative movements
 class CombinedKinematicMovementDescription
 {
+public:
   CombinedKinematicMovementDescription();
   
   /** returns the combined relative movement chain for time _time
@@ -49,7 +51,7 @@ class CombinedKinematicMovementDescription
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  std::vector<st_is::GeometryPose> path( st_is::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
+  std::vector<movements::GeometryPose> path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
   
   /** replaces the current relative kinematic movement chain represented by the object with _to_equal */
   CombinedKinematicMovementDescription& operator=( CombinedRelativeMovement const& _to_equal );
@@ -83,6 +85,6 @@ private:
   
   /** returns the total number of relative movements currently added (kinematic included */
   unsigned int nrOfMovements();
-}
+};
   
 } 
