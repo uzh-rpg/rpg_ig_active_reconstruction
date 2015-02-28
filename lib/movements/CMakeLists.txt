@@ -13,4 +13,6 @@ add_library(movements
   src/kinematic_movement_description.cpp
   src/relative_movement.cpp
   src/ros_movements.cpp
+  src/translation.cpp
+  src/in_out_spiral.cpp
 )

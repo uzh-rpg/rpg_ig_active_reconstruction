@@ -20,6 +20,10 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/foreach.hpp>
 #include "dense_reconstruction/youbot_reconstruction_controller.h"
 
+#include "movements/geometry_pose.h"
+#include "movements/translation.h"
+#include "movements/ros_movements.h"
+
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
   ros_node_(_n)
 {  
@@ -92,16 +96,19 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
+  movements::GeometryPose base_pose = ROSToMovements(target_0);
+  
   std::vector<geometry_msgs::Pose> cartesian_path;
   if( test == 0 )
   {
+    robot_->setPoseTarget(target_0);
     test = 1;
   }
   else
   {
+    robot_->setPoseTarget(target_1);
     test = 0;
   }
-  robot_->setPoseTarget(target_0);
   
   std::vector<double> target_state_position;
   
