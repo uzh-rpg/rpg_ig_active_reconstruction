@@ -21,8 +21,8 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/youbot_reconstruction_controller.h"
 
 #include "movements/geometry_pose.h"
-#include "movements/translation.h"
-#include "movements/ros_movements.h"
+#include <movements/translation.h>
+#include <movements/ros_movements.h>
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
   ros_node_(_n)
@@ -96,7 +96,7 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
-  movements::GeometryPose base_pose = ROSToMovements(target_0);
+  movements::GeometryPose base_pose = movements::ROSToMovements(target_0);
   
   std::vector<geometry_msgs::Pose> cartesian_path;
   if( test == 0 )

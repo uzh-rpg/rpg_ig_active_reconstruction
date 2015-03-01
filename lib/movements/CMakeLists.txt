@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
+project(movements)
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+)
+set(movements_INCLUDE_DIRS
+${CMAKE_CURRENT_SOURCE_DIR}/include
+${catkin_INCLUDE_DIRS}
+${Eigen_INCLUDE_DIRS}
+${Boost_INCLUDE_DIRS}
+PARENT_SCOPE
 )
 
 add_library(movements
