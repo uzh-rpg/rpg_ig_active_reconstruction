@@ -24,17 +24,7 @@ movements::GeometryPose GeometryPose::operator+( movements::RelativeMovement& _s
   return _second.applyToBasePose(*this);
 }
 
-movements::GeometryPose GeometryPose::operator+( movements::RelativeMovement _second )
-{
-  return _second.applyToBasePose(*this);
-}
-
 GeometryPose GeometryPose::operator+( movements::CombinedRelativeMovement&  _second )
-{
-  return _second.applyToBasePose(*this);
-}
-
-GeometryPose GeometryPose::operator+( movements::CombinedRelativeMovement  _second )
 {
   return _second.applyToBasePose(*this);
 }

@@ -44,7 +44,7 @@ RelativeMovement InOutSpiral::operator()( double _time )
   Eigen::Vector3d relative_movement_spiral_coord( x,y,0 );
   Eigen::Vector3d relative_movement_parent_coord = orientation_*relative_movement_spiral_coord;
   
-  return Translation::translation( relative_movement_parent_coord );
+  return Translation::create( relative_movement_parent_coord );
 }
 
 double InOutSpiral::getRadius( double _time )

@@ -96,17 +96,18 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
-  movements::GeometryPose base_pose = movements::ROSToMovements(target_0);
+  movements::GeometryPose base_pose = movements::fromROS(target_0);
+  movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
   
   std::vector<geometry_msgs::Pose> cartesian_path;
   if( test == 0 )
   {
-    robot_->setPoseTarget(target_0);
+    robot_->setPoseTarget( movements::toROS(base_pose) );
     test = 1;
   }
   else
   {
-    robot_->setPoseTarget(target_1);
+    robot_->setPoseTarget( movements::toROS(base_pose+z_down) );
     test = 0;
   }
   

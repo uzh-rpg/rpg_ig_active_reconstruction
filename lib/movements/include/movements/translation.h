@@ -30,14 +30,21 @@ public:
   Translation( double _x, double _y, double _z );
   Translation( Eigen::Vector3d _translation );
   
-  std::string type();
+  /** access to the x-translation element */
+  double& x();
+  /** access to the y-translation element */
+  double& y();
+  /** access to the z-translation element */
+  double& z();
   
-  GeometryPose applyToBasePose( GeometryPose const& _base );
+  virtual std::string type();
+  
+  virtual GeometryPose applyToBasePose( GeometryPose const& _base );
   
   /** returns a RelativeMovement that contains the wanted translation */
-  static RelativeMovement translation( double _x, double _y, double _z );
+  static RelativeMovement create( double _x, double _y, double _z );
   /** returns a RelativeMovement that contains the wanted translation */
-  static RelativeMovement translation( Eigen::Vector3d _translation );
+  static RelativeMovement create( Eigen::Vector3d _translation );
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:

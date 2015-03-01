@@ -36,6 +36,23 @@ translation_(_translation)
   
 }
 
+double& Translation::x()
+{
+  return translation_(0);
+}
+
+double& Translation::y()
+{
+  return translation_(1);
+}
+
+double& Translation::z()
+{
+  return translation_(2);
+}
+
+
+
 std::string Translation::type()
 {
   return "movements::Translation";
@@ -48,12 +65,12 @@ GeometryPose Translation::applyToBasePose( GeometryPose const& _base )
   return copy;
 }
 
-RelativeMovement Translation::translation( double _x, double _y, double _z )
+RelativeMovement Translation::create( double _x, double _y, double _z )
 {
   return RelativeMovement( new Translation(_x,_y,_z) );
 }
 
-RelativeMovement Translation::translation( Eigen::Vector3d _translation )
+RelativeMovement Translation::create( Eigen::Vector3d _translation )
 {
   return RelativeMovement( new Translation(_translation) );
 }

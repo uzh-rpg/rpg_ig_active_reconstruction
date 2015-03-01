@@ -20,7 +20,7 @@ namespace movements
 {
 
 
-geometry_msgs::Pose movementsToROS( movements::GeometryPose _pose )
+geometry_msgs::Pose toROS( movements::GeometryPose _pose )
 {
   geometry_msgs::Pose pose;
   
@@ -37,7 +37,7 @@ geometry_msgs::Pose movementsToROS( movements::GeometryPose _pose )
 }
 
 
-movements::GeometryPose ROSToMovements( geometry_msgs::Pose _pose )
+movements::GeometryPose fromROS( geometry_msgs::Pose _pose )
 {
   movements::GeometryPose pose;
   
@@ -53,22 +53,22 @@ movements::GeometryPose ROSToMovements( geometry_msgs::Pose _pose )
   return pose;
 }
 
-std::vector<geometry_msgs::Pose> movementsToROS( std::vector<GeometryPose> _to_convert )
+std::vector<geometry_msgs::Pose> toROS( std::vector<GeometryPose> _to_convert )
 {
   std::vector<geometry_msgs::Pose> out;
   BOOST_FOREACH( auto pose,  _to_convert )
   {
-    out.push_back( movementsToROS(pose) );
+    out.push_back( toROS(pose) );
   }
   return out;
 }
 
-std::vector<GeometryPose> ROSToMovements( std::vector<geometry_msgs::Pose> _to_convert )
+std::vector<GeometryPose> fromROS( std::vector<geometry_msgs::Pose> _to_convert )
 {
   std::vector<GeometryPose> out;
   BOOST_FOREACH( auto pose,  _to_convert )
   {
-    out.push_back( ROSToMovements(pose) );
+    out.push_back( fromROS(pose) );
   }
   return out;
 }

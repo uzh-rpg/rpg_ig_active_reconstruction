@@ -82,7 +82,8 @@ std::vector<movements::GeometryPose> KinematicMovementDescription::KinematicMove
   std::vector<movements::GeometryPose> cartesian_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
-    cartesian_path.push_back( _base_pose + (*this)(t) );
+    RelativeMovement move = (*this)(t);
+    cartesian_path.push_back( _base_pose+move );
   }
   return cartesian_path;
 }

@@ -23,4 +23,5 @@ add_library(movements
   src/ros_movements.cpp
   src/translation.cpp
   src/in_out_spiral.cpp
+  src/linear_movement.cpp
 )
