@@ -21,7 +21,7 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 namespace movements
 {
 
-class GeometryPose;
+class Pose;
 class CombinedKinematicMovementDescription;
 class CombinedRelativeMovement;
 class KinematicMovementDescription;
@@ -42,7 +42,7 @@ public:
   
   
   /** applies the relative movement to a base pose */
-  movements::GeometryPose applyToBasePose( movements::GeometryPose& _base );
+  movements::Pose applyToBasePose( movements::Pose& _base );
   
   /** returns a pointer to the internally hold RelativeMovementInstance */
   boost::shared_ptr<RelativeMovementInstance> operator*();
@@ -74,7 +74,7 @@ public:
   virtual std::string type()=0;
   
   /** applies the relative movement to a base pose */
-  virtual movements::GeometryPose applyToBasePose( movements::GeometryPose const& _base )=0;
+  virtual movements::Pose applyToBasePose( movements::Pose const& _base )=0;
 };
 
 }

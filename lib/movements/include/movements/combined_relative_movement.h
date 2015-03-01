@@ -33,7 +33,7 @@ public:
   CombinedRelativeMovement();
   
   /** applies the relative movement queue to a base pose */
-  movements::GeometryPose applyToBasePose( movements::GeometryPose& _base );
+  movements::Pose applyToBasePose( movements::Pose& _base );
   
   /** replaces the current relative movement chain represented by the object with _to_equal as the one, single chain element */
   CombinedRelativeMovement& operator=( RelativeMovement const& _to_equal );

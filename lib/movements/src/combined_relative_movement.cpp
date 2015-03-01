@@ -26,9 +26,9 @@ CombinedRelativeMovement::CombinedRelativeMovement()
 {
 }
 
-movements::GeometryPose CombinedRelativeMovement::applyToBasePose( movements::GeometryPose& _base )
+movements::Pose CombinedRelativeMovement::applyToBasePose( movements::Pose& _base )
 {
-  movements::GeometryPose end_pose = _base;
+  movements::Pose end_pose = _base;
   BOOST_FOREACH( auto rel_movement, relative_movement_queue_ )
   {
     end_pose+=rel_movement;

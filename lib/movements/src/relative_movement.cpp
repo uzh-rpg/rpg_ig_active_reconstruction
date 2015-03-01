@@ -32,7 +32,7 @@ std::string RelativeMovement::type()
   return enwrapped_relative_movement_->type();
 }
 
-movements::GeometryPose RelativeMovement::applyToBasePose( movements::GeometryPose& _base )
+movements::Pose RelativeMovement::applyToBasePose( movements::Pose& _base )
 {
   return enwrapped_relative_movement_->applyToBasePose(_base);
 }

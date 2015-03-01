@@ -59,9 +59,9 @@ std::string Translation::type()
   return "movements::Translation";
 }
 
-GeometryPose Translation::applyToBasePose( GeometryPose const& _base )
+Pose Translation::applyToBasePose( Pose const& _base )
 {
-  GeometryPose copy = _base;
+  Pose copy = _base;
   copy.position += translation_;
   return copy;
 }

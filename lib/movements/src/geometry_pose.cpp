@@ -20,23 +20,23 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 namespace movements
 {
 
-movements::GeometryPose GeometryPose::operator+( movements::RelativeMovement _second )
+movements::Pose Pose::operator+( movements::RelativeMovement _second )
 {
   return _second.applyToBasePose(*this);
 }
 
-GeometryPose GeometryPose::operator+( movements::CombinedRelativeMovement  _second )
+Pose Pose::operator+( movements::CombinedRelativeMovement  _second )
 {
   return _second.applyToBasePose(*this);
 }
 
-GeometryPose& GeometryPose::operator+=( movements::RelativeMovement  _second )
+Pose& Pose::operator+=( movements::RelativeMovement  _second )
 {
   *this = _second.applyToBasePose(*this);
   return *this;
 }
 
-GeometryPose& GeometryPose::operator+=( movements::CombinedRelativeMovement  _second )
+Pose& Pose::operator+=( movements::CombinedRelativeMovement  _second )
 {
   *this = _second.applyToBasePose(*this);
   return *this;

@@ -25,21 +25,21 @@ namespace movements
   class CombinedRelativeMovement;
   
   /** class to represent a geometry pose in 3d space */
-  class GeometryPose
+  class Pose
   {
   public:
     Eigen::Vector3d position;
     Eigen::Quaterniond orientation;
     
     /** executes a relative movement on the pose */
-    GeometryPose operator+( movements::RelativeMovement  _second );
+    Pose operator+( movements::RelativeMovement  _second );
     /** executes a combined relative movement on the pose */
-    GeometryPose operator+( movements::CombinedRelativeMovement  _second );
+    Pose operator+( movements::CombinedRelativeMovement  _second );
     
     /** executes a relative movement on the pose */
-    GeometryPose& operator+=( movements::RelativeMovement  _second );
+    Pose& operator+=( movements::RelativeMovement  _second );
     /** executes a relative movement on the pose */
-    GeometryPose& operator+=( movements::CombinedRelativeMovement  _second );
+    Pose& operator+=( movements::CombinedRelativeMovement  _second );
   };
   
 }

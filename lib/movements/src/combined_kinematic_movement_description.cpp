@@ -72,9 +72,9 @@ std::vector<CombinedRelativeMovement> CombinedKinematicMovementDescription::rela
   return relative_movement_queue;
 }
 
-std::vector<movements::GeometryPose> CombinedKinematicMovementDescription::path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size )
+std::vector<movements::Pose> CombinedKinematicMovementDescription::path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size )
 {
-  std::vector<movements::GeometryPose> cartesian_path;
+  std::vector<movements::Pose> cartesian_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
     movements::CombinedRelativeMovement move = (*this)(t);

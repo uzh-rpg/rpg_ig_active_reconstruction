@@ -52,7 +52,7 @@ public:
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  std::vector<movements::GeometryPose> path( movements::GeometryPose _base_pose, double _start_time, double _end_time, double _step_size );
+  std::vector<movements::Pose> path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
   
   /** replaces the current relative kinematic movement chain represented by the object with _to_equal */
   CombinedKinematicMovementDescription& operator=( CombinedRelativeMovement const& _to_equal );

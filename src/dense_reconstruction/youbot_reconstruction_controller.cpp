@@ -78,7 +78,6 @@ bool YoubotReconstructionController::planAndMove()
   robot_->setGoalPositionTolerance(0.001);
   robot_->setGoalOrientationTolerance(0.001);
   
-  ros::Duration(2).sleep();
   geometry_msgs::Pose target_0, target_1;
   
   target_0.position.x = 0.126;
@@ -97,11 +96,42 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
-  movements::GeometryPose base_pose = movements::fromROS(target_0);
+  movements::Pose base_pose = movements::fromROS(target_0);
   movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
   movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
   
-  std::vector<geometry_msgs::Pose> cartesian_path;
+  std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.01 );
+  std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
+  moveit_msgs::RobotTrajectory trajectory;
+  moveit::planning_interface::MoveGroup::Plan plan;
+  
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+  robot_->setStartState(current_robot_state);
+    
+    
+  double success_ratio = 0;
+  while(success_ratio==0)
+  {
+    success_ratio=robot_->computeCartesianPath( waypoints, 1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+    ros::Duration(0.01).sleep();
+    cout<<endl<<"Trying to solve problem...";
+    break;
+  }
+  cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
+  cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
+  cout<<endl<<"The poses in the calculated path are:";
+  BOOST_FOREACH(auto pose, waypoints)
+  {
+    cout<<pose<<endl;
+  }
+  cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
+  
+  plan.trajectory_ = trajectory;
+  plan.planning_time_ = 0.1;
+  
+  // using direct pose targets
+  /*
   if( test == 0 )
   {
     robot_->setPoseTarget( movements::toROS(base_pose) );
@@ -112,35 +142,57 @@ bool YoubotReconstructionController::planAndMove()
     robot_->setPoseTarget( movements::toROS( base_pose+md(0.1) ) );
     test = 0;
   }
+  */
+  // using cartesian paths
+  if( test == 0 )
+  {
+    cout<<endl<<"Moving to start position"<<endl;
+    robot_->setPoseTarget( movements::toROS(base_pose) );
+    test = 1;
+    
+      
+    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+    //robot_->setStartState(current_robot_state);
+    
+    double joint_tolerance = robot_->getGoalJointTolerance();
+    double velocity_tolerance = 0.0001;
+    
+    
+    //ros::AsyncSpinner spinner(1);
+    
+    //scene_->unlockSceneRead();
+    
+    //spinner.start();
+    // plan and execute a path to the target state
+    bool success = robot_->asyncMove();
+    //spinner.stop();
+    //scene_->lockSceneRead();
+    
+    //if( !success ) return false;
+    
+    
+  }
+  else
+  {
+    cout<<endl<<"Executing motion plan"<<endl;
+    
+    
+    //ros::AsyncSpinner spinner(1);    
+    //scene_->unlockSceneRead();    
+    //spinner.start();
+    robot_->asyncExecute(plan);
+    //spinner.stop();
+    //scene_->lockSceneRead();
+        
+    test = 0;
+  }
   
-  std::vector<double> target_state_position;
   
-  std::vector<std::string> joint_names = robot_->getJoints();
   
-  // move() and execute() never unblock thus this target reaching function is used
-  robot_state::RobotState target_robot_state = robot_->getJointValueTarget();
   
     
-  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-  robot_state::RobotState current_robot_state = current_scene->getCurrentState();
-  robot_->setStartState(current_robot_state);
-  
-  double joint_tolerance = robot_->getGoalJointTolerance();
-  double velocity_tolerance = 0.0001;
-  
-  
-  ros::AsyncSpinner spinner(1);
-  
-  scene_->unlockSceneRead();
-  
-  spinner.start();
-  // plan and execute a path to the target state
-  bool success = robot_->move();
-  spinner.stop();
-  scene_->lockSceneRead();
-  
-  if( !success ) return false;
-    
+  ros::Duration(2).sleep();
   ros::Duration wait_time(0,10000000); // 10 ms
   
   

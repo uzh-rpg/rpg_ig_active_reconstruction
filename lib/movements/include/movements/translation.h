@@ -40,7 +40,7 @@ public:
   
   virtual std::string type();
   
-  virtual GeometryPose applyToBasePose( GeometryPose const& _base );
+  virtual Pose applyToBasePose( Pose const& _base );
   
   /** returns a RelativeMovement that contains the wanted translation */
   static RelativeMovement create( double _x, double _y, double _z );

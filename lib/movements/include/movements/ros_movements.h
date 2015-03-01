@@ -24,9 +24,9 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 namespace movements
 {
 
-geometry_msgs::Pose toROS( movements::GeometryPose _pose );
-movements::GeometryPose fromROS( geometry_msgs::Pose _pose );
-std::vector<geometry_msgs::Pose> toROS( std::vector<GeometryPose> _to_convert );
-std::vector<GeometryPose> fromROS( std::vector<geometry_msgs::Pose> _to_convert );
+geometry_msgs::Pose toROS( movements::Pose _pose );
+movements::Pose fromROS( geometry_msgs::Pose _pose );
+std::vector<geometry_msgs::Pose> toROS( std::vector<Pose> _to_convert );
+std::vector<Pose> fromROS( std::vector<geometry_msgs::Pose> _to_convert );
 
 }
