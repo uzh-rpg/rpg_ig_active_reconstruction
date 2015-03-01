@@ -1,16 +1,17 @@
 /* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
 *
-* 
-kinematic_movement_description is free software: you can redistribute it and/or modify
+This file is part of movements, a library for representations and calculations of movements in space,
+
+movements is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-kinematic_movement_description is distributed in the hope that it will be useful,
+movements is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with kinematic_movement_description. If not, see <http://www.gnu.org/licenses/>.
+along with movements. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -20,8 +21,6 @@ along with kinematic_movement_description. If not, see <http://www.gnu.org/licen
 
 namespace movements
 {
-
-class CombinedRelativeMovement;
 
 
 /** class that serves as package wrapper for KinematicMovementDescriptionInstances that naturally need to be moved around as pointers. The use of this class keeps the whole pointer arithmetic internal and thus easens the use. */
@@ -68,6 +67,9 @@ public:
 private:
   boost::shared_ptr<KinematicMovementDescriptionInstance> enwrapped_kinematic_movement_description_;
 };
+
+typedef KinematicMovementDescription KinMove;
+
 
 /** defines the interface for relative kinematic movement classes */
 class KinematicMovementDescription::KinematicMovementDescriptionInstance

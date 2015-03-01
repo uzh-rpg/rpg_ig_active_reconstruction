@@ -1,16 +1,17 @@
 /* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
 *
-* 
-linear_movement is free software: you can redistribute it and/or modify
+This file is part of movements, a library for representations and calculations of movements in space,
+
+movements is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-linear_movement is distributed in the hope that it will be useful,
+movements is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with linear_movement. If not, see <http://www.gnu.org/licenses/>.
+along with movements. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -25,16 +26,16 @@ namespace movements
 {
 
 /// represents a kinematic description of a relative linear movement
-class LinearMovement:public KinematicMovementDescription::KinematicMovementDescriptionInstance
+class Linear:public KinematicMovementDescription::KinematicMovementDescriptionInstance
 {
 public:
-  LinearMovement();
+  Linear();
   /** constructor: lengths in [m], velocity in [m/s] */
-  LinearMovement( double _x, double _y, double _z, double _velocity );
+  Linear( double _x, double _y, double _z, double _velocity );
   /** constructor: lengths in [m], velocity in [m/s] */
-  LinearMovement( Eigen::Vector3d _direction, double _velocity );
+  Linear( Eigen::Vector3d _direction, double _velocity );
   /** constructor: lengths in [m], velocity in [m/s] */
-  LinearMovement( Translation _direction, double _speed );
+  Linear( Translation _direction, double _speed );
   
   /** access to the x-translation element [m]*/
   double& x();
