@@ -38,11 +38,11 @@ public:
   
   /// runs one step of the autonomous calibration process
   /** The method iterates through the joint space and estimates the hand-eye transformation along the way.
-   * Based on the hand-eye transformation it also estimates the position of the calibration target, e.g.
-   * the checkerboard in order to skip joint positions where the target is expected not to be visible. The
-   * current estimate is printed to the console. At each run another joint position is assumed.
-   * @return false if all positions were covered
-   */
+  * Based on the hand-eye transformation it also estimates the position of the calibration target, e.g.
+  * the checkerboard in order to skip joint positions where the target is expected not to be visible. The
+  * current estimate is printed to the console. At each run another joint position is assumed.
+  * @return false if all positions were covered
+  */
   bool runSingleIteration();
   
 private:

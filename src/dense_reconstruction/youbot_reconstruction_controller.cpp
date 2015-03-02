@@ -96,39 +96,7 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
-  movements::Pose base_pose = movements::fromROS(target_0);
-  movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
-  movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
   
-  std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.01 );
-  std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
-  moveit_msgs::RobotTrajectory trajectory;
-  moveit::planning_interface::MoveGroup::Plan plan;
-  
-  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-  robot_state::RobotState current_robot_state = current_scene->getCurrentState();
-  robot_->setStartState(current_robot_state);
-    
-    
-  double success_ratio = 0;
-  while(success_ratio==0)
-  {
-    success_ratio=robot_->computeCartesianPath( waypoints, 1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
-    ros::Duration(0.01).sleep();
-    cout<<endl<<"Trying to solve problem...";
-    break;
-  }
-  cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
-  cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
-  cout<<endl<<"The poses in the calculated path are:";
-  BOOST_FOREACH(auto pose, waypoints)
-  {
-    cout<<pose<<endl;
-  }
-  cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
-  
-  plan.trajectory_ = trajectory;
-  plan.planning_time_ = 0.1;
   
   // using direct pose targets
   /*
@@ -144,13 +112,20 @@ bool YoubotReconstructionController::planAndMove()
   }
   */
   // using cartesian paths
-  if( test == 0 )
+  cout<<endl<<"Enter 1 to execute the relative trajactory, 0 to move to the base position."<<endl;
+  char input;
+  cin>>input;
+  if( input == 0 )
   {
     cout<<endl<<"Moving to start position"<<endl;
-    robot_->setPoseTarget( movements::toROS(base_pose) );
     test = 1;
     
-      
+    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+    //robot_->setStartState(current_robot_state);
+    
+    robot_->setStartStateToCurrentState();
+    robot_->setPoseTarget( target_0 );
     //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
     //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
     //robot_->setStartState(current_robot_state);
@@ -159,15 +134,14 @@ bool YoubotReconstructionController::planAndMove()
     double velocity_tolerance = 0.0001;
     
     
-    //ros::AsyncSpinner spinner(1);
+    ros::AsyncSpinner spinner(1);
+    scene_->unlockSceneRead();
     
-    //scene_->unlockSceneRead();
-    
-    //spinner.start();
+    spinner.start();
     // plan and execute a path to the target state
-    bool success = robot_->asyncMove();
-    //spinner.stop();
-    //scene_->lockSceneRead();
+    bool success = robot_->move();
+    spinner.stop();
+    scene_->lockSceneRead();
     
     //if( !success ) return false;
     
@@ -175,14 +149,46 @@ bool YoubotReconstructionController::planAndMove()
   }
   else
   {
+    robot_->setStartStateToCurrentState();
+    geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+    
+    movements::Pose base_pose = movements::fromROS(current_pose);
+    movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
+    movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
+    
+    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.1 );
+    std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
+    
+    moveit_msgs::RobotTrajectory trajectory;
+    moveit::planning_interface::MoveGroup::Plan plan;
+    
+    double success_ratio = 0;
+    while(success_ratio==0)
+    {
+      success_ratio=robot_->computeCartesianPath( waypoints, 1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+      ros::Duration(0.01).sleep();
+      cout<<endl<<"Trying to solve problem...";
+      break;
+    }
+    cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
+    cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
+    cout<<endl<<"The poses in the calculated path are:";
+    BOOST_FOREACH(auto pose, waypoints)
+    {
+      cout<<pose<<endl;
+    }
+    cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
+    
+    plan.trajectory_ = trajectory;
+    plan.planning_time_ = 0.1;
+  
     cout<<endl<<"Executing motion plan"<<endl;
     
-    
-    //ros::AsyncSpinner spinner(1);    
+    ros::AsyncSpinner spinner(1);    
     //scene_->unlockSceneRead();    
-    //spinner.start();
-    robot_->asyncExecute(plan);
-    //spinner.stop();
+    spinner.start();
+    robot_->execute(plan);
+    spinner.stop();
     //scene_->lockSceneRead();
         
     test = 0;
@@ -192,7 +198,7 @@ bool YoubotReconstructionController::planAndMove()
   
   
     
-  ros::Duration(2).sleep();
+  ros::Duration(5).sleep();
   ros::Duration wait_time(0,10000000); // 10 ms
   
   
