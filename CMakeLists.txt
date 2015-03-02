@@ -40,6 +40,7 @@ include_directories(include
 add_executable(youbot_control
   src/dense_reconstruction/develop.cpp
   src/dense_reconstruction/youbot_reconstruction_controller.cpp
+  src/utils/ros_eigen.cpp
   ${movement_sources}
 )
 

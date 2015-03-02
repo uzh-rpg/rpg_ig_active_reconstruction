@@ -19,6 +19,18 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 
 namespace movements
 {
+  
+Pose::Pose()
+{
+  
+}
+
+Pose::Pose( Eigen::Vector3d _position, Eigen::Quaterniond _orientation ):
+  position(_position),
+  orientation(_orientation)
+{
+  
+}
 
 movements::Pose Pose::operator+( movements::RelativeMovement _second )
 {

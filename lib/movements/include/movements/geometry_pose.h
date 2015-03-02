@@ -28,6 +28,9 @@ namespace movements
   class Pose
   {
   public:
+    Pose();
+    Pose( Eigen::Vector3d _position, Eigen::Quaterniond _orientation );
+    
     Eigen::Vector3d position;
     Eigen::Quaterniond orientation;
     

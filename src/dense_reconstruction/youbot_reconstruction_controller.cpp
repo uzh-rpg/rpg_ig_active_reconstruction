@@ -19,6 +19,7 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <boost/foreach.hpp>
 #include "dense_reconstruction/youbot_reconstruction_controller.h"
+#include "utils/ros_eigen.h"
 
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
@@ -62,17 +63,19 @@ movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::D
   geometry_msgs::TransformStamped end_effector_pose_ros;
   
   try{
-    tf_listener_.lookupTransform("/base_footprint", "/camera", ros::Time(0), end_effector_pose);
+    tf_listener_.lookupTransform("/base_footprint", "/camera", ros::Time(0), end_effector_pose_tf);
   }
   catch (tf::TransformException ex){
     ROS_ERROR("%s",ex.what());
     return movements::Pose();
   }
   
-  tf::tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros );
-  tf::Vector3 translation_tf = end_effector_pose_tf.getOrigin();
-  tf::Quaternion rotation_tf = end_effector_pose_tf.getRotation();
+  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros );
   
+  Eigen::Quaterniond rotation = st_is::geometryToEigen( end_effector_pose_ros.transform.rotation );
+  Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
+  
+  return movements::Pose( translation, rotation );
 }
 
 bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::LockedPlanningSceneRO& _scene, robot_state::RobotState& _robot )
@@ -186,7 +189,7 @@ bool YoubotReconstructionController::planAndMove()
     cout<<endl<<"The end effector frame is: "<<robot_->getEndEffector();
     cout<<endl<<"The current pose appears to be:"<<endl<<current_pose<<endl;
     
-    movements::Pose base_pose = movements::fromROS(current_pose);
+    movements::Pose base_pose = getEndEffectorPoseFromTF();//movements::fromROS(current_pose);
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
     
