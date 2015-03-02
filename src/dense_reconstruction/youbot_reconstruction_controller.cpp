@@ -140,7 +140,8 @@ bool YoubotReconstructionController::planAndMove()
     spinner.start();
     // plan and execute a path to the target state
     cout<<endl<<"well i get here.."<<endl;
-    bool success = robot_->move();
+    bool success;
+    do{success = robot_->move();}while(!success);
     cout<<endl<<"moveit says that the motion execution function has finished with success="<<success<<"."<<endl;
     spinner.stop();
     scene_->lockSceneRead();
@@ -151,26 +152,38 @@ bool YoubotReconstructionController::planAndMove()
   }
   else
   {
-    robot_->setStartStateToCurrentState();
+    cout<<endl<<"Executing motion plan"<<endl;
+    
+    //robot_->setStartStateToCurrentState();
+    
+    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+    //robot_->setStartState(current_robot_state);
+    
     geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+    
+    cout<<endl<<"The current pose appears to be:"<<endl<<current_pose<<endl;
     
     movements::Pose base_pose = movements::fromROS(current_pose);
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
     
-    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.1 );
+    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.05 );
     std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
     
     moveit_msgs::RobotTrajectory trajectory;
     moveit::planning_interface::MoveGroup::Plan plan;
     
     double success_ratio = 0;
-    while(success_ratio==0)
+    int count=0;
+    while(success_ratio!=1)
     {
+      count++;
       success_ratio=robot_->computeCartesianPath( waypoints, 1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
       ros::Duration(0.01).sleep();
       cout<<endl<<"Trying to solve problem...";
-      break;
+      //break;
+      if( count>10 ) break;
     }
     cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
     cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
@@ -184,7 +197,6 @@ bool YoubotReconstructionController::planAndMove()
     plan.trajectory_ = trajectory;
     plan.planning_time_ = 0.1;
   
-    cout<<endl<<"Executing motion plan"<<endl;
     
     ros::AsyncSpinner spinner(1);    
     //scene_->unlockSceneRead();    

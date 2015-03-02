@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   moveit_ros_planning_interface
   control_msgs
-  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -27,7 +26,7 @@ find_package(Eigen REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs tf2_msgs tf2_ros sensor_msgs cv_bridge moveit_ros_planning_interface control_msgs message_runtime
+  CATKIN_DEPENDS roscpp geometry_msgs tf2_msgs tf2_ros sensor_msgs cv_bridge moveit_ros_planning_interface control_msgs
   DEPENDS opencv opencv2 Eigen
 )
 
