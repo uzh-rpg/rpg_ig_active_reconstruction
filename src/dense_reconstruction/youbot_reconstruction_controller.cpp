@@ -60,7 +60,7 @@ bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::Lo
     
   return !colliding;
 }
-int test = 0;
+
 bool YoubotReconstructionController::planAndMove()
 {
   std::string end_effector_name;
@@ -75,8 +75,6 @@ bool YoubotReconstructionController::planAndMove()
   cout<<endl<<"goal orientation tolerance is: "<<robot_->getGoalOrientationTolerance();
   cout<<endl;
   
-  robot_->setGoalPositionTolerance(0.001);
-  robot_->setGoalOrientationTolerance(0.001);
   
   geometry_msgs::Pose target_0, target_1;
   
@@ -96,8 +94,10 @@ bool YoubotReconstructionController::planAndMove()
   target_1.orientation.z = -0.99378;
   target_1.orientation.w = 0.0109;
   
-  
-  
+  robot_->setGoalPositionTolerance(0.001);
+  robot_->setGoalOrientationTolerance(0.001);
+
+
   // using direct pose targets
   /*
   if( test == 0 )
@@ -113,19 +113,19 @@ bool YoubotReconstructionController::planAndMove()
   */
   // using cartesian paths
   cout<<endl<<"Enter 1 to execute the relative trajactory, 0 to move to the base position."<<endl;
-  char input;
+  int input;
   cin>>input;
   if( input == 0 )
   {
     cout<<endl<<"Moving to start position"<<endl;
-    test = 1;
+    robot_->setPoseTarget( target_0 );
     
-    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-    //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+    planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    robot_state::RobotState current_robot_state = current_scene->getCurrentState();
     //robot_->setStartState(current_robot_state);
     
-    robot_->setStartStateToCurrentState();
-    robot_->setPoseTarget( target_0 );
+    //robot_->setStartStateToCurrentState();
+    
     //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
     //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
     //robot_->setStartState(current_robot_state);
@@ -139,7 +139,9 @@ bool YoubotReconstructionController::planAndMove()
     
     spinner.start();
     // plan and execute a path to the target state
+    cout<<endl<<"well i get here.."<<endl;
     bool success = robot_->move();
+    cout<<endl<<"moveit says that the motion execution function has finished with success="<<success<<"."<<endl;
     spinner.stop();
     scene_->lockSceneRead();
     
@@ -191,7 +193,6 @@ bool YoubotReconstructionController::planAndMove()
     spinner.stop();
     //scene_->lockSceneRead();
         
-    test = 0;
   }
   
   
