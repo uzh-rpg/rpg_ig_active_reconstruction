@@ -136,8 +136,8 @@ bool YoubotReconstructionController::planAndMove()
   }
   */
   // using cartesian paths
-  cout<<endl<<"Enter 1 to execute the relative trajactory, 0 to move to the base position."<<endl;
-  int input;
+  cout<<endl<<"Enter time step size for the created path, 0 will move the end effector to the base pose."<<endl;
+  double input;
   cin>>input;
   if( input == 0 )
   {
@@ -165,7 +165,7 @@ bool YoubotReconstructionController::planAndMove()
     // plan and execute a path to the target state
     cout<<endl<<"well i get here.."<<endl;
     bool success;
-    do{success = robot_->move();}while(!success);
+    do{success = robot_->move();}while(!success && ros_node_->ok() );
     cout<<endl<<"moveit says that the motion execution function has finished with success="<<success<<"."<<endl;
     spinner.stop();
     scene_->lockSceneRead();
@@ -184,16 +184,31 @@ bool YoubotReconstructionController::planAndMove()
     //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
     //robot_->setStartState(current_robot_state);
     
-    geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
-    cout<<endl<<"The reference frame is: "<<robot_->getPoseReferenceFrame();
-    cout<<endl<<"The end effector frame is: "<<robot_->getEndEffector();
-    cout<<endl<<"The current pose appears to be:"<<endl<<current_pose<<endl;
+    //geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+    //cout<<endl<<"The reference frame is: "<<robot_->getPoseReferenceFrame();
+    //cout<<endl<<"The end effector frame is: "<<robot_->getEndEffector();
+    //cout<<endl<<"The current pose appears to be:"<<endl<<current_pose<<endl;
     
     movements::Pose base_pose = getEndEffectorPoseFromTF();//movements::fromROS(current_pose);
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
     
-    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, 0.05 );
+    
+    // the camera should point into the same direction during the whole movement - seems not to have an impact
+    moveit_msgs::OrientationConstraint eef_orientation_constraint;
+    eef_orientation_constraint.header.frame_id = "base_footprint";
+    eef_orientation_constraint.link_name = "camera";
+    eef_orientation_constraint.orientation = st_is::eigenToGeometry(base_pose.orientation);
+    eef_orientation_constraint.absolute_x_axis_tolerance = 0.05;
+    eef_orientation_constraint.absolute_y_axis_tolerance = 0.05;
+    eef_orientation_constraint.absolute_z_axis_tolerance = 0.05;
+    eef_orientation_constraint.weight = 1000;
+    
+    moveit_msgs::Constraints robot_constraints;
+    robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);
+    robot_->setPathConstraints( robot_constraints );
+    
+    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0, 0.1, input );
     std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
     
     moveit_msgs::RobotTrajectory trajectory;
@@ -201,15 +216,17 @@ bool YoubotReconstructionController::planAndMove()
     
     double success_ratio = 0;
     int count=0;
-    while(success_ratio!=1)
+    while( success_ratio!=1 && ros_node_->ok() )
     {
       count++;
-      success_ratio=robot_->computeCartesianPath( waypoints, 1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+      success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
       ros::Duration(0.01).sleep();
       cout<<endl<<"Trying to solve problem...";
       //break;
       if( count>10 ) break;
     }
+    robot_->clearPathConstraints();
+    
     cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
     cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
     cout<<endl<<"The poses in the calculated path are:";
@@ -237,8 +254,8 @@ bool YoubotReconstructionController::planAndMove()
   
   
     
-  ros::Duration(5).sleep();
-  ros::Duration wait_time(0,10000000); // 10 ms
+  //ros::Duration(5).sleep();
+  //ros::Duration wait_time(0,10000000); // 10 ms
   
   
   bool finished = false;
