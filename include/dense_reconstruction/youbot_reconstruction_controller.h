@@ -22,7 +22,14 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <moveit/robot_state/robot_state.h>
 #include <Eigen/Core>
 
+#include <tf/transform_listener.h>
+
 #include <sensor_msgs/CameraInfo.h>
+
+#include <movements/core>
+#include <movements/ros_movements.h>
+#include <movements/translation.h>
+#include <movements/linear_movement.h>
 
 /// class that autonomously extracts hand-eye pose correspondences in a robotic setup and estimates the hand-eye-calibration from it
 class YoubotReconstructionController
@@ -45,6 +52,12 @@ public:
   */
   bool runSingleIteration();
   
+  /** attempts to get a new end effector pose from tf
+   * @param _max_wait_time the maximal time to wait for a new transformation to be available
+   * @return empty Pose() if no complete tf tree was published for the transformation in the given time
+   */
+  movements::Pose getEndEffectorPoseFromTF( ros::Duration _max_wait_time= ros::Duration(5.0) );
+  
 private:
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
@@ -52,6 +65,8 @@ private:
   
   boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor> scene_;
   boost::shared_ptr<moveit::planning_interface::MoveGroup> robot_;
+  
+  tf::TransformListener tf_listener_;
     
   /// plans and executes a plan to the currently loaded target - blocks until completion
   /** completion means that the robot state is closer to the target than set in the tolerance and its velocity is approximately zero in all joint

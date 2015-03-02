@@ -20,13 +20,10 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/foreach.hpp>
 #include "dense_reconstruction/youbot_reconstruction_controller.h"
 
-#include <movements/core>
-#include <movements/ros_movements.h>
-#include <movements/translation.h>
-#include <movements/linear_movement.h>
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
-  ros_node_(_n)
+  ros_node_(_n),
+  tf_listener_(*_n)
 {  
   std::string moveit_group_name = "arm";
   
@@ -52,6 +49,30 @@ bool YoubotReconstructionController::runSingleIteration()
   ros::Duration(1).sleep(); // sleep one second - allow robot to move
   
   return true;
+}
+
+movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::Duration _max_wait_time )
+{
+  bool new_tf_available = tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(3.0) );
+  
+  if( !new_tf_available )
+    return movements::Pose();
+  
+  tf::StampedTransform end_effector_pose_tf;
+  geometry_msgs::TransformStamped end_effector_pose_ros;
+  
+  try{
+    tf_listener_.lookupTransform("/base_footprint", "/camera", ros::Time(0), end_effector_pose);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return movements::Pose();
+  }
+  
+  tf::tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros );
+  tf::Vector3 translation_tf = end_effector_pose_tf.getOrigin();
+  tf::Quaternion rotation_tf = end_effector_pose_tf.getRotation();
+  
 }
 
 bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::LockedPlanningSceneRO& _scene, robot_state::RobotState& _robot )
@@ -161,7 +182,8 @@ bool YoubotReconstructionController::planAndMove()
     //robot_->setStartState(current_robot_state);
     
     geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
-    
+    cout<<endl<<"The reference frame is: "<<robot_->getPoseReferenceFrame();
+    cout<<endl<<"The end effector frame is: "<<robot_->getEndEffector();
     cout<<endl<<"The current pose appears to be:"<<endl<<current_pose<<endl;
     
     movements::Pose base_pose = movements::fromROS(current_pose);
@@ -201,7 +223,8 @@ bool YoubotReconstructionController::planAndMove()
     ros::AsyncSpinner spinner(1);    
     //scene_->unlockSceneRead();    
     spinner.start();
-    robot_->execute(plan);
+    if(success_ratio==1) robot_->execute(plan);
+    else cout<<endl<<"Failed to create complete trajectory."<<endl;
     spinner.stop();
     //scene_->lockSceneRead();
         
