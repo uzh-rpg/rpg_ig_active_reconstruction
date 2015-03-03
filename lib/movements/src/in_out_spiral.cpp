@@ -20,11 +20,12 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 namespace movements
 {
 
-InOutSpiral::InOutSpiral( Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed ):
+InOutSpiral::InOutSpiral( Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed, Plane _plane ):
 orientation_(_orientation),
 max_radius_(_max_radius),
 angle_speed_(_angle_speed),
-radial_speed_(_radial_speed)
+radial_speed_(_radial_speed),
+plane_to_use_(_plane)
 {
   half_time_ = max_radius_ / radial_speed_;
 }
@@ -39,10 +40,47 @@ RelativeMovement InOutSpiral::operator()( double _time )
   double current_radius = getRadius(_time);
   double current_angle = _time*angle_speed_;
   
-  double x = current_radius * cos(current_angle);
-  double y = current_radius * sin(current_angle);
+  double first_axis = current_radius * cos(current_angle);
+  double second_axis = current_radius * sin(current_angle);
+  double normal_axis = 0;
   
-  Eigen::Vector3d relative_movement_spiral_coord( x,y,0 );
+  double x,y,z;
+  
+  switch(plane_to_use_)
+  {
+    case XYPlane:
+      x=first_axis;
+      y=second_axis;
+      z=normal_axis;
+      break;
+    case YZPlane:
+      x=normal_axis;
+      y=first_axis;
+      z=second_axis;
+      break;
+    case ZXPlane:
+      x=second_axis;
+      y=normal_axis;
+      z=first_axis;
+      break;
+    case YXPlane:
+      x=second_axis;
+      y=first_axis;
+      z=normal_axis;
+      break;
+    case ZYPlane:
+      x=normal_axis;
+      y=second_axis;
+      z=first_axis;
+      break;
+    case XZPlane:
+      x=first_axis;
+      y=normal_axis;
+      z=second_axis;
+      break;
+  }
+  
+  Eigen::Vector3d relative_movement_spiral_coord( x,y,z );
   Eigen::Vector3d relative_movement_parent_coord = orientation_*relative_movement_spiral_coord;
   
   return Translation::create( relative_movement_parent_coord );

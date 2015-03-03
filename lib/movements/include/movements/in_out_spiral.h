@@ -28,13 +28,18 @@ namespace movements
   
 class InOutSpiral:public KinematicMovementDescription::KinematicMovementDescriptionInstance
 {  
+public:
+  
+  enum Plane{ XYPlane, YZPlane, ZXPlane, YXPlane, ZYPlane, XZPlane };
+  
   /** Constructor for a new InOutSpiral
-   * @param _orientation The spiral is being built in the x-y-plane of a coordinate system oriented as described by the quaternion, rotation starts at the x-axis. It thus represents the rotation R_PS that transforms a point oriented as v_S in S into its corresponding point v_P = R_PS*v_S in a coordinate oriented like P
+   * @param _orientation The spiral is being built in the _plane-plane of a coordinate system oriented as described by the quaternion, rotation starts at the "first" axis (see _plane description). It thus represents the rotation R_PS that transforms a point oriented as v_S in S into its corresponding point v_P = R_PS*v_S in a coordinate oriented like P
    * @param _max_radius maximal size of the spiral. If it is reached the spiral will shrink again until its radius equals zero, then it will restart growing, and so on
    * @param _angle_speed speed by which the spiral turns [rad/s]
    * @param _radial_speed speed by which the spiral grows outward [m/s]
+   * @param _plane used to set the plane in which the spiral shall be created, relative to the local coordinate frame (_orientation). Options are XYPlane, YZPlane, ZXPlane, YXPlane, ZYPlane and XZPlane. For XY, YZ and ZX the spiral rotates according to the right hand rule around the normal axis, for YX, ZY and XZ it rotates according to the left hand rule
    */
-  InOutSpiral( Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed );
+  InOutSpiral( Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed, Plane _plane=XYPlane );
   
   std::string type();
   
@@ -46,6 +51,8 @@ private:
   double max_radius_;
   double angle_speed_;
   double radial_speed_;
+  
+  Plane plane_to_use_; // the plane in which the spiral is being created
   
   double half_time_; /// time needed to reach outer bound
   
