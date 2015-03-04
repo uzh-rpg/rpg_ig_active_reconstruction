@@ -28,7 +28,10 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   tf_listener_(*_n)
 {  
   std::string moveit_group_name = "arm";
+  planning_group_ = "arm";
   
+  setEndEffectorPlanningFrame("camera");
+  base_planning_frame_="base_footprint";
   
   scene_ = boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor>( new planning_scene_monitor::PlanningSceneMonitor("robot_description") );
   scene_->startStateMonitor();
@@ -85,6 +88,113 @@ bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::Lo
   bool colliding = _scene->isStateColliding( _robot );
     
   return !colliding;
+}
+
+bool YoubotReconstructionController::planFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts )
+{
+        
+    /*geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+    movements::Pose base_pose = movements::fromROS(current_pose);
+    movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
+    movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
+            
+    moveit_msgs::Constraints robot_constraints;
+    robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);*/
+    
+    if( _path_constraints!=nullptr )
+    {
+      robot_->setPathConstraints( *_path_constraints );
+    }
+    
+    std::vector<geometry_msgs::Pose> waypoints = toROS(_waypoints);
+    
+    moveit_msgs::RobotTrajectory trajectory;
+    //moveit::planning_interface::MoveGroup::Plan plan;
+    
+    double success_ratio = 0;
+    int count=0;
+    while( success_ratio!=1 && ros_node_->ok() )
+    {
+      count++;
+      success_ratio=robot_->computeCartesianPath( waypoints, 0.01,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+      ros::Duration(0.01).sleep();
+      
+      if( count>_planning_attempts ) return false;
+    }
+    /*
+    cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
+    cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
+    cout<<endl<<"The poses in the calculated path are:";
+    BOOST_FOREACH(auto pose, waypoints)
+    {
+      cout<<pose<<endl;
+    }
+    */
+    //std::vector<trajectory_msgs::JointTrajectoryPoint> traj_joint_values = trajectory.joint_trajectory.points;
+    //std::vector<std::string> traj_joint_names = trajectory.joint_trajectory.joint_names;
+    
+    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    //robot_state::RobotState robot_state = current_scene->getCurrentState();
+    /*
+    // print out transforms for the calculated trajectory path points
+    cout<<endl<<"The moveit trajectory consists of "<<traj_joint_values.size()<<" points.";
+    cout<<endl<<"The computed trajectory is:";
+    BOOST_FOREACH( auto traj_joint_value, traj_joint_values )
+    {
+      robot_state.setVariablePositions( traj_joint_names, traj_joint_value.positions );
+      Eigen::Matrix<double,4,4> state_transform = robot_state.getFrameTransform("camera").matrix();
+      movements::Pose relative_pose_m( Eigen::Vector3d(state_transform.topRightCorner<3,1>()), Eigen::Quaterniond(state_transform.topLeftCorner<3,3>()) );
+      geometry_msgs::Pose relative_pose = movements::toROS(relative_pose_m);
+      cout<<endl<<relative_pose;
+    }*/
+    //cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
+    
+    // attempt to create velocities *************************************
+    /*
+    // First to create a RobotTrajectory object
+    robot_state::RobotState current_robot_state = current_scene->getCurrentState();
+    
+    robot_trajectory::RobotTrajectory rt( current_robot_state.getRobotModel(), planning_group_);
+    rt.setRobotTrajectoryMsg( current_robot_state, trajectory );
+    // Thrid create a IterativeParabolicTimeParameterization object
+    trajectory_processing::IterativeParabolicTimeParameterization iptp;
+    bool success = iptp.computeTimeStamps(rt);
+    ROS_INFO("Computed time stamp %s",success?"SUCCEDED":"FAILED");
+    // Get RobotTrajectory_msg from RobotTrajectory
+    rt.getRobotTrajectoryMsg(trajectory);
+    // ***********************************
+    */
+    //cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
+    
+    _plan.trajectory_ = trajectory;
+    //_plan.planning_time_ = 0.1;
+  
+    robot_->clearPathConstraints();
+    
+    return true;
+}
+
+moveit_msgs::OrientationConstraint YoubotReconstructionController::getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight, double _x_axis_tolerance, double _y_axis_tolerance, double _z_axis_tolerance )
+{
+  moveit_msgs::OrientationConstraint eef_orientation_constraint;
+  eef_orientation_constraint.header.frame_id = base_planning_frame_;
+  eef_orientation_constraint.link_name = end_effector_planning_frame_;
+  eef_orientation_constraint.orientation = st_is::eigenToGeometry(_base_pose.orientation);
+  eef_orientation_constraint.absolute_x_axis_tolerance = _x_axis_tolerance;
+  eef_orientation_constraint.absolute_y_axis_tolerance = _y_axis_tolerance;
+  eef_orientation_constraint.absolute_z_axis_tolerance = _z_axis_tolerance;
+  eef_orientation_constraint.weight = _weight;
+  
+  return eef_orientation_constraint;
+}
+
+
+void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _name )
+{
+  if( robot_->setEndEffector(_name) )
+  {
+    end_effector_planning_frame_ = _name;
+  }
 }
 
 bool YoubotReconstructionController::planAndMove()
@@ -183,102 +293,38 @@ bool YoubotReconstructionController::planAndMove()
     //robot_->setStartStateToCurrentState();
     
     //robot_->setStartState(current_robot_state);
-        
+    
+    // compute eef trajectory
     geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
     movements::Pose base_pose = movements::fromROS(current_pose);
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
+    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0.01, 0.1, input );
     
     
     // the camera should point into the same direction during the whole movement - seems not to have an impact
-    moveit_msgs::OrientationConstraint eef_orientation_constraint;
-    eef_orientation_constraint.header.frame_id = "base_footprint";
-    eef_orientation_constraint.link_name = "camera";
-    eef_orientation_constraint.orientation = st_is::eigenToGeometry(base_pose.orientation);
-    eef_orientation_constraint.absolute_x_axis_tolerance = 0.05;
-    eef_orientation_constraint.absolute_y_axis_tolerance = 0.05;
-    eef_orientation_constraint.absolute_z_axis_tolerance = 0.05;
-    eef_orientation_constraint.weight = 1000;
+    moveit_msgs::OrientationConstraint eef_orientation_constraint = getFixedEEFLinkOrientationConstraint(base_pose);
     
     moveit_msgs::Constraints robot_constraints;
     robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);
-    robot_->setPathConstraints( robot_constraints );
     
-    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0.01, 0.1, input );
-    std::vector<geometry_msgs::Pose> waypoints = toROS(m_waypoints);
     
-    moveit_msgs::RobotTrajectory trajectory;
     moveit::planning_interface::MoveGroup::Plan plan;
     
-    double success_ratio = 0;
-    int count=0;
-    while( success_ratio!=1 && ros_node_->ok() )
-    {
-      count++;
-      success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
-      ros::Duration(0.01).sleep();
-      cout<<endl<<"Trying to solve problem...";
-      //break;
-      if( count>10 ) break;
-    }
-    
-    cout<<endl<<"The planning success ratio is "<<success_ratio<<"%.";
-    cout<<endl<<"calculated path has size :"<<endl<<waypoints.size()<<".";
-    cout<<endl<<"The poses in the calculated path are:";
-    BOOST_FOREACH(auto pose, waypoints)
-    {
-      cout<<pose<<endl;
-    }
-    
-    std::vector<trajectory_msgs::JointTrajectoryPoint> traj_joint_values = trajectory.joint_trajectory.points;
-    std::vector<std::string> traj_joint_names = trajectory.joint_trajectory.joint_names;
-    
-    planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-    robot_state::RobotState robot_state = current_scene->getCurrentState();
-    
-    // print out transforms for the calculated trajectory path points
-    cout<<endl<<"The moveit trajectory consists of "<<traj_joint_values.size()<<" points.";
-    cout<<endl<<"The computed trajectory is:";
-    BOOST_FOREACH( auto traj_joint_value, traj_joint_values )
-    {
-      robot_state.setVariablePositions( traj_joint_names, traj_joint_value.positions );
-      Eigen::Matrix<double,4,4> state_transform = robot_state.getFrameTransform("camera").matrix();
-      movements::Pose relative_pose_m( Eigen::Vector3d(state_transform.topRightCorner<3,1>()), Eigen::Quaterniond(state_transform.topLeftCorner<3,3>()) );
-      geometry_msgs::Pose relative_pose = movements::toROS(relative_pose_m);
-      cout<<endl<<relative_pose;
-    }
-    //cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
-    
-    // attempt to create velocities *************************************
-    
-    // First to create a RobotTrajectory object
-    robot_state::RobotState current_robot_state = current_scene->getCurrentState();
-    
-    robot_trajectory::RobotTrajectory rt( current_robot_state.getRobotModel(), "arm");
-    rt.setRobotTrajectoryMsg( current_robot_state, trajectory );
-    // Thrid create a IterativeParabolicTimeParameterization object
-    trajectory_processing::IterativeParabolicTimeParameterization iptp;
-    bool success = iptp.computeTimeStamps(rt);
-    ROS_INFO("Computed time stamp %s",success?"SUCCEDED":"FAILED");
-    // Get RobotTrajectory_msg from RobotTrajectory
-    rt.getRobotTrajectoryMsg(trajectory);
-    // ***********************************
-    
-    cout<<endl<<"The computed trajectory is:"<<endl<<trajectory<<endl<<endl;
-    
-    plan.trajectory_ = trajectory;
-    plan.planning_time_ = 0.1;
+    bool planned_successfully = planFromMovementsPath( m_waypoints, plan, &robot_constraints );
   
+    if( planned_successfully )
+    {
+      ros::AsyncSpinner spinner(1);    
+      scene_->unlockSceneRead();    
+      spinner.start();
+      robot_->execute(plan);
+      spinner.stop();
+      scene_->lockSceneRead();
+    }
+    else
+      cout<<endl<<"Failed to create complete trajectory."<<endl;
     
-    ros::AsyncSpinner spinner(1);    
-    scene_->unlockSceneRead();    
-    spinner.start();
-    if(success_ratio==1) robot_->execute(plan);
-    else cout<<endl<<"Failed to create complete trajectory."<<endl;
-    spinner.stop();
-    scene_->lockSceneRead();
-    
-    robot_->clearPathConstraints();
   }
   
   

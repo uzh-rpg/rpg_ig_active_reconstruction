@@ -58,10 +58,36 @@ public:
    */
   movements::Pose getEndEffectorPoseFromTF( ros::Duration _max_wait_time= ros::Duration(5.0) );
   
+  /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object!
+   * @param _waypoints path for the end effector
+   * @param _plan returned path
+   * @param _planning_attempts number of planning attempts to be taken if planning fails before giving up
+   * @param _path_constraints path constraints to use during planning
+   * @return true if plan could be calculated, false if not
+   */
+  bool planFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints=nullptr, int _planning_attempts=3 );
+  
+  /** creates a static orientation constraint for the end effector based on the pose _base_pose that can be added to a moveit_msgs::Constraints by pushing it onto its orientation_constraints vector 
+   * @param _base_pose pose whose orientation will be used to construct the constraint
+   * @param _weight weight that is set for the constraint (importance if several constraints were to contradict each other)
+   * @param _x_axis_tolerance tolerance for the x axis
+   * @param _y_axis_tolerance tolerance for the y axis
+   * @param _z_axis_tolerance tolerance for the z axis
+   */
+  moveit_msgs::OrientationConstraint getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight=100, double _x_axis_tolerance=0.05, double _y_axis_tolerance=0.05, double _z_axis_tolerance=0.05 );
+  
+  /** sets the end effector planning frame
+   */
+  void setEndEffectorPlanningFrame( std::string _name );
+  
 private:
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
+  
+  std::string planning_group_; // the group for which planning is done
+  std::string base_planning_frame_; /// relative base frame for end effector calculations
+  std::string end_effector_planning_frame_; /// name of the frame for which the end effector pose shall be controlled
   
   boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor> scene_;
   boost::shared_ptr<moveit::planning_interface::MoveGroup> robot_;
