@@ -309,7 +309,8 @@ bool YoubotReconstructionController::planAndMove()
     movements::Pose base_pose = movements::fromROS(current_pose);
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
-    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0.0, 0.1, input );
+    
+    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0.0, 0.1, 0.01 );
     
     
     // the camera should point into the same direction during the whole movement - seems not to have an impact

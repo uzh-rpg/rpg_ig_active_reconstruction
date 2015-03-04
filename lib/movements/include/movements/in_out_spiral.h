@@ -41,6 +41,9 @@ public:
    */
   InOutSpiral( Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed, Plane _plane=XYPlane );
   
+  /** directly returns a kinematic movement description containing an InOutSpiral, see the constructor for a description of the parameters */
+  static KinematicMovementDescription create(  Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed, Plane _plane=XYPlane );
+  
   std::string type();
   
   RelativeMovement operator()( double _time );

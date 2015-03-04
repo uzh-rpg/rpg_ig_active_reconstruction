@@ -86,6 +86,11 @@ RelativeMovement InOutSpiral::operator()( double _time )
   return Translation::create( relative_movement_parent_coord );
 }
 
+static KinematicMovementDescription InOutSpiral::create(  Eigen::Quaterniond _orientation, double _max_radius, double _angle_speed, double _radial_speed, Plane _plane )
+{
+  return KinematicMovementDescription( new InOutSpiral(_orientation,_max_radius,_angle_speed,_radial_speed,_plane) );
+}
+
 double InOutSpiral::getRadius( double _time )
 {
   double relative_time = _time/half_time_;
