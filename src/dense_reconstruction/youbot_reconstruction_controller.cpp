@@ -183,6 +183,114 @@ bool YoubotReconstructionController::planFromMovementsPath( std::vector<movement
     return true;
 }
 
+bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts, double _max_dropoff )
+{
+    if( _path_constraints!=nullptr )
+    {
+      robot_->setPathConstraints( *_path_constraints );
+    }
+    
+    std::vector<geometry_msgs::Pose> waypoints = toROS(_waypoints);
+    
+    moveit_msgs::RobotTrajectory trajectory;
+    //moveit::planning_interface::MoveGroup::Plan plan;
+    
+    double success_ratio = 0;
+    int count=0;
+    int dropped_points = 0;
+    int passed_points = _waypoints.size();
+    
+    while( success_ratio!=1 && ros_node_->ok() )
+    {
+      count++;
+      success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+      
+      if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
+      {
+	dropped_points++;
+	
+	if( dropped_points==passed_points || _max_dropoff<=0 )
+	{
+	  using namespace std;
+	  cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	  cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	  cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	  cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	  cout<<endl<<"Number of dropped points: "<<dropped_points;
+	  cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	  cout<<endl<<endl;
+	  char simplestopper;
+	  cin>>simplestopper;
+	  return false;  // too many dropped points
+	}
+	else if( _max_dropoff<1 )
+	{
+	  if( dropped_points/passed_points > _max_dropoff )
+	  {
+	    using namespace std;
+	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	    cout<<endl<<"Number of dropped points: "<<dropped_points;
+	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	    cout<<endl<<endl;
+	    char simplestopper;
+	    cin>>simplestopper;
+	    return false; // too many dropped points
+	  }
+	}
+	else
+	{
+	  if( dropped_points > _max_dropoff )
+	  {
+	    using namespace std;
+	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	    cout<<endl<<"Number of dropped points: "<<dropped_points;
+	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	    cout<<endl<<endl;
+	    char simplestopper;
+	    cin>>simplestopper;
+	    return false; // too many dropped points
+	  }
+	}
+	
+	int valid_points = trajectory.joint_trajectory.points.size(); // -> also the index of the point which will be dropped
+	count = 0;
+	// drop point for which calculation failed
+	for( unsigned int i=valid_points; i<waypoints.size()-1; i++ )
+	{
+	  waypoints[i]=waypoints[i+1]; // shift all later points one position forward
+	}
+	waypoints.resize( waypoints.size()-1 ); // drop last
+      }
+      
+      //ros::Duration(0.001).sleep();
+    }
+      
+      using namespace std;
+      cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+      cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+      cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+      cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+      cout<<endl<<"Number of dropped points: "<<dropped_points;
+      cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+      cout<<endl<<endl;
+      char simplestopper;
+      cin>>simplestopper;
+      
+      
+    _plan.trajectory_ = trajectory;
+    //_plan.planning_time_ = 0.1;
+  
+    robot_->clearPathConstraints();
+    
+    return true;
+}
+
 moveit_msgs::OrientationConstraint YoubotReconstructionController::getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight, double _x_axis_tolerance, double _y_axis_tolerance, double _z_axis_tolerance )
 {
   moveit_msgs::OrientationConstraint eef_orientation_constraint;
@@ -327,7 +435,7 @@ bool YoubotReconstructionController::planAndMove()
     
     moveit::planning_interface::MoveGroup::Plan plan;
     
-    bool planned_successfully = planFromMovementsPath( m_waypoints, plan, &robot_constraints );
+    bool planned_successfully = filteredPlanFromMovementsPath( m_waypoints, plan, &robot_constraints );
   
     if( planned_successfully )
     {
