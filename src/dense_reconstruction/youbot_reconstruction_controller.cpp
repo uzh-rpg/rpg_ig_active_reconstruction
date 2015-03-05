@@ -219,8 +219,6 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	  cout<<endl<<"Number of dropped points: "<<dropped_points;
 	  cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
 	  cout<<endl<<endl;
-	  char simplestopper;
-	  cin>>simplestopper;
 	  return false;  // too many dropped points
 	}
 	else if( _max_dropoff<1 )
@@ -235,8 +233,6 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	    cout<<endl<<"Number of dropped points: "<<dropped_points;
 	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
 	    cout<<endl<<endl;
-	    char simplestopper;
-	    cin>>simplestopper;
 	    return false; // too many dropped points
 	  }
 	}
@@ -252,8 +248,6 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	    cout<<endl<<"Number of dropped points: "<<dropped_points;
 	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
 	    cout<<endl<<endl;
-	    char simplestopper;
-	    cin>>simplestopper;
 	    return false; // too many dropped points
 	  }
 	}
@@ -279,8 +273,6 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
       cout<<endl<<"Number of dropped points: "<<dropped_points;
       cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
       cout<<endl<<endl;
-      char simplestopper;
-      cin>>simplestopper;
       
       
     _plan.trajectory_ = trajectory;
@@ -421,9 +413,9 @@ bool YoubotReconstructionController::planAndMove()
     geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
     cout<<endl<<"arm_link_4 pose is:"<<endl<<link_4_pose<<endl;
     movements::Pose link_4 = movements::fromROS(link_4_pose);
-    movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.05, movements::InOutSpiral::ZXPlane );
+    movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
     
-    std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.0, 3, 0.01 );
+    std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.0, 3, 0.02 );
     
     
     // the camera should point into the same direction during the whole movement - seems not to have an impact
