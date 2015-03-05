@@ -212,13 +212,13 @@ bool YoubotReconstructionController::planAndMove()
   end_effector_name = robot_->getEndEffector();
   std::cout<<std::endl<<"end effector name: "<<end_effector_name<<std::endl;
   
-  geometry_msgs::PoseStamped current_end_effector_pose = robot_->getCurrentPose();
-  std::cout<<std::endl<<current_end_effector_pose<<std::endl;
+  //geometry_msgs::PoseStamped current_end_effector_pose = robot_->getCurrentPose();
+  //std::cout<<std::endl<<current_end_effector_pose<<std::endl;
   
   using namespace std;
-  cout<<endl<<"goal position tolerance is: "<<robot_->getGoalPositionTolerance();
-  cout<<endl<<"goal orientation tolerance is: "<<robot_->getGoalOrientationTolerance();
-  cout<<endl;
+  //cout<<endl<<"goal position tolerance is: "<<robot_->getGoalPositionTolerance();
+  //cout<<endl<<"goal orientation tolerance is: "<<robot_->getGoalOrientationTolerance();
+  //cout<<endl;
   
   
   geometry_msgs::Pose target_0, target_1;
@@ -310,7 +310,12 @@ bool YoubotReconstructionController::planAndMove()
     movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
     movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
     
-    std::vector<movements::Pose> m_waypoints = md.path( base_pose, 0.0, 0.1, 0.01 );
+    geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
+    cout<<endl<<"arm_link_4 pose is:"<<endl<<link_4_pose<<endl;
+    movements::Pose link_4 = movements::fromROS(link_4_pose);
+    movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.05, movements::InOutSpiral::ZXPlane );
+    
+    std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.0, 3, 0.01 );
     
     
     // the camera should point into the same direction during the whole movement - seems not to have an impact

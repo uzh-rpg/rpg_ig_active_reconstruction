@@ -30,6 +30,7 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/ros_movements.h>
 #include <movements/translation.h>
 #include <movements/linear_movement.h>
+#include <movements/in_out_spiral.h>
 
 /// class that autonomously extracts hand-eye pose correspondences in a robotic setup and estimates the hand-eye-calibration from it
 class YoubotReconstructionController
