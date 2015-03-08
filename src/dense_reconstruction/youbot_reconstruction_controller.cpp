@@ -33,14 +33,15 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   
   
   //setEndEffectorPlanningFrame("camera");
-  base_planning_frame_="base_footprint";
+  base_planning_frame_="odom";
   
   scene_ = boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor>( new planning_scene_monitor::PlanningSceneMonitor("robot_description") );
   scene_->startStateMonitor();
   scene_->startSceneMonitor();
   scene_->startWorldGeometryMonitor();
   
-    
+  // block everything until complete tf tree is available: this doesn't help
+  //tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(0.0) );
 }
 
 bool YoubotReconstructionController::runSingleIteration()
@@ -82,6 +83,91 @@ movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::D
   Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
   
   return movements::Pose( translation, rotation );
+}
+
+movements::Pose YoubotReconstructionController::getCurrentLinkPose( std::string _link )
+{
+  bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), ros::Duration(3.0) );
+  
+  if( !new_tf_available )
+    return movements::Pose();
+  
+  tf::StampedTransform end_effector_pose_tf;
+  geometry_msgs::TransformStamped end_effector_pose_ros;
+  
+  try{
+    tf_listener_.lookupTransform(base_planning_frame_, _link, ros::Time(0), end_effector_pose_tf);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return movements::Pose();
+  }
+  
+  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros );
+  
+  Eigen::Quaterniond rotation = st_is::geometryToEigen( end_effector_pose_ros.transform.rotation );
+  Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
+  
+  return movements::Pose( translation, rotation );
+}
+
+bool YoubotReconstructionController::makeScan()
+{
+  geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+  movements::Pose base_pose = movements::fromROS(current_pose);
+  
+  geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
+  movements::Pose link_4 = movements::fromROS(link_4_pose);
+  // 0.05m radius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
+  movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
+  
+  std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.5, 3.5, 0.02 );
+  
+  // the camera should point into the same direction during the whole movement - seems not to have an impact
+  moveit_msgs::OrientationConstraint eef_orientation_constraint = getFixedEEFLinkOrientationConstraint(base_pose);
+  
+  moveit_msgs::Constraints robot_constraints;
+  robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);
+  
+  bool scan_success = executeMovementsPath( m_waypoints, &robot_constraints );
+  
+  if( scan_success )
+  {    
+    geometry_msgs::Pose stop_pose = robot_->getCurrentPose().pose;
+    movements::Pose stop_pose_m = movements::fromROS(stop_pose);
+    std::vector<movements::Pose> go_home;
+    go_home.push_back(stop_pose_m);
+    go_home.push_back(base_pose);
+    
+    executeMovementsPath( go_home );
+    
+    return true;
+  }
+  else
+    return false;
+}
+
+bool YoubotReconstructionController::moveBaseCircularlyTo( Eigen::Vector2d _target_position, Eigen::Vector2d _center )
+{
+  return false;
+}
+
+bool YoubotReconstructionController::executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints )
+{
+  moveit::planning_interface::MoveGroup::Plan plan;
+  bool successfully_planned = filteredPlanFromMovementsPath( _path, plan, _constraints, 2, 0.7 );
+  
+  if( successfully_planned )
+  {
+    ros::AsyncSpinner spinner(1);  
+    //scene_->unlockSceneRead();   
+    spinner.start();
+    robot_->execute(plan);
+    spinner.stop();
+    //scene_->lockSceneRead();
+    return true;
+  }
+  return false;
 }
 
 bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::LockedPlanningSceneRO& _scene, robot_state::RobotState& _robot )
@@ -223,7 +309,7 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	}
 	else if( _max_dropoff<1 )
 	{
-	  if( dropped_points/passed_points > _max_dropoff )
+	  if( (double)dropped_points/passed_points > _max_dropoff )
 	  {
 	    using namespace std;
 	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
@@ -286,7 +372,7 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 moveit_msgs::OrientationConstraint YoubotReconstructionController::getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight, double _x_axis_tolerance, double _y_axis_tolerance, double _z_axis_tolerance )
 {
   moveit_msgs::OrientationConstraint eef_orientation_constraint;
-  eef_orientation_constraint.header.frame_id = base_planning_frame_;
+  eef_orientation_constraint.header.frame_id = "base_footprint";
   eef_orientation_constraint.link_name = end_effector_planning_frame_;
   eef_orientation_constraint.orientation = st_is::eigenToGeometry(_base_pose.orientation);
   eef_orientation_constraint.absolute_x_axis_tolerance = _x_axis_tolerance;
@@ -310,7 +396,11 @@ bool YoubotReconstructionController::planAndMove()
 {
   std::string end_effector_name;
   end_effector_name = robot_->getEndEffector();
-  std::cout<<std::endl<<"end effector name: "<<end_effector_name<<std::endl;
+  std::cout<<std::endl<<"end effector name: "<<end_effector_name;
+  std::cout<<std::endl<<"planning frame name: "<<robot_->getPlanningFrame();
+  std::cout<<std::endl<<"base position: "<<std::endl<<robot_->getCurrentPose("base_footprint")<<std::endl;
+  movements::Pose basePose = getCurrentLinkPose("base_footprint");
+  std::cout<<std::endl<<"base position translation from tf: "<<std::endl<<basePose.position<<std::endl;
   
   //geometry_msgs::PoseStamped current_end_effector_pose = robot_->getCurrentPose();
   //std::cout<<std::endl<<current_end_effector_pose<<std::endl;
@@ -360,6 +450,8 @@ bool YoubotReconstructionController::planAndMove()
   cout<<endl<<"Enter time step size for the created path, 0 will move the end effector to the base pose."<<endl;
   double input;
   cin>>input;
+  if( input==10 )
+    return false;
   if( input == 0 )
   {
     cout<<endl<<"Moving to start position"<<endl;
@@ -396,63 +488,12 @@ bool YoubotReconstructionController::planAndMove()
   }
   else
   {
-    cout<<endl<<"Executing motion plan"<<endl;
+    bool executed_scan_successfully = makeScan();
     
-    robot_->setStartStateToCurrentState();
-    
-    //robot_->setStartState(current_robot_state);
-    
-    // compute eef trajectory
-    ros::spinOnce();
-    geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
-    //cout<<endl<<"Current pose as given inside planAndMove is:"<<endl<<current_pose<<endl<<endl;
-    movements::Pose base_pose = movements::fromROS(current_pose);
-    movements::RelativeMovement z_down = movements::Translation::create(0,0,-0.1);
-    movements::KinMove md = movements::Linear::create(0,0,-1,1); // moving downwards with 1 m/s
-    
-    geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
-    cout<<endl<<"arm_link_4 pose is:"<<endl<<link_4_pose<<endl;
-    movements::Pose link_4 = movements::fromROS(link_4_pose);
-    movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
-    
-    std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.0, 3, 0.02 );
-    
-    
-    // the camera should point into the same direction during the whole movement - seems not to have an impact
-    moveit_msgs::OrientationConstraint eef_orientation_constraint = getFixedEEFLinkOrientationConstraint(base_pose);
-    
-    moveit_msgs::Constraints robot_constraints;
-    //robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);
-    
-    
-    moveit::planning_interface::MoveGroup::Plan plan;
-    
-    bool planned_successfully = filteredPlanFromMovementsPath( m_waypoints, plan, &robot_constraints );
-  
-    if( planned_successfully )
-    {
-      ros::AsyncSpinner spinner(1);    
-      //scene_->unlockSceneRead();    
-      spinner.start();
-      robot_->execute(plan);
-      spinner.stop();
-      //scene_->lockSceneRead();
-    }
-    else
-      cout<<endl<<"Failed to create complete trajectory."<<endl;
+    if(!executed_scan_successfully)
+      cout<<endl<<"Failed to create trajectory and execute it."<<endl;
     
   }
-  
-  
-  
-  
-    
-  //ros::Duration(5).sleep();
-  //ros::Duration wait_time(0,10000000); // 10 ms
-  
-  
-  bool finished = false;
-  
   
   return true;
 }

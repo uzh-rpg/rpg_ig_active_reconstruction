@@ -53,11 +53,31 @@ public:
   */
   bool runSingleIteration();
   
-  /** attempts to get a new end effector pose from tf
+  /** attempts to get a new end effector pose from tf (transform from end effector frame to robot base)
    * @param _max_wait_time the maximal time to wait for a new transformation to be available
    * @return empty Pose() if no complete tf tree was published for the transformation in the given time
    */
   movements::Pose getEndEffectorPoseFromTF( ros::Duration _max_wait_time= ros::Duration(5.0) );
+  
+  /** loads pose of link _link relative to the planning frame (using tf, not moveit)
+   * That is transform to transforms entities in _link frame to the planning frame
+   */
+  movements::Pose getCurrentLinkPose( std::string _link );
+  
+  /** plans and executes a scanning movement from the current position of arm_link_4
+   * @return true if successful, false if not
+   */
+  bool makeScan();
+  
+  /** moves the base to the target position on a circular (but with varying radius) trajectory around the given _center
+   * @return true if successful, false if not
+   */
+  bool moveBaseCircularlyTo( Eigen::Vector2d _target_position, Eigen::Vector2d _center );
+  
+  /** attempts to create a cartesian path following the given poses given some constraints
+   * @return true if planning and execution were successful
+   */
+  bool executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints=nullptr );
   
   /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object!
    * @param _waypoints path for the end effector
