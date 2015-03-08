@@ -1,11 +1,24 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(movements)
 
+find_package(catkin REQUIRED COMPONENTS
+  angles
+)
+
+find_package(Eigen REQUIRED)
+
+catkin_package(
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS angles
+  DEPENDS Eigen
+)
+
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
 )
+
 set(movements_INCLUDE_DIRS
 ${CMAKE_CURRENT_SOURCE_DIR}/include
 ${catkin_INCLUDE_DIRS}
@@ -24,4 +37,6 @@ add_library(movements
   src/translation.cpp
   src/in_out_spiral.cpp
   src/linear_movement.cpp
+  src/circular_ground_path.cpp
+  ${catkin_LIBRARIES}
 )
