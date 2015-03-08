@@ -21,11 +21,13 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/youbot_reconstruction_controller.h"
 #include "utils/ros_eigen.h"
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
+#include <geometry_msgs/Pose2D.h>
 
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
   ros_node_(_n),
-  tf_listener_(*_n)
+  tf_listener_(*_n),
+  base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
 {
   planning_group_ = "arm";
   
@@ -39,6 +41,11 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   scene_->startStateMonitor();
   scene_->startSceneMonitor();
   scene_->startWorldGeometryMonitor();
+  
+  // try contacting action server
+  ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
+  base_trajectory_sender_.waitForServer();
+  ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::Successfully contacted.");
   
   // block everything until complete tf tree is available: this doesn't help
   //tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(0.0) );
@@ -150,6 +157,51 @@ bool YoubotReconstructionController::makeScan()
 bool YoubotReconstructionController::moveBaseCircularlyTo( Eigen::Vector2d _target_position, Eigen::Vector2d _center )
 {
   return false;
+}
+
+void YoubotReconstructionController::moveBaseTo( double _x, double _y, double _theta )
+{
+  ros::Publisher commander = ros_node_->advertise<geometry_msgs::Pose2D>("/base_controller/position_command",1);
+  geometry_msgs::Pose2D command;
+  command.x=_x;
+  command.y=_y;
+  command.theta=_theta;
+  commander.publish(command);
+}
+
+bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( std::vector<movements::Pose>& _path, double _dt )
+{
+  control_msgs::FollowJointTrajectoryGoal traj;
+  
+  traj.trajectory.joint_names.push_back("youbot_base/x");
+  traj.trajectory.joint_names.push_back("youbot_base/y");
+  traj.trajectory.joint_names.push_back("youbot_base/theta");
+  
+  double associated_time = 0;
+  BOOST_FOREACH( auto pose, _path )
+  {
+    trajectory_msgs::JointTrajectoryPoint new_point;
+    new_point.positions.push_back( pose.position.x() );
+    new_point.positions.push_back( pose.position.y() );
+    double angle;
+    if( pose.orientation.z()>0 )
+      angle = 2*acos( pose.orientation.w() );
+    else
+      angle = 2*acos( -pose.orientation.w() );
+    new_point.positions.push_back( angle );
+    new_point.time_from_start = ros::Duration(associated_time);
+    
+    traj.trajectory.points.push_back(new_point);
+    associated_time+=_dt;
+  }
+  
+  base_trajectory_sender_.sendGoal(traj);
+  base_trajectory_sender_.waitForResult();
+  
+  if (base_trajectory_sender_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+    return true;
+  else
+    return false;
 }
 
 bool YoubotReconstructionController::executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints )

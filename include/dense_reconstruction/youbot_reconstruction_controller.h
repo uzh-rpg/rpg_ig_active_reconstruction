@@ -32,6 +32,10 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/linear_movement.h>
 #include <movements/in_out_spiral.h>
 
+#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ActionClient;
+
 /// class that autonomously extracts hand-eye pose correspondences in a robotic setup and estimates the hand-eye-calibration from it
 class YoubotReconstructionController
 {
@@ -74,6 +78,16 @@ public:
    */
   bool moveBaseCircularlyTo( Eigen::Vector2d _target_position, Eigen::Vector2d _center );
   
+  /** commands the base to move to a specific position, doesn't check for success though!
+   */
+  void moveBaseTo( double _x, double _y, double _theta );
+  
+  /** executes a trajectory on the base (positions only atm)
+   * @param _path the path to follow
+   * @param _dt time to pass between sending commands [s]
+   */
+  bool executeMovementsTrajectoryOnBase( std::vector<movements::Pose>& _path, double _dt );
+  
   /** attempts to create a cartesian path following the given poses given some constraints
    * @return true if planning and execution were successful
    */
@@ -115,6 +129,7 @@ private:
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
+  ActionClient base_trajectory_sender_;
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations
