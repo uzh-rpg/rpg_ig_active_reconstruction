@@ -22,6 +22,7 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include "utils/ros_eigen.h"
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 #include <geometry_msgs/Pose2D.h>
+#include <movements/circular_ground_path.h>
 
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
@@ -53,17 +54,9 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
 
 bool YoubotReconstructionController::runSingleIteration()
 {
-  ROS_INFO("Calculate next position...");
-  
   ros::spinOnce();
   
-  if( !planAndMove() ) // don't have to move for first position
-    return true; // no calculation for current new pos, but still new positions available
-  
-  
-  ros::Duration(1).sleep(); // sleep one second - allow robot to move
-  
-  return true;
+  return planAndMove();
 }
 
 movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::Duration _max_wait_time )
@@ -118,13 +111,13 @@ movements::Pose YoubotReconstructionController::getCurrentLinkPose( std::string 
   return movements::Pose( translation, rotation );
 }
 
-bool YoubotReconstructionController::makeScan()
+bool YoubotReconstructionController::makeScan(double _max_dropoff)
 {
-  geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
-  movements::Pose base_pose = movements::fromROS(current_pose);
+  //geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
+  movements::Pose base_pose = getCurrentLinkPose("camera");//movements::fromROS(current_pose);
   
-  geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
-  movements::Pose link_4 = movements::fromROS(link_4_pose);
+  //geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
+  movements::Pose link_4 = getCurrentLinkPose("arm_link_4");//::fromROS(link_4_pose);
   // 0.05m radius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
   movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
   
@@ -136,7 +129,7 @@ bool YoubotReconstructionController::makeScan()
   moveit_msgs::Constraints robot_constraints;
   robot_constraints.orientation_constraints.push_back(eef_orientation_constraint);
   
-  bool scan_success = executeMovementsPath( m_waypoints, &robot_constraints );
+  bool scan_success = executeMovementsPath( m_waypoints, &robot_constraints, _max_dropoff );
   
   if( scan_success )
   {    
@@ -204,10 +197,10 @@ bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( std::vect
     return false;
 }
 
-bool YoubotReconstructionController::executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints )
+bool YoubotReconstructionController::executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints, double _max_dropoff )
 {
   moveit::planning_interface::MoveGroup::Plan plan;
-  bool successfully_planned = filteredPlanFromMovementsPath( _path, plan, _constraints, 2, 0.7 );
+  bool successfully_planned = filteredPlanFromMovementsPath( _path, plan, _constraints, 10, _max_dropoff );
   
   if( successfully_planned )
   {
@@ -349,28 +342,28 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	
 	if( dropped_points==passed_points || _max_dropoff<=0 )
 	{
-	  using namespace std;
+	  /*using namespace std;
 	  cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
 	  cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
 	  cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
 	  cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
 	  cout<<endl<<"Number of dropped points: "<<dropped_points;
 	  cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	  cout<<endl<<endl;
+	  cout<<endl<<endl;*/
 	  return false;  // too many dropped points
 	}
 	else if( _max_dropoff<1 )
 	{
 	  if( (double)dropped_points/passed_points > _max_dropoff )
 	  {
-	    using namespace std;
+	    /*using namespace std;
 	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
 	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
 	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
 	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
 	    cout<<endl<<"Number of dropped points: "<<dropped_points;
 	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	    cout<<endl<<endl;
+	    cout<<endl<<endl;*/
 	    return false; // too many dropped points
 	  }
 	}
@@ -378,14 +371,14 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<
 	{
 	  if( dropped_points > _max_dropoff )
 	  {
-	    using namespace std;
+	    /*using namespace std;
 	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
 	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
 	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
 	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
 	    cout<<endl<<"Number of dropped points: "<<dropped_points;
 	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	    cout<<endl<<endl;
+	    cout<<endl<<endl;*/
 	    return false; // too many dropped points
 	  }
 	}
@@ -446,105 +439,42 @@ void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _n
 
 bool YoubotReconstructionController::planAndMove()
 {
-  std::string end_effector_name;
+  /*std::string end_effector_name;
   end_effector_name = robot_->getEndEffector();
   std::cout<<std::endl<<"end effector name: "<<end_effector_name;
   std::cout<<std::endl<<"planning frame name: "<<robot_->getPlanningFrame();
   std::cout<<std::endl<<"base position: "<<std::endl<<robot_->getCurrentPose("base_footprint")<<std::endl;
   movements::Pose basePose = getCurrentLinkPose("base_footprint");
-  std::cout<<std::endl<<"base position translation from tf: "<<std::endl<<basePose.position<<std::endl;
-  
-  //geometry_msgs::PoseStamped current_end_effector_pose = robot_->getCurrentPose();
-  //std::cout<<std::endl<<current_end_effector_pose<<std::endl;
-  
+  std::cout<<std::endl<<"base position translation from tf: "<<std::endl<<basePose.position<<std::endl;*/
+    
   using namespace std;
-  //cout<<endl<<"goal position tolerance is: "<<robot_->getGoalPositionTolerance();
-  //cout<<endl<<"goal orientation tolerance is: "<<robot_->getGoalOrientationTolerance();
-  //cout<<endl;
-  
-  
-  geometry_msgs::Pose target_0, target_1;
-  
-  target_0.position.x = 0.126;
-  target_0.position.y = -0.01;
-  target_0.position.z = 0.477;
-  target_0.orientation.x = 0.019;
-  target_0.orientation.y = 0.109;
-  target_0.orientation.z = -0.99378;
-  target_0.orientation.w = 0.0109;
-  
-  target_1.position.x = 0.126;
-  target_1.position.y = -0.01;
-  target_1.position.z = 0.377;
-  target_1.orientation.x = 0.019;
-  target_1.orientation.y = 0.109;
-  target_1.orientation.z = -0.99378;
-  target_1.orientation.w = 0.0109;
   
   robot_->setGoalPositionTolerance(0.001);
   robot_->setGoalOrientationTolerance(0.001);
 
-
-  // using direct pose targets
-  /*
-  if( test == 0 )
-  {
-    robot_->setPoseTarget( movements::toROS(base_pose) );
-    test = 1;
-  }
-  else
-  {
-    robot_->setPoseTarget( movements::toROS( base_pose+md(0.1) ) );
-    test = 0;
-  }
-  */
-  // using cartesian paths
-  cout<<endl<<"Enter time step size for the created path, 0 will move the end effector to the base pose."<<endl;
-  double input;
+  cout<<endl<<"Press q to quit, s to scan again, m to move to the next position and scan."<<endl;
+  char input;
   cin>>input;
-  if( input==10 )
+  if( input=='q' )
     return false;
-  if( input == 0 )
+  else if( input=='s' )
   {
-    cout<<endl<<"Moving to start position"<<endl;
-    robot_->setPoseTarget( target_0 );
-    
-    planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-    robot_state::RobotState current_robot_state = current_scene->getCurrentState();
-    robot_->setStartState(current_robot_state);
-    
-    //robot_->setStartStateToCurrentState();
-    
-    //planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-    //robot_state::RobotState current_robot_state = current_scene->getCurrentState();
-    //robot_->setStartState(current_robot_state);
-    
-    double joint_tolerance = robot_->getGoalJointTolerance();
-    double velocity_tolerance = 0.0001;
-    
-    
-    ros::AsyncSpinner spinner(1);
-    scene_->unlockSceneRead();
-    
-    spinner.start();
-    // plan and execute a path to the target state
-    bool success;
-    do{ success = robot_->move(); ros::spinOnce(); }while(!success && ros_node_->ok() );
-    cout<<endl<<"moveit says that the motion execution function has finished with success="<<success<<"."<<endl;
-    spinner.stop();
-    scene_->lockSceneRead();
-    
-    //if( !success ) return false;
-    
-    
+    while( !makeScan(0.1) ){ros::spinOnce();};    
   }
-  else
+  else if( input=='m' )
   {
-    bool executed_scan_successfully = makeScan();
+    movements::Pose base_pose = getCurrentLinkPose("base_footprint");
+    movements::Pose object_center( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
+    //movements::Pose object_center( base_pose.position+2*base_pose.position.normalized(), Eigen::Quaterniond() );
     
-    if(!executed_scan_successfully)
-      cout<<endl<<"Failed to create trajectory and execute it."<<endl;
+    // start position, end position, angular speed, movement direction
+    movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, base_pose.position, 0.1*6.283185307, movements::CircularGroundPath::COUNTER_CLOCKWISE );
     
+    double dt = 0.25;
+    std::vector<movements::Pose> waypoints = circle_seg.path( object_center, 0, 1.25, dt );
+    
+    bool base_successfully_moved = executeMovementsTrajectoryOnBase(waypoints,1);
+    //while( !makeScan(0.1) ){ros::spinOnce();};
   }
   
   return true;

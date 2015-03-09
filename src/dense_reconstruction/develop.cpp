@@ -23,14 +23,15 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "autonomous_hand_eye_calibration");
-  ros::NodeHandle n("autonomous_hand_eye_calibration");
+  ros::init(argc, argv, "youbot_reconstruction_controller");
+  ros::NodeHandle n("youbot_reconstruction_controller");
   
     
   YoubotReconstructionController calibrator(&n);
   
   
   ros::Rate rate(0.2);
+  
   while ( calibrator.runSingleIteration() && n.ok() )
   {
     cout<<endl<<"Working: "<<endl;

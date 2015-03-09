@@ -37,9 +37,18 @@ public:
    * @param _direction in which direction to turn (SHORTEST, COUNTER_CLOCKWISE, CLOCKWISE), default is SHORTEST
    */
   CircularGroundPath( Eigen::Vector3d _start_point, Eigen::Vector3d _target_point, double _angular_speed, MovementDirection _direction = SHORTEST );
+  /** constructor for CircularGroundPath
+   * @param _start_point the positions vector inside the pose will be used directly as start point of the movement
+   * @param _target_point the positions vector inside the pose will be used directly as end point of the movement
+   * @param _angular_speed angular speed [rad/s]
+   * @param _direction in which direction to turn (SHORTEST, COUNTER_CLOCKWISE, CLOCKWISE), default is SHORTEST
+   */
+  CircularGroundPath( movements::Pose _start_point, movements::Pose _target_point, double _angular_speed, MovementDirection _direction = SHORTEST );
   
   /** directly returns a KinematicMovementDescription containing a CircularGroundPath movement, see constructor for description of the parameters */
   static KinematicMovementDescription create( Eigen::Vector3d _start_point, Eigen::Vector3d _target_point, double _angular_speed, MovementDirection _direction = SHORTEST );
+  /** directly returns a KinematicMovementDescription containing a CircularGroundPath movement, see constructor for description of the parameters */
+  static KinematicMovementDescription create( movements::Pose _start_point, movements::Pose _target_point, double _angular_speed, MovementDirection _direction = SHORTEST );
   
   virtual std::string type();
   

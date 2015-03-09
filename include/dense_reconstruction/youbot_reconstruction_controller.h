@@ -69,9 +69,10 @@ public:
   movements::Pose getCurrentLinkPose( std::string _link );
   
   /** plans and executes a scanning movement from the current position of arm_link_4
+   * @param _max_dropoff see filteredPlanFromMovementsPath
    * @return true if successful, false if not
    */
-  bool makeScan();
+  bool makeScan( double _max_dropoff=0.2 );
   
   /** moves the base to the target position on a circular (but with varying radius) trajectory around the given _center
    * @return true if successful, false if not
@@ -91,7 +92,7 @@ public:
   /** attempts to create a cartesian path following the given poses given some constraints
    * @return true if planning and execution were successful
    */
-  bool executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints=nullptr );
+  bool executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints=nullptr, double _max_dropoff=0.2 );
   
   /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object!
    * @param _waypoints path for the end effector
