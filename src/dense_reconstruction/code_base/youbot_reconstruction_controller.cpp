@@ -1,17 +1,17 @@
 /* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
 *
-This file is part of hand_eye_calibration, a ROS package for hand eye calibration,
+This file is part of dense_reconstruction, a ROS package for...well,
 
-hand_eye_calibration is free software: you can redistribute it and/or modify
+dense_reconstruction is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-hand_eye_calibration is distributed in the hope that it will be useful,
+dense_reconstruction is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
+along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
@@ -24,6 +24,8 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <geometry_msgs/Pose2D.h>
 #include <movements/circular_ground_path.h>
 
+namespace dense_reconstruction
+{
 
 YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
   ros_node_(_n),
@@ -452,7 +454,7 @@ bool YoubotReconstructionController::planAndMove()
   robot_->setGoalPositionTolerance(0.001);
   robot_->setGoalOrientationTolerance(0.001);
 
-  cout<<endl<<"Press q to quit, s to scan again, m to move to the next position and scan."<<endl;
+  cout<<endl<<"Press q to quit, s to scan again, m to move to the next position."<<endl;
   char input;
   cin>>input;
   if( input=='q' )
@@ -478,4 +480,6 @@ bool YoubotReconstructionController::planAndMove()
   }
   
   return true;
+}
+
 }

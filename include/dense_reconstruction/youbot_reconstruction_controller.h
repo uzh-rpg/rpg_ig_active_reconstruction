@@ -1,17 +1,17 @@
 /* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
 *
-This file is part of hand_eye_calibration, a ROS package for hand eye calibration,
+This file is part of dense_reconstruction, a ROS package for...well,
 
-hand_eye_calibration is free software: you can redistribute it and/or modify
+dense_reconstruction is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-hand_eye_calibration is distributed in the hope that it will be useful,
+dense_reconstruction is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
+along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #pragma once
@@ -36,6 +36,9 @@ along with hand_eye_calibration. If not, see <http://www.gnu.org/licenses/>.
 #include <control_msgs/FollowJointTrajectoryAction.h>
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ActionClient;
 
+namespace dense_reconstruction
+{
+  
 /// class that autonomously extracts hand-eye pose correspondences in a robotic setup and estimates the hand-eye-calibration from it
 class YoubotReconstructionController
 {
@@ -156,3 +159,5 @@ private:
   
   
 };
+
+}

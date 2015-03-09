@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_core
   moveit_ros_planning_interface
   control_msgs
+  svo_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -39,8 +40,8 @@ include_directories(include
 
 
 add_executable(youbot_control
-  src/dense_reconstruction/develop.cpp
-  src/dense_reconstruction/youbot_reconstruction_controller.cpp
+  src/dense_reconstruction/ros_nodes/develop.cpp
+  src/dense_reconstruction/code_base/youbot_reconstruction_controller.cpp
   src/utils/ros_eigen.cpp
   ${movement_sources}
 )
@@ -52,5 +53,23 @@ target_link_libraries(youbot_control
 )
 
 add_dependencies(youbot_control
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(remode_feeder
+  src/dense_reconstruction/code_base/remode_feeder.cpp
+  src/dense_reconstruction/ros_nodes/feeder_node.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+)
+
+target_link_libraries(remode_feeder
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(remode_feeder
  ${catkin_EXPORTED_TARGETS}
 )

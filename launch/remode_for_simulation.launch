@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<launch>
+  
+
+  <!-- ********************************************************************************
+       REMODE node 
+       launch-prefix="nvprof -o remode.nvprof"
+  -->
+  <node pkg="remode" type="remode_live" name="remode" clear_params="true" output="screen">
+ 
+    <rosparam command="load" file="$(find dense_reconstruction)/config/gazebo_cam.yaml" />
+    <rosparam command="load" file="$(find remode)/configs/desktop.yaml" />
+    <param name="svo_topic" value="/dense_reconstruction/remode_feed" />
+    <param name="min_depth" value="0.2" />
+    <param name="max_depth" value="2.0" />
+    <param name="eta_inlier" value="0.7" />
+    <param name="eta_outlier" value="0.05" />
+    <param name="ncc_threshold" value="0.5" />
+    <param name="required_completion_percentage" value="0.5" />
+    <param name="distance_between_keyframes" value="0.5" />
+    <param name="use_gpu" value="false" />
+
+    <param name="save_depthmap" value="False" />
+    <param name="pyr_init_level" value="0" />
+    <param name="pyr_reconstruction_level" value="0" />
+  </node>
+
+  <!--
+      RVIZ
+  -->
+  <!--<node name="vis" pkg="rviz" type="rviz" args=" -d $(find remode)/configs/rviz_config_color.rviz" /> -->
+
+  
+</launch>
