@@ -90,12 +90,12 @@ public:
    * @param _path the path to follow
    * @param _dt time to pass between sending commands [s]
    */
-  bool executeMovementsTrajectoryOnBase( std::vector<movements::Pose>& _path, double _dt );
+  bool executeMovementsTrajectoryOnBase( movements::PoseVector& _path, double _dt );
   
   /** attempts to create a cartesian path following the given poses given some constraints
    * @return true if planning and execution were successful
    */
-  bool executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints=nullptr, double _max_dropoff=0.2 );
+  bool executeMovementsPath( movements::PoseVector& _path, moveit_msgs::Constraints* _constraints=nullptr, double _max_dropoff=0.2 );
   
   /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object!
    * @param _waypoints path for the end effector
@@ -104,7 +104,7 @@ public:
    * @param _path_constraints path constraints to use during planning
    * @return true if plan could be calculated, false if not
    */
-  bool planFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints=nullptr, int _planning_attempts=3 );
+  bool planFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints=nullptr, int _planning_attempts=3 );
   
   /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object! If planning fails for _planning_attempts times, the function tries to localize path points that are a problem and removes them. The maximal number or percentage of points that can be removed before the function returns failure can be specified in _max_dropoff: currently only works if the resolution (max distance between points) of the path passed is less than eef_step used in the cartesian path calculation inside the function (currently 0.1m)
    * @param _waypoints path for the end effector
@@ -114,7 +114,7 @@ public:
    * @param _max_dropoff If less than 1: Represents the percentage of the maximal number of points that may be dropped to find a valid cartesian path, if equal or higher than 1 it represents the absolute number of points that may be dropped, if _max_dropoff<=0 no filter stage is run
    * @return true if plan could be calculated, false if not
    */
-  bool filteredPlanFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints=nullptr, int _planning_attempts=3, double _max_dropoff = 0.2 );
+  bool filteredPlanFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints=nullptr, int _planning_attempts=3, double _max_dropoff = 0.2 );
   
   /** creates a static orientation constraint for the end effector based on the pose _base_pose that can be added to a moveit_msgs::Constraints by pushing it onto its orientation_constraints vector 
    * @param _base_pose pose whose orientation will be used to construct the constraint

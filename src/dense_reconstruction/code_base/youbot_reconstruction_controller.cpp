@@ -123,7 +123,7 @@ bool YoubotReconstructionController::makeScan(double _max_dropoff)
   // 0.05m radius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
   movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.06, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
   
-  std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.5, 3.5, 0.02 );
+  movements::PoseVector m_waypoints = scan.path( base_pose, 0.5, 3.5, 0.02 );
   
   // the camera should point into the same direction during the whole movement - seems not to have an impact
   moveit_msgs::OrientationConstraint eef_orientation_constraint = getFixedEEFLinkOrientationConstraint(base_pose);
@@ -137,7 +137,7 @@ bool YoubotReconstructionController::makeScan(double _max_dropoff)
   {    
     geometry_msgs::Pose stop_pose = robot_->getCurrentPose().pose;
     movements::Pose stop_pose_m = movements::fromROS(stop_pose);
-    std::vector<movements::Pose> go_home;
+    movements::PoseVector go_home;
     go_home.push_back(stop_pose_m);
     go_home.push_back(base_pose);
     
@@ -164,7 +164,7 @@ void YoubotReconstructionController::moveBaseTo( double _x, double _y, double _t
   commander.publish(command);
 }
 
-bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( std::vector<movements::Pose>& _path, double _dt )
+bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( movements::PoseVector& _path, double _dt )
 {
   control_msgs::FollowJointTrajectoryGoal traj;
   
@@ -199,7 +199,7 @@ bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( std::vect
     return false;
 }
 
-bool YoubotReconstructionController::executeMovementsPath( std::vector<movements::Pose>& _path, moveit_msgs::Constraints* _constraints, double _max_dropoff )
+bool YoubotReconstructionController::executeMovementsPath( movements::PoseVector& _path, moveit_msgs::Constraints* _constraints, double _max_dropoff )
 {
   moveit::planning_interface::MoveGroup::Plan plan;
   bool successfully_planned = filteredPlanFromMovementsPath( _path, plan, _constraints, 10, _max_dropoff );
@@ -224,7 +224,7 @@ bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::Lo
   return !colliding;
 }
 
-bool YoubotReconstructionController::planFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts )
+bool YoubotReconstructionController::planFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts )
 {
         
     /*geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
@@ -316,7 +316,7 @@ bool YoubotReconstructionController::planFromMovementsPath( std::vector<movement
     return true;
 }
 
-bool YoubotReconstructionController::filteredPlanFromMovementsPath( std::vector<movements::Pose>& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts, double _max_dropoff )
+bool YoubotReconstructionController::filteredPlanFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts, double _max_dropoff )
 {
     if( _path_constraints!=nullptr )
     {
@@ -473,7 +473,7 @@ bool YoubotReconstructionController::planAndMove()
     movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, base_pose.position, 0.1*6.283185307, movements::CircularGroundPath::COUNTER_CLOCKWISE );
     
     double dt = 0.25;
-    std::vector<movements::Pose> waypoints = circle_seg.path( object_center, 0, 1.25, dt );
+    movements::PoseVector waypoints = circle_seg.path( object_center, 0, 1.25, dt );
     
     bool base_successfully_moved = executeMovementsTrajectoryOnBase(waypoints,1);
     //while( !makeScan(0.1) ){ros::spinOnce();};

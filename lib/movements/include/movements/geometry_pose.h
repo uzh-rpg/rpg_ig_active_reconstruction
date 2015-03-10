@@ -43,6 +43,9 @@ namespace movements
     Pose& operator+=( movements::RelativeMovement  _second );
     /** executes a relative movement on the pose */
     Pose& operator+=( movements::CombinedRelativeMovement  _second );
+    
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
   
+  typedef std::vector<movements::Pose,Eigen::aligned_allocator<movements::Pose> > PoseVector;
 }

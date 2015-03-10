@@ -55,7 +55,7 @@ std::vector<RelativeMovement> KinematicMovementDescription::relativePath( double
   return enwrapped_kinematic_movement_description_->relativePath(_start_time,_end_time,_step_size);
 }
 
-std::vector<movements::Pose> KinematicMovementDescription::path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size )
+movements::PoseVector KinematicMovementDescription::path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size )
 {
   if( _step_size<=0 )
   {
@@ -78,9 +78,9 @@ std::vector<RelativeMovement> KinematicMovementDescription::KinematicMovementDes
   return relative_path;
 }
 
-std::vector<movements::Pose> KinematicMovementDescription::KinematicMovementDescriptionInstance::path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size )
+movements::PoseVector KinematicMovementDescription::KinematicMovementDescriptionInstance::path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size )
 {
-  std::vector<movements::Pose> cartesian_path;
+  movements::PoseVector cartesian_path;
   for( double t=_start_time; t<=_end_time; t+=_step_size )
   {
     RelativeMovement move = (*this)(t);

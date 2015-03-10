@@ -59,7 +59,7 @@ public:
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  std::vector<movements::Pose> path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
+  movements::PoseVector path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
   
   /** creates a relative kinematic event chain where the kinematic movement represented by the class object is prepended to the argument _to_add */
   template<class MovementT>
@@ -90,7 +90,7 @@ public:
    * @param _end_time latest time for the last pose
    * @param _step_size time step size [s]
    */
-  virtual std::vector<movements::Pose> path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
+  virtual movements::PoseVector path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
 };
 
 template<class MovementT>

@@ -26,7 +26,7 @@ namespace movements
 
 geometry_msgs::Pose toROS( movements::Pose _pose );
 movements::Pose fromROS( geometry_msgs::Pose _pose );
-std::vector<geometry_msgs::Pose> toROS( std::vector<Pose> _to_convert );
-std::vector<Pose> fromROS( std::vector<geometry_msgs::Pose> _to_convert );
+std::vector<geometry_msgs::Pose> toROS( movements::PoseVector _to_convert );
+movements::PoseVector fromROS( std::vector<geometry_msgs::Pose> _to_convert );
 
 }

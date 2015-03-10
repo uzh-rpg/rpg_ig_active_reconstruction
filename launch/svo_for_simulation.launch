@@ -9,6 +9,10 @@
         <!-- Camera calibration file -->
         <rosparam file="$(find dense_reconstruction)/config/gazebo_cam.yaml" />
         
+	<!-- Camera calibration file -->
+	<!--<rosparam file="$(find rpg_calib)/cameras/bluefox_016_pinhole.yaml" />-->
+	<param name="calib_file" value="$(find dense_reconstruction)/config/gazebo_cam_svo_special.yaml" />
+	
         <!-- Default parameter settings: choose between vo_fast and vo_accurate -->
         <rosparam file="$(find svo_ros)/param/vo_fast.yaml" />
 
@@ -21,6 +25,12 @@
         <!-- Dense Input -->
         <param name="publish_every_nth_dense_input" value="5" />
         <param name="publish_dense_input" value="True" />
+	
+	
+	<!-- Initial camera orientation, make it point sideways -->
+	<param name="init_rx" value="1.57" />
+	<param name="init_ry" value="0.00" />
+	<param name="init_rz" value="0.00" />
     </node>
         
 </launch>

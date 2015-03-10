@@ -58,6 +58,8 @@ public:
   static KinematicMovementDescription create( Eigen::Vector3d _direction, double _velocity );
   /** directly returns a kinematic movement description containing a linear movement */
   static KinematicMovementDescription create( Translation _direction, double _speed );
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   Eigen::Vector3d direction_; /// [m]
   double velocity_; /// [m/s]

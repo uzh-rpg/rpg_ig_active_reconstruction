@@ -54,7 +54,7 @@ movements::Pose fromROS( geometry_msgs::Pose _pose )
   return pose;
 }
 
-std::vector<geometry_msgs::Pose> toROS( std::vector<Pose> _to_convert )
+std::vector<geometry_msgs::Pose> toROS( movements::PoseVector _to_convert )
 {
   std::vector<geometry_msgs::Pose> out;
   BOOST_FOREACH( auto pose,  _to_convert )
@@ -64,9 +64,9 @@ std::vector<geometry_msgs::Pose> toROS( std::vector<Pose> _to_convert )
   return out;
 }
 
-std::vector<Pose> fromROS( std::vector<geometry_msgs::Pose> _to_convert )
+movements::PoseVector fromROS( std::vector<geometry_msgs::Pose> _to_convert )
 {
-  std::vector<Pose> out;
+  movements::PoseVector out;
   BOOST_FOREACH( auto pose,  _to_convert )
   {
     out.push_back( fromROS(pose) );
