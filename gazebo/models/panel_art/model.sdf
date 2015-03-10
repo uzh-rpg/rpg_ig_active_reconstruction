@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name="panel_art">
+    <static>true</static>
+    <link name="body">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="visual">
+	<geometry>
+	  <box>
+	    <size>0.40 0.60 0.05</size>
+	  </box>
+	</geometry>
+	<material>
+	  <script>
+            <uri>model://panel_art</uri>
+            <name>PanelArt/Diffuse</name>
+          </script>
+	</material>
+      </visual>
+    </link>
+  </model>
+</sdf>

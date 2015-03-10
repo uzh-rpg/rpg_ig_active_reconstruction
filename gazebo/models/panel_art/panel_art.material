@@ -1,0 +1,17 @@
+material PanelArt/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture nice_panel.png
+        filtering anistropic
+        max_anisotropy 16
+      }
+      
+    }
+  }
+}
