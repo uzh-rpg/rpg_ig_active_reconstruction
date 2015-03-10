@@ -14,8 +14,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/** simple node that acts as interface to remode, feeding it data
- * The idea is that data from different sources could be merged here (e.g. SVO, Odometry, etc)
+/** simple node can act as interface to remode, feeding it data
+ * The idea is that data from different sources could be merged here (e.g. SVO, Odometry, etc), currently unfinished, just circumvents svo, thus performs quite bad
  */
 
 #pragma once
