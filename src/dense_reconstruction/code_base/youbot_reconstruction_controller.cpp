@@ -121,7 +121,7 @@ bool YoubotReconstructionController::makeScan(double _max_dropoff)
   //geometry_msgs::Pose link_4_pose = robot_->getCurrentPose("arm_link_4").pose;
   movements::Pose link_4 = getCurrentLinkPose("arm_link_4");//::fromROS(link_4_pose);
   // 0.05m radius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
-  movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.05, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
+  movements::KinMove scan = movements::InOutSpiral::create( link_4.orientation, 0.06, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
   
   std::vector<movements::Pose> m_waypoints = scan.path( base_pose, 0.5, 3.5, 0.02 );
   

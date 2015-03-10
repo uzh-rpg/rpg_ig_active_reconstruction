@@ -6,7 +6,7 @@
       <link name="body">
         <visual name="visual">
           <geometry>
-            <mesh><uri>file://squirrel/models/Squirrel.dae</uri></mesh>
+            <mesh><uri>model://squirrel/models/Squirrel.dae</uri></mesh>
           </geometry>
         </visual>
       </link>

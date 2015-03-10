@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+  
+    <node pkg="svo_ros" type="vo" name="svo" clear_params="true" output="screen">
+    
+        <!-- Camera topic to subscribe to -->
+        <param name="cam_topic" value="/youbot/eye/image_rect" type="str" />
+        
+        <!-- Camera calibration file -->
+        <rosparam file="$(find dense_reconstruction)/config/gazebo_cam.yaml" />
+        
+        <!-- Default parameter settings: choose between vo_fast and vo_accurate -->
+        <rosparam file="$(find svo_ros)/param/vo_fast.yaml" />
+
+	<!-- Additional parameters -->
+	<param name="use_edgelets" value="True" />
+        <param name="max_fts" value="200" />
+        <param name="init_rx" value="3.14159" />
+
+
+        <!-- Dense Input -->
+        <param name="publish_every_nth_dense_input" value="5" />
+        <param name="publish_dense_input" value="True" />
+    </node>
+        
+</launch>

@@ -6,7 +6,7 @@
       <link name="body">
         <visual name="visual">
           <geometry>
-            <mesh><uri>file://candle_dog/Dog_Candlestick_LP.dae</uri></mesh>
+            <mesh><uri>model://candle_dog/models/Dog_Candlestick_LP.dae</uri></mesh>
           </geometry>
         </visual>
       </link>

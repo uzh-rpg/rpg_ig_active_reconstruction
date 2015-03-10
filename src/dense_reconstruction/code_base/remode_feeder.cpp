@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/remode_feeder.h"
 #include <movements/ros_movements.h>
 #include "utils/ros_eigen.h"
+#include <tf/transform_broadcaster.h>
 
 namespace dense_reconstruction
 {
@@ -50,6 +51,7 @@ void RemodeFeeder::imageStreamCallback(  const sensor_msgs::ImageConstPtr& _newI
   {
     return;
   }
+  
     
   
   ros::Time image_time = _newImage->header.stamp;
@@ -79,6 +81,10 @@ bool RemodeFeeder::poseFromTF( std::string _source, std::string _target, ros::Ti
   
   if( !new_tf_available )
     return false;
+  
+  // set world and odom to have the same origin
+  //static tf::TransformBroadcaster br;
+  //br.sendTransform(tf::StampedTransform(tf::Transform(), ros::Time::now(), "world", "odom"));
   
   tf::StampedTransform pose;
   geometry_msgs::TransformStamped end_effector_;
