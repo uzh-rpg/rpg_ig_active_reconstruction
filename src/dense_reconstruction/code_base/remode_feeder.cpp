@@ -18,6 +18,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/ros_movements.h>
 #include "utils/ros_eigen.h"
 #include <tf/transform_broadcaster.h>
+#include <boost/foreach.hpp>
 
 namespace dense_reconstruction
 {
@@ -38,6 +39,10 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   
   image_stream_ = nh_.subscribe( image_topic,1 ,&RemodeFeeder::imageStreamCallback, this );
   feeder_ = nh_.advertise<svo_msgs::DenseInputWithFeatures>( remode_input_topic,10 );
+  
+  // to get poses directly from gazebo
+  /*got_gazebo_pose_ = false;
+  ros::Subscriber gazebo = nh_.subscribe( "/gazebo/link_states",1 ,&RemodeFeeder::gazeboCallback, this );*/
 }
 
 void RemodeFeeder::imageStreamCallback(  const sensor_msgs::ImageConstPtr& _newImage )
@@ -61,6 +66,10 @@ void RemodeFeeder::imageStreamCallback(  const sensor_msgs::ImageConstPtr& _newI
   {
     // pose was found
     svo_msgs::DenseInputWithFeatures msg;
+    
+    // if you want to get a pose from gazebo directly (cam is not included though)
+    /*if( got_gazebo_pose_ )
+      camera_pose = groundTruthStateFromGazebo();*/
     
     msg.header = _newImage->header;
     msg.header.frame_id = world_frame_;
@@ -104,6 +113,25 @@ bool RemodeFeeder::poseFromTF( std::string _source, std::string _target, ros::Ti
   
   *_output = movements::Pose( translation, rotation );
   return true;
+}
+
+movements::Pose RemodeFeeder::groundTruthStateFromGazebo()
+{
+  int cam_index = 0;
+  for( ; cam_index<last_gazebo_msg_.name.size(); cam_index++ )
+  {
+    if( last_gazebo_msg_.name[cam_index]=="youbot::arm_link_5" ) //camera ain't there, don't know why
+    {
+      break;
+    }
+  }
+  return movements::fromROS( last_gazebo_msg_.pose[cam_index] );
+}
+
+void RemodeFeeder::gazeboCallback( const gazebo_msgs::LinkStatesPtr& _gazebo_states )
+{
+  got_gazebo_pose_ = true;
+  last_gazebo_msg_ = *_gazebo_states;
 }
 
 

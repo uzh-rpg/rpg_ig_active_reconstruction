@@ -27,7 +27,7 @@ find_package(Eigen REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs
   DEPENDS opencv opencv2 Eigen
 )
 

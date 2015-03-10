@@ -1,0 +1,17 @@
+material box18/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture 18.jpg
+        filtering anistropic
+        max_anisotropy 16
+      }
+      
+    }
+  }
+}

@@ -29,12 +29,12 @@
 
         <!-- Dense Input -->
         <param name="publish_every_nth_dense_input" value="5" />
-        <param name="publish_dense_input" value="False" />
+        <param name="publish_dense_input" value="True" />
 	
 	
 	<!-- Initial camera orientation, make it point sideways -->
-	<!--<param name="init_rx" value="1.57" />
-	<param name="init_ry" value="0.00" />
+	<!--<param name="init_rx" value="0" />
+	<param name="init_ry" value="1.57" />
 	<param name="init_rz" value="0.00" />-->
     </node>
         

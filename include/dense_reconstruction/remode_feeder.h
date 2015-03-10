@@ -15,7 +15,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 /** simple node can act as interface to remode, feeding it data
- * The idea is that data from different sources could be merged here (e.g. SVO, Odometry, etc), currently unfinished, just circumvents svo, thus performs quite bad
+ * The idea is that data from different sources could be merged here (e.g. SVO, Odometry, etc), currently unfinished, just circumvents svo, thus performs quite bad:
+ * Most likely I'll use it to transform the camera pose issued by SVO into the dr_origin frame
  */
 
 #pragma once
@@ -25,6 +26,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_listener.h>
 #include <movements/core>
+#include <gazebo_msgs/LinkStates.h>
 
 namespace dense_reconstruction
 {
@@ -47,6 +49,7 @@ public:
   */
   bool poseFromTF( std::string _source, std::string _target, ros::Time _time, movements::Pose* _output, double _max_wait_time=3 );
   
+  void gazeboCallback( const gazebo_msgs::LinkStatesPtr& _gazebo_states );
 private:
   ros::NodeHandle nh_;
   ros::Publisher feeder_;
@@ -62,6 +65,10 @@ private:
   double max_depth_; // for remode
   unsigned int publish_every_xth_frame_; // publish every xth frame
   unsigned int publish_count_;
+  
+  bool got_gazebo_pose_;
+  gazebo_msgs::LinkStates last_gazebo_msg_;
+  movements::Pose groundTruthStateFromGazebo();
 };
 
 }

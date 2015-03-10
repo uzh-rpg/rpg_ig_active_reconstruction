@@ -1,0 +1,17 @@
+material box6/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture 6.jpg
+        filtering anistropic
+        max_anisotropy 16
+      }
+      
+    }
+  }
+}
