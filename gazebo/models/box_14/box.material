@@ -1,6 +1,6 @@
 material box14/Diffuse
 {
-  receive_shadows off
+  receive_shadows on
   technique
   {
     pass
