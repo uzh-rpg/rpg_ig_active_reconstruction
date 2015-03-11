@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   moveit_ros_planning_interface
   control_msgs
   svo_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -25,9 +26,20 @@ add_subdirectory(lib)
 
 find_package(Eigen REQUIRED)
 
+add_service_files(
+  FILES
+  PoseSetter.srv
+  IsOk.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
+
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime
   DEPENDS opencv opencv2 Eigen
 )
 
@@ -71,5 +83,20 @@ target_link_libraries(remode_feeder
 )
 
 add_dependencies(remode_feeder
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(tf_linker
+  src/dense_reconstruction/ros_nodes/tf_linker.cpp
+  ${movement_sources}
+)
+
+target_link_libraries(tf_linker
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+add_dependencies(tf_linker
  ${catkin_EXPORTED_TARGETS}
 )

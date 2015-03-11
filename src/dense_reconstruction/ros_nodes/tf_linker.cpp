@@ -14,6 +14,11 @@ You should have received a copy of the GNU Lesser General Public License
 along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/** transmits additional tf transforms that are needed, connecting
+ * the two independent trees: the robot tree (from Youbot or Gazebo) and the SVO tree
+ * Needs hand eye calibration data which it loads from parameter server
+ * 
+ */
 
 #include <iostream>
 #include "ros/ros.h"
@@ -22,19 +27,49 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <boost/thread/mutex.hpp>
 
 #include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
+
+#include "dense_reconstruction/PoseSetter.h"
+#include "dense_reconstruction/IsOk.h"
+
+
+boost::mutex pose_protector;
+tf::Transfrom world2dr_origin;
+tf::Transfrom odom2dr_origin;
+
+bool new_cam_pose_available;
+ros::Time last_update;
+
+bool setPoseRequest( dense_reconstruction::PoseSetter::Request& _req, dense_reconstruction::PoseSetter::Response& _res )
+{
+  return true;
+}
+
+bool svoAvailableRequest( dense_reconstruction::IsOk::Request& _req, dense_reconstruction::IsOk::Response& _res )
+{
+  return true;
+}
+
+using namespace std;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "youbot_reconstruction_controller");
-  ros::NodeHandle n("youbot_reconstruction_controller");
+  ros::init(argc, argv, "tf_linker");
+  ros::NodeHandle n;
   
-    
-  dense_reconstruction::YoubotReconstructionController calibrator(&n);
+  // initialize transforms
+  world2dr_origin.setIdentity();
+  odom2dr_origin.setIdentity();
   
+  // setup server
+  ros::ServiceServer tree_connector;
+  tree_connector = n.advertiseService("dense_reconstruction/set_world_pose", setPoseRequest );
+  ros::ServiceServer status_answers;
+  status_answers = n.advertiseService("dense_reconstruction/svo_pose_available", svoAvailableRequest );
   
-  ros::Rate rate(0.2);
+  ros::Rate rate(10);
   
-  while ( calibrator.runSingleIteration() && n.ok() )
+  while ( n.ok() )
   {
     cout<<endl<<"Working: "<<endl;
   }
