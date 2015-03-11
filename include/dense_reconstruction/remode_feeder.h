@@ -49,11 +49,15 @@ public:
   */
   bool poseFromTF( std::string _source, std::string _target, ros::Time _time, movements::Pose* _output, double _max_wait_time=3 );
   
-  void gazeboCallback( const gazebo_msgs::LinkStatesPtr& _gazebo_states );
+  void gazeboCallback( const gazebo_msgs::LinkStatesConstPtr& _gazebo_states );
+  
+  /** svo callback function */
+  void svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& _svo_output );
 private:
   ros::NodeHandle nh_;
   ros::Publisher feeder_;
   ros::Subscriber image_stream_;
+  ros::Subscriber svo_subscriber_;
   
   tf::TransformListener tf_listener_;
   //ros::Subscriber svo_; // not used yet would be used e.g. for features

@@ -33,12 +33,14 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   camera_frame_ = "camera";
   std::string image_topic = "youbot/eye/image_rect";
   std::string remode_input_topic = "dense_reconstruction/remode_feed";
+  std::string svo_topic = "/svo/dense_input";
   
   min_depth_ = 0.1;
   max_depth_ = 1.5;
   
-  image_stream_ = nh_.subscribe( image_topic,1 ,&RemodeFeeder::imageStreamCallback, this );
+  //image_stream_ = nh_.subscribe( image_topic,1 ,&RemodeFeeder::imageStreamCallback, this ); // first try version
   feeder_ = nh_.advertise<svo_msgs::DenseInputWithFeatures>( remode_input_topic,10 );
+  svo_subscriber_ = nh_.subscribe( svo_topic,1 , &RemodeFeeder::svoCallback, this );
   
   // to get poses directly from gazebo
   /*got_gazebo_pose_ = false;
@@ -115,8 +117,50 @@ bool RemodeFeeder::poseFromTF( std::string _source, std::string _target, ros::Ti
   return true;
 }
 
+void RemodeFeeder::gazeboCallback( const gazebo_msgs::LinkStatesConstPtr& _gazebo_states )
+{
+  got_gazebo_pose_ = true;
+  last_gazebo_msg_ = *_gazebo_states;
+}
+
+void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& _svo_output )
+{
+  ros::Time now = ros::Time::now();
+  bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.0) );
+  
+  if(ground_tf_available)
+  {
+    tf::StampedTransform t_OW; // world to origin
+    tf_listener_.lookupTransform("dr_origin","world",now,t_OW);
+    
+    svo_msgs::DenseInputWithFeatures msg = *_svo_output;
+    
+    // header unchanged
+    // pose: P_OC = P_OW*P_WC
+    tf::Transform t_WC; //cam_pos to world
+    tf::poseMsgToTF( msg.pose,t_WC );
+    tf::Transform t_OC = t_OW*t_WC;
+    tf::poseTFToMsg( t_OC, msg.pose );
+    // image unchanged
+    // min_depth unchanged
+    // max_depth unchanged
+    BOOST_FOREACH( auto feature, msg.features )
+    {
+      tf::Vector3 feat_W(feature.x,feature.y,feature.z);
+      tf::Vector3 feat_O = t_OW*feat_W;
+      feature.x = feat_O.x();
+      feature.y = feat_O.y();
+      feature.z = feat_O.z();
+    }
+    //bgr_image unchanged
+    feeder_.publish(msg);
+  }
+  
+}
+
 movements::Pose RemodeFeeder::groundTruthStateFromGazebo()
 {
+  // actually would have to read up if this really isn't affected by noise - but it's unused anyway
   int cam_index = 0;
   for( ; cam_index<last_gazebo_msg_.name.size(); cam_index++ )
   {
@@ -126,12 +170,6 @@ movements::Pose RemodeFeeder::groundTruthStateFromGazebo()
     }
   }
   return movements::fromROS( last_gazebo_msg_.pose[cam_index] );
-}
-
-void RemodeFeeder::gazeboCallback( const gazebo_msgs::LinkStatesPtr& _gazebo_states )
-{
-  got_gazebo_pose_ = true;
-  last_gazebo_msg_ = *_gazebo_states;
 }
 
 
