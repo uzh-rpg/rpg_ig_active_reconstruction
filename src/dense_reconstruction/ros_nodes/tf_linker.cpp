@@ -74,6 +74,7 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   : nh_(_nh)
   , max_tf_wait_time_(_max_svo_wait_time)
   , tf_up_to_date_(false)
+  , tf_listener_(nh_)
 {
   // initialize transforms
   world2dr_origin_.setIdentity();
@@ -99,10 +100,11 @@ void TFLinker::run()
   
   // get newest robot transform
   ros::Time now = ros::Time::now();
-  
+  // TODO:check timing constraints, is the last issued pose good enough?
   bool in_time = tf_listener_.waitForTransform( "arm_link_5", "base_footprint", now, max_tf_wait_time_ );
+  bool in_time2 = tf_listener_.waitForTransform( "world", "cam_pos", now, max_tf_wait_time_ );
   
-  if( !in_time )
+  if( !in_time || !in_time2 )
   {
     ROS_WARN("TFLinker:: Couldn't get current tf transform from 'base_footprint' to 'arm_link_5' in time.");
     tf_up_to_date_ = false;
@@ -115,9 +117,17 @@ void TFLinker::run()
   // build new complete robot transfrom
   tf::Transform base2image = arm2image_*base2arm_link_5;
   
+  // t_OC = t_OW*t_WC
+  tf::StampedTransform t_WC;
+  tf_listener_.lookupTransform("world", "cam_pos", now, t_WC);
+  tf::Transform t_OC = world2dr_origin_*t_WC;
+  
   // broadcast new transforms
-  tf_broadcaster_.sendTransform(tf::StampedTransform(base2image, now, "cam_pos", "youbot_base"));
-  tf_broadcaster_.sendTransform(tf::StampedTransform(world2dr_origin_, now, "dr_origin", "world"));
+  tf_broadcaster_.sendTransform(tf::StampedTransform(base2image, now, "cam_pos", "youbot_base")); //ok
+  tf_broadcaster_.sendTransform(tf::StampedTransform(t_OC, now, "dr_origin", "cam_pos"));
+  
+  // needs to become: tf_broadcaster_.sendTransform(tf::StampedTransform(xxx, now, "dr_origin", "base_link"));
+  tf_broadcaster_.sendTransform(tf::StampedTransform(odom2dr_origin_, now, "dr_origin", "odom"));
   
   tf_up_to_date_ = true;
   
@@ -171,7 +181,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "tf_linker");
   ros::NodeHandle n;
   
-  dense_reconstruction::TFLinker tfl( n, ros::Duration(0.03) );
+  dense_reconstruction::TFLinker tfl( n, ros::Duration(0.06) );
   
   
   

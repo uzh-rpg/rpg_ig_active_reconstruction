@@ -448,9 +448,11 @@ void YoubotReconstructionController::initializeTF()
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
   ros::Time now = ros::Time::now();
-  while( !tf_listener_.waitForTransform("cam_pos","world",now, ros::Duration(1.0) ) )
+  while( !tf_listener_.waitForTransform("cam_pos","world",now, ros::Duration(1.0) )&&ros_node_->ok() )
   {
     ROS_INFO("Waiting for 'cam_pos' to be published...");
+    ros::spinOnce();
+    now = ros::Time::now();
   }
   tf::StampedTransform t_IW;
   tf_listener_.lookupTransform("cam_pos","world",now,t_IW);
@@ -469,16 +471,20 @@ void YoubotReconstructionController::initializeTF()
     {
       ROS_INFO("Waiting for '/hec/arm2image' params to be available on parameter server...");
       ros::Duration(1).sleep();
+      ros::spinOnce();
     }
-  }while(!hand_eye_available);
+  }while(!hand_eye_available&&ros_node_->ok());
   tf::Transform t_AI,t_IA;
   tf::transformMsgToTF(arm2image,t_IA);
   t_AI = t_IA.inverse();
   
   // t_OA - A:last arm link
-  while( !tf_listener_.waitForTransform("odom","arm_link_5",now, ros::Duration(1.0) ) )
+  now = ros::Time::now();
+  while( !tf_listener_.waitForTransform("odom","arm_link_5",now, ros::Duration(1.0) ) &&ros_node_->ok())
   {
     ROS_INFO("Waiting for 'odom' to 'arm_link_5' being published...");
+    now = ros::Time::now();
+    ros::spinOnce();
   }
   tf::StampedTransform t_OA;
   tf_listener_.lookupTransform("odom","arm_link_5",now,t_OA);
@@ -491,10 +497,11 @@ void YoubotReconstructionController::initializeTF()
   dense_reconstruction::PoseSetter request;
   request.request.pose = ow_msg;
   
-  while( !ros::service::call("dense_reconstruction/set_world_pose",request) )
+  while( !ros::service::call("dense_reconstruction/set_world_pose",request)&&ros_node_->ok() )
   {
     ROS_INFO("Sending request to setup tf links to tf_linker, no answer...");
     ros::Duration(1).sleep();
+    ros::spinOnce();
   }
   return;
 }
