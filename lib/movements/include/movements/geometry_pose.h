@@ -22,7 +22,7 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 
 namespace movements
 {
-  class CombinedRelativeMovement;
+  class CombinedRelativeMovement; // forward declaration
   
   /** class to represent a geometry pose in 3d space */
   class Pose
