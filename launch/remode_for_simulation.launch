@@ -10,8 +10,8 @@
  
     <rosparam command="load" file="$(find dense_reconstruction)/config/gazebo_cam.yaml" />
     <rosparam command="load" file="$(find remode)/configs/desktop.yaml" />
-    <!--<param name="svo_topic" value="/dense_reconstruction/remode_feed" />-->
-    <param name="svo_topic" value="/svo/dense_input" />
+    <param name="svo_topic" value="/dense_reconstruction/remode_feed" />
+    <!--<param name="svo_topic" value="/svo/dense_input" />-->
     <param name="min_depth" value="0.2" />
     <param name="max_depth" value="2.0" />
     <param name="eta_inlier" value="0.7" /> <!-- bound for inliers (lower->more inliers) -->

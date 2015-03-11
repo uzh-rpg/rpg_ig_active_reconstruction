@@ -129,6 +129,9 @@ public:
    */
   void setEndEffectorPlanningFrame( std::string _name );
   
+  /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf */
+  void initializeTF();
+  
 private:
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;

@@ -85,8 +85,8 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   }
   
   // setup servers
-  tree_connector_ = nh_.advertiseService("dense_reconstruction/set_world_pose", &TFLinker::setWorldPoseRequest, this );
-  status_answers_ = nh_.advertiseService("dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
+  tree_connector_ = nh_.advertiseService("/dense_reconstruction/set_world_pose", &TFLinker::setWorldPoseRequest, this );
+  status_answers_ = nh_.advertiseService("/dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
 }
 
 void TFLinker::run()

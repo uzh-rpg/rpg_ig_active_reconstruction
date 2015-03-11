@@ -23,6 +23,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 #include <geometry_msgs/Pose2D.h>
 #include <movements/circular_ground_path.h>
+#include "dense_reconstruction/PoseSetter.h"
 
 namespace dense_reconstruction
 {
@@ -49,6 +50,10 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
   base_trajectory_sender_.waitForServer();
   ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::Successfully contacted.");
+  
+  ROS_INFO("YoubotReconstructionController::YoubotReconstructionController::Initializing tf structures...");
+  initializeTF();
+  ROS_INFO("YoubotReconstructionController::YoubotReconstructionController:: tf structures Initialized.");
   
   // block everything until complete tf tree is available: this doesn't help
   //tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(0.0) );
@@ -437,6 +442,61 @@ void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _n
   {
     end_effector_planning_frame_ = _name;
   }
+}
+
+void YoubotReconstructionController::initializeTF()
+{
+  // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
+  ros::Time now = ros::Time::now();
+  while( !tf_listener_.waitForTransform("cam_pos","world",now, ros::Duration(1.0) ) )
+  {
+    ROS_INFO("Waiting for 'cam_pos' to be published...");
+  }
+  tf::StampedTransform t_IW;
+  tf_listener_.lookupTransform("cam_pos","world",now,t_IW);
+  
+  geometry_msgs::Transform arm2image;
+  bool hand_eye_available;
+  do{
+    hand_eye_available = ros_node_->getParam("/hec/arm2image/translation/x", arm2image.translation.x )
+              && ros_node_->getParam("/hec/arm2image/translation/y", arm2image.translation.y )
+              && ros_node_->getParam("/hec/arm2image/translation/z", arm2image.translation.z )
+              && ros_node_->getParam("/hec/arm2image/rotation/x", arm2image.rotation.x )
+              && ros_node_->getParam("/hec/arm2image/rotation/y", arm2image.rotation.y )
+              && ros_node_->getParam("/hec/arm2image/rotation/z", arm2image.rotation.z )
+              && ros_node_->getParam("/hec/arm2image/rotation/w", arm2image.rotation.w );
+    if(!hand_eye_available)
+    {
+      ROS_INFO("Waiting for '/hec/arm2image' params to be available on parameter server...");
+      ros::Duration(1).sleep();
+    }
+  }while(!hand_eye_available);
+  tf::Transform t_AI,t_IA;
+  tf::transformMsgToTF(arm2image,t_IA);
+  t_AI = t_IA.inverse();
+  
+  // t_OA - A:last arm link
+  while( !tf_listener_.waitForTransform("odom","arm_link_5",now, ros::Duration(1.0) ) )
+  {
+    ROS_INFO("Waiting for 'odom' to 'arm_link_5' being published...");
+  }
+  tf::StampedTransform t_OA;
+  tf_listener_.lookupTransform("odom","arm_link_5",now,t_OA);
+  
+  tf::Transform t_OW = t_OA*t_AI*t_IW;
+  
+  geometry_msgs::Transform ow_msg;
+  tf::transformTFToMsg( t_OW, ow_msg );
+  
+  dense_reconstruction::PoseSetter request;
+  request.request.pose = ow_msg;
+  
+  while( !ros::service::call("dense_reconstruction/set_world_pose",request) )
+  {
+    ROS_INFO("Sending request to setup tf links to tf_linker, no answer...");
+    ros::Duration(1).sleep();
+  }
+  return;
 }
 
 bool YoubotReconstructionController::planAndMove()

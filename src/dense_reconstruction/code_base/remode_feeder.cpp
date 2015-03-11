@@ -128,7 +128,7 @@ void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& 
   ros::Time now = ros::Time::now();
   bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.0) );
   
-  if(ground_tf_available)
+  if(ground_tf_available) // transform here because it would be much more overhead to do it for every point in the point cloud remote publishes
   {
     tf::StampedTransform t_OW; // world to origin
     tf_listener_.lookupTransform("dr_origin","world",now,t_OW);
