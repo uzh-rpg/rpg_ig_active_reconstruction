@@ -1,3 +1,3 @@
-geometry_msgs/Pose request
+geometry_msgs/Transform pose
 ---
 bool success

@@ -99,4 +99,5 @@ target_link_libraries(tf_linker
 
 add_dependencies(tf_linker
  ${catkin_EXPORTED_TARGETS}
+ ${PROJECT_NAME}_generate_messages_cpp
 )

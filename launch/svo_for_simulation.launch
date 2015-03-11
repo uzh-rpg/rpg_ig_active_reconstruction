@@ -19,8 +19,8 @@
 	<!-- Additional parameters -->
 	<param name="use_edgelets" value="True" />
         <param name="max_fts" value="150" />
-	<!--<param name="init_rx" value="3.14159" />-->
-        <param name="T_world_imuinit/qx" value="1" />
+	<!--<param name="init_rx" value="3.14159" /> -->
+        <param name="T_world_imuinit/qx" value="1" /><!-- disable... you've got no IMU...-->
         <param name="T_world_imuinit/qy" value="0" />
         <param name="T_world_imuinit/qz" value="0" />
         <param name="T_world_imuinit/qw" value="0" />
@@ -32,7 +32,7 @@
         <param name="publish_dense_input" value="True" />
 	
 	
-	<!-- Initial camera orientation, make it point sideways -->
+	<!-- Initial camera orientation, make it point sideways "look for kfselect_criterion" -->
 	<!--<param name="init_rx" value="0" />
 	<param name="init_ry" value="1.57" />
 	<param name="init_rz" value="0.00" />-->

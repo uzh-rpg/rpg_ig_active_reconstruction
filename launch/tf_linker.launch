@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- launches the tf linker node with the needed parameters -->
+<launch>
+
+  <!-- upload camera and checkerboard parameters -->
+  <rosparam file="$(find dense_reconstruction)/config/tf_linker_config.yaml" command="load" ns=""/>
+    
+  <node name="tf_linker" pkg="dense_reconstruction" type="tf_linker" respawn="false" output="screen"/>
+  
+</launch>
