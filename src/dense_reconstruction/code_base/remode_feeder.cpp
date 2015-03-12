@@ -29,11 +29,13 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   publish_every_xth_frame_(_publish_every_xth_frame),
   publish_count_(0)
 {
-  world_frame_ = "odom";
-  camera_frame_ = "camera";
-  std::string image_topic = "youbot/eye/image_rect";
-  std::string remode_input_topic = "dense_reconstruction/remode_feed";
+  world_frame_ = "dr_origin";
+  std::string remode_input_topic = "/dense_reconstruction/remode_feed";
   std::string svo_topic = "/svo/dense_input";
+  
+  
+  camera_frame_ = "camera";
+  std::string image_topic = "/camera/image_rect";
   
   min_depth_ = 0.1;
   max_depth_ = 1.5;
@@ -125,8 +127,8 @@ void RemodeFeeder::gazeboCallback( const gazebo_msgs::LinkStatesConstPtr& _gazeb
 
 void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& _svo_output )
 {
-  ros::Time now = ros::Time::now();
-  bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.0) );
+  ros::Time now = _svo_output->header.stamp;
+  bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.03) );
   
   if(ground_tf_available) // transform here because it would be much more overhead to do it for every point in the point cloud remote publishes
   {
@@ -135,7 +137,9 @@ void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& 
     
     svo_msgs::DenseInputWithFeatures msg = *_svo_output;
     
-    // header unchanged
+    // set frame in header
+    msg.header.frame_id = world_frame_;
+    
     // pose: P_OC = P_OW*P_WC
     tf::Transform t_WC; //cam_pos to world
     tf::poseMsgToTF( msg.pose,t_WC );
@@ -154,6 +158,10 @@ void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& 
     }
     //bgr_image unchanged
     feeder_.publish(msg);
+  }
+  else
+  {
+    ROS_WARN("Couldn't find transformation from 'dr_origin' to 'world'.");
   }
   
 }

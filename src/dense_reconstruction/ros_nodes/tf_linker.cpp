@@ -41,8 +41,9 @@ public:
   TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time );
   
   /** on iteration */
-  void run();
+  void publish();
   
+  /** expects the transform from dr_origin coordinates into world coordinates */
   bool setWorldPoseRequest( dense_reconstruction::PoseSetter::Request& _req, dense_reconstruction::PoseSetter::Response& _res );
   /** whether the published tf tree is up to date */
   bool tfUpToDate( dense_reconstruction::IsOk::Request& _req, dense_reconstruction::IsOk::Response& _res );
@@ -59,11 +60,11 @@ private:
   tf::TransformListener tf_listener_;
   tf::TransformBroadcaster tf_broadcaster_;
   
-  
+  bool is_setup_; //only starts publishing when it receveived at least on world pose
   boost::mutex pose_protector_;
-  tf::Transform world2dr_origin_; // as data is transformed
+  tf::Transform dr_origin2world_; // as data is transformed
   tf::Transform odom2dr_origin_;
-  tf::Transform arm2image_; // from hec
+  tf::Transform image2arm_; // from hec
 
   bool tf_up_to_date_;
   ros::Duration max_tf_wait_time_; // max time to wait for all needed tfs to be available before tf state is set to be invalid
@@ -75,9 +76,10 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   , max_tf_wait_time_(_max_svo_wait_time)
   , tf_up_to_date_(false)
   , tf_listener_(nh_)
+  , is_setup_(false)
 {
   // initialize transforms
-  world2dr_origin_.setIdentity();
+  dr_origin2world_.setIdentity();
   odom2dr_origin_.setIdentity();
   if( !loadHEC() )
   {
@@ -90,14 +92,20 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   status_answers_ = nh_.advertiseService("/dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
 }
 
-void TFLinker::run()
+void TFLinker::publish()
 {
-  tf::Transform world2dr_origin;
+  if(!is_setup_)
+    return;
+  
+  tf::Transform dr_origin2world;
   { // allows for multithreaded spinning
     boost::mutex::scoped_lock scoped_lock(pose_protector_);
-    world2dr_origin = world2dr_origin_;
+    dr_origin2world = dr_origin2world_;
   }
-  
+  ros::Time now = ros::Time::now();
+  tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "world", "dr_origin"));
+  tf_broadcaster_.sendTransform(tf::StampedTransform(image2arm_, now, "arm_link_5", "cam_pos"));
+  /*
   // get newest robot transform
   ros::Time now = ros::Time::now();
   // TODO:check timing constraints, is the last issued pose good enough?
@@ -128,7 +136,7 @@ void TFLinker::run()
   
   // needs to become: tf_broadcaster_.sendTransform(tf::StampedTransform(xxx, now, "dr_origin", "base_link"));
   tf_broadcaster_.sendTransform(tf::StampedTransform(odom2dr_origin_, now, "dr_origin", "odom"));
-  
+  */
   tf_up_to_date_ = true;
   
   return;
@@ -140,9 +148,10 @@ bool TFLinker::setWorldPoseRequest( dense_reconstruction::PoseSetter::Request& _
   
   { // allows for multithreaded spinning
     boost::mutex::scoped_lock scoped_lock(pose_protector_);
-    tf::transformMsgToTF( new_world_pose, world2dr_origin_ );
+    tf::transformMsgToTF( new_world_pose, dr_origin2world_ );
   }
   _res.success = true;
+  is_setup_ = true;
   return true;
 }
 
@@ -169,8 +178,10 @@ bool TFLinker::loadHEC()
     return true;
   }
   
-  tf::transformMsgToTF( arm2image, arm2image_ );
+  tf::Transform arm2image_tf;
+  tf::transformMsgToTF( arm2image, arm2image_tf );
   
+  image2arm_ = arm2image_tf.inverse();
   return true;
 }
 
@@ -190,7 +201,7 @@ int main(int argc, char **argv)
   
   while ( n.ok() )
   {
-    tfl.run();
+    tfl.publish();
     
     ros::spinOnce();
     rate.sleep();

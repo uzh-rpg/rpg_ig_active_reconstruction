@@ -1,7 +1,7 @@
 # configuration for youbot base joint interface
 youbot_base:
-  position_frame: dr_origin
-  base_frame: youbot_base
+  position_frame: odom
+  base_frame: base_footprint
   velocity_topic: cmd_vel
   
   publish_base_state: false #whether the state of the base is to be published on /joint_states as if it was a joint

@@ -454,8 +454,8 @@ void YoubotReconstructionController::initializeTF()
     ros::spinOnce();
     now = ros::Time::now();
   }
-  tf::StampedTransform t_IW;
-  tf_listener_.lookupTransform("cam_pos","world",now,t_IW);
+  tf::StampedTransform t_WI;
+  tf_listener_.lookupTransform("world","cam_pos",now,t_WI);
   
   geometry_msgs::Transform arm2image;
   bool hand_eye_available;
@@ -474,9 +474,8 @@ void YoubotReconstructionController::initializeTF()
       ros::spinOnce();
     }
   }while(!hand_eye_available&&ros_node_->ok());
-  tf::Transform t_AI,t_IA;
+  tf::Transform t_IA;
   tf::transformMsgToTF(arm2image,t_IA);
-  t_AI = t_IA.inverse();
   
   // t_OA - A:last arm link
   now = ros::Time::now();
@@ -486,16 +485,16 @@ void YoubotReconstructionController::initializeTF()
     now = ros::Time::now();
     ros::spinOnce();
   }
-  tf::StampedTransform t_OA;
-  tf_listener_.lookupTransform("odom","arm_link_5",now,t_OA);
+  tf::StampedTransform t_AO;
+  tf_listener_.lookupTransform("arm_link_5","odom",now,t_AO);
   
-  tf::Transform t_OW = t_OA*t_AI*t_IW;
+  tf::Transform t_WO = t_WI*t_IA*t_AO;
   
-  geometry_msgs::Transform ow_msg;
-  tf::transformTFToMsg( t_OW, ow_msg );
+  geometry_msgs::Transform wo_msg;
+  tf::transformTFToMsg( t_WO, wo_msg );
   
   dense_reconstruction::PoseSetter request;
-  request.request.pose = ow_msg;
+  request.request.pose = wo_msg;
   
   while( !ros::service::call("dense_reconstruction/set_world_pose",request)&&ros_node_->ok() )
   {
