@@ -8,7 +8,7 @@
   www.ros.org/wiki/octomap_server for details  
 -->
 <launch>
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen">
 		<param name="resolution" value="0.005" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -24,17 +24,20 @@
 		<param name="ground_filter/plane_distance" value="0.2" />-->
 		
 		<!-- max z -->
-		<!--<param name="pointcloud_min_z" value="1.5" />
-		<param name="pointcloud_max_z" value="0" />-->
+		<param name="pointcloud_min_z" value="0" />
+		<param name="pointcloud_max_z" value="0.5" />
 		<!-- max z if octomap publishes (doesn't affect internal map)
 		<param name="occupancy_min_z" value="1.5" />
 		<param name="occupancy_max_z" value="0" />-->
 
-    <!-- use stereo sensor model (quadratic error) -->
-    <param name="sensor_model/stereo_model" value="true"/>
+		<!-- use stereo sensor model (quadratic error) -->
+		<param name="sensor_model/stereo_model" value="true"/>
 
-    <!-- stereo model error coefficient: P_hit' = P_hit * C * (max_range^2 / d^2) -->
-    <param name="sensor_model/stereo_error_coeff" value="40"/><!--8.887-->
+		<!-- stereo model error coefficient: P_hit' = P_hit * C * (max_range^2 / d^2) -->
+		<param name="sensor_model/stereo_error_coeff" value="50.0"/><!--8.887-->
+		
+		<param name="sensor_model/hit" value="0.7"/> <!-- probability for being occupied on a hit -->
+		<param name="sensor_model/miss" value="0.4"/><!-- probability for being occupied on a miss -->
 		
 		<!-- data source to integrate (PointCloud2) -->
 		<remap from="cloud_in" to="/remode/pointcloud" />
