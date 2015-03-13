@@ -25,6 +25,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/CameraInfo.h>
+#include <std_msgs/String.h>
 
 #include <movements/core>
 #include <movements/ros_movements.h>
@@ -97,6 +98,9 @@ public:
    */
   bool executeMovementsPath( movements::PoseVector& _path, moveit_msgs::Constraints* _constraints=nullptr, double _max_dropoff=0.2 );
   
+  /** execute a moveit plan */
+  bool executeMoveItPlan( moveit::planning_interface::MoveGroup::Plan& _plan );
+  
   /** Calls computeCartesianPath(...) to build a moveit plan for the movements path for the end effector. Path constraints are cleared afterwards, this will affect all constraints set for the robot_ object!
    * @param _waypoints path for the end effector
    * @param _plan returned path
@@ -136,7 +140,7 @@ public:
   moveit_msgs::RobotTrajectory loadUpperArmTrajectory( std::string _filename );
   
   /** saves upper arm trajectory positions to file (links 2 through 5)*/
-  void saveUpperArmTrajectoryPositions( std::string _filename, moveit_msgs::RobotTrajectory _trajectory );
+  void saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory );
   
 private:
   ros::NodeHandle* ros_node_;
@@ -144,6 +148,10 @@ private:
   ros::ServiceClient hand_client_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
+    
+  ros::Publisher remode_commander_;
+  std_msgs::String remode_stopandsmooth_;
+  std_msgs::String remode_start_;
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations

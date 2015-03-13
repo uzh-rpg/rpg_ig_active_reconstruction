@@ -23,7 +23,8 @@
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>svo_msgs</build_depend>
   <build_depend>gazebo_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
+  <build_depend>message_generation</build_depend>std_msgs
+  <build_depend>std_msgs</build_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
@@ -35,6 +36,7 @@
   <run_depend>svo_msgs</run_depend>
   <run_depend>gazebo_msgs</run_depend>
   <run_depend>message_runtime</run_depend>
+  <run_depend>std_msgs</run_depend>
 
 
 </package>

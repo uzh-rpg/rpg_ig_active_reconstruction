@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   control_msgs
   svo_msgs
   message_generation
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -39,7 +40,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs
   DEPENDS opencv opencv2 Eigen
 )
 
