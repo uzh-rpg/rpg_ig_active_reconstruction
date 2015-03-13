@@ -332,87 +332,96 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( movements::P
     
     moveit_msgs::RobotTrajectory trajectory;
     //moveit::planning_interface::MoveGroup::Plan plan;
-    
-    double success_ratio = 0;
-    int count=0;
-    int dropped_points = 0;
-    int passed_points = _waypoints.size();
-    
-    while( success_ratio!=1 && ros_node_->ok() )
+    if( spin_trajectory_ != nullptr )
     {
-      count++;
-      success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
-      
-      if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
-      {
-	dropped_points++;
-	
-	if( dropped_points==passed_points || _max_dropoff<=0 )
-	{
-	  /*using namespace std;
-	  cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
-	  cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
-	  cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
-	  cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
-	  cout<<endl<<"Number of dropped points: "<<dropped_points;
-	  cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	  cout<<endl<<endl;*/
-	  return false;  // too many dropped points
-	}
-	else if( _max_dropoff<1 )
-	{
-	  if( (double)dropped_points/passed_points > _max_dropoff )
-	  {
-	    /*using namespace std;
-	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
-	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
-	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
-	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
-	    cout<<endl<<"Number of dropped points: "<<dropped_points;
-	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	    cout<<endl<<endl;*/
-	    return false; // too many dropped points
-	  }
-	}
-	else
-	{
-	  if( dropped_points > _max_dropoff )
-	  {
-	    /*using namespace std;
-	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
-	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
-	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
-	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
-	    cout<<endl<<"Number of dropped points: "<<dropped_points;
-	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-	    cout<<endl<<endl;*/
-	    return false; // too many dropped points
-	  }
-	}
-	
-	int valid_points = trajectory.joint_trajectory.points.size(); // -> also the index of the point which will be dropped
-	count = 0;
-	// drop point for which calculation failed
-	for( unsigned int i=valid_points; i<waypoints.size()-1; i++ )
-	{
-	  waypoints[i]=waypoints[i+1]; // shift all later points one position forward
-	}
-	waypoints.resize( waypoints.size()-1 ); // drop last
-      }
-      
-      //ros::Duration(0.001).sleep();
+      trajectory = moveit_msgs::RobotTrajectory(*spin_trajectory_);
     }
+    else
+    {
+      ROS_INFO("Need to calculate trajectory...");
+      double success_ratio = 0;
+      int count=0;
+      int dropped_points = 0;
+      int passed_points = _waypoints.size();
       
-      using namespace std;
-      cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
-      cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
-      cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
-      cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
-      cout<<endl<<"Number of dropped points: "<<dropped_points;
-      cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
-      cout<<endl<<endl;
-      
-      
+      while( success_ratio!=1 && ros_node_->ok() )
+      {
+	count++;
+	success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+	
+	if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
+	{
+	  dropped_points++;
+	  
+	  if( dropped_points==passed_points || _max_dropoff<=0 )
+	  {
+	    /*using namespace std;
+	    cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	    cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	    cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	    cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	    cout<<endl<<"Number of dropped points: "<<dropped_points;
+	    cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	    cout<<endl<<endl;*/
+	    return false;  // too many dropped points
+	  }
+	  else if( _max_dropoff<1 )
+	  {
+	    if( (double)dropped_points/passed_points > _max_dropoff )
+	    {
+	      /*using namespace std;
+	      cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	      cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	      cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	      cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	      cout<<endl<<"Number of dropped points: "<<dropped_points;
+	      cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	      cout<<endl<<endl;*/
+	      return false; // too many dropped points
+	    }
+	  }
+	  else
+	  {
+	    if( dropped_points > _max_dropoff )
+	    {
+	      /*using namespace std;
+	      cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	      cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	      cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	      cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	      cout<<endl<<"Number of dropped points: "<<dropped_points;
+	      cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	      cout<<endl<<endl;*/
+	      return false; // too many dropped points
+	    }
+	  }
+	  
+	  int valid_points = trajectory.joint_trajectory.points.size(); // -> also the index of the point which will be dropped
+	  count = 0;
+	  // drop point for which calculation failed
+	  for( unsigned int i=valid_points; i<waypoints.size()-1; i++ )
+	  {
+	    waypoints[i]=waypoints[i+1]; // shift all later points one position forward
+	  }
+	  waypoints.resize( waypoints.size()-1 ); // drop last
+	}
+	
+	//ros::Duration(0.001).sleep();
+      }
+	
+	using namespace std;
+	cout<<endl<<"Total number of points in trajectory passed is: p="<<_waypoints.size();
+	cout<<endl<<"Percentage of successfully computed cartesian path s is: s="<<success_ratio;
+	cout<<endl<<"Number of computed points in cartesian trajectory is: c = "<<trajectory.joint_trajectory.points.size();
+	cout<<endl<<"s*p = "<<success_ratio*_waypoints.size();
+	cout<<endl<<"Number of dropped points: "<<dropped_points;
+	cout<<endl<<"Dropped point percentage: "<<dropped_points/(double)_waypoints.size();
+	cout<<endl<<endl;
+    }  
+    if( spin_trajectory_ == nullptr )
+    {
+      spin_trajectory_ = boost::shared_ptr<moveit_msgs::RobotTrajectory>( new moveit_msgs::RobotTrajectory(trajectory) ); 
+    }
     _plan.trajectory_ = trajectory;
     //_plan.planning_time_ = 0.1;
   
@@ -442,6 +451,77 @@ void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _n
   {
     end_effector_planning_frame_ = _name;
   }
+}
+
+
+moveit_msgs::RobotTrajectory YoubotReconstructionController::loadUpperArmTrajectory( std::string _filename )
+{
+  std::ifstream in(_filename, std::ifstream::in);
+  
+  double next_value;
+  
+  std::vector<std::string> link_names;
+  link_names.push_back("arm_link_2");
+  link_names.push_back("arm_link_3");
+  link_names.push_back("arm_link_4");
+  link_names.push_back("arm_link_5");
+  
+  trajectory_msgs::JointTrajectory traj;
+  trajectory_msgs::JointTrajectoryPoint point;
+  
+  traj.joint_names = link_names;
+  
+  while( in>>next_value )
+  {
+    if( point.positions.size()>=4 )
+    {
+      point.positions.clear();
+    }
+    point.positions.push_back(next_value);
+    if( point.positions.size()==3 )
+    {
+      traj.points.push_back(point);
+    }
+  }
+  if( point.positions.size()!=3 )
+  {
+    ROS_ERROR("YoubotReconstructionController::loadUpperArmTrajectory:: the trajectory file loaded did not contain the correct number of values, a point might be missing at the end. Continuing without it.");
+  }
+  
+  moveit_msgs::RobotTrajectory new_trajectory;
+  new_trajectory.joint_trajectory = traj;
+  return new_trajectory;
+}
+
+
+void YoubotReconstructionController::saveUpperArmTrajectoryPositions( std::string _filename, moveit_msgs::RobotTrajectory _trajectory )
+{
+  std::ofstream out(_filename, std::ofstream::trunc);
+  std::vector<std::string> link_names;
+  link_names.push_back("arm_link_2");
+  link_names.push_back("arm_link_3");
+  link_names.push_back("arm_link_4");
+  link_names.push_back("arm_link_5");
+  
+  std::vector<unsigned int> map;
+  for( unsigned int i=0; i<link_names.size(); i++ )
+  {
+    for( unsigned int m=0; m<_trajectory.joint_trajectory.joint_names.size(); m++ )
+    {
+      if( link_names[i]==_trajectory.joint_trajectory.joint_names[m] )
+      {
+	map.push_back(m);
+	break;
+      }
+    }
+  }
+  
+  BOOST_FOREACH( auto point, _trajectory.joint_trajectory.points )
+  {
+    out << point.positions[map[0]] <<" " << point.positions[map[1]] <<" " << point.positions[map[2]] <<" " << point.positions[map[3]] <<"\n";
+  }
+  
+  out.close();
 }
 
 void YoubotReconstructionController::initializeTF()

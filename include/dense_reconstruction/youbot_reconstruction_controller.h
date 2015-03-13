@@ -132,11 +132,18 @@ public:
   /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf */
   void initializeTF();
   
+  /** loads an upper arm trajectory form files saved with saveUpperArmTrajectoryPositions */
+  moveit_msgs::RobotTrajectory loadUpperArmTrajectory( std::string _filename );
+  
+  /** saves upper arm trajectory positions to file (links 2 through 5)*/
+  void saveUpperArmTrajectoryPositions( std::string _filename, moveit_msgs::RobotTrajectory _trajectory );
+  
 private:
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
   ActionClient base_trajectory_sender_;
+  boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations
