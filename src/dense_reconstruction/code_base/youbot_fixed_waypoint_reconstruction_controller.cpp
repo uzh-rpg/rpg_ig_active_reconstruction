@@ -18,7 +18,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <boost/foreach.hpp>
-#include "dense_reconstruction/youbot_reconstruction_controller.h"
+#include "dense_reconstruction/youbot_fixed_waypoint_reconstruction_controller.h"
 #include "utils/ros_eigen.h"
 #include <moveit/trajectory_processing/iterative_time_parameterization.h>
 #include <geometry_msgs/Pose2D.h>
@@ -28,7 +28,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 namespace dense_reconstruction
 {
 
-YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle* _n ):
+YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionController( ros::NodeHandle* _n ):
   ros_node_(_n),
   tf_listener_(*_n),
   base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
@@ -48,13 +48,13 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   scene_->startWorldGeometryMonitor();
   
   // try contacting action server
-  ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
+  ROS_INFO_STREAM("YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionController::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
   base_trajectory_sender_.waitForServer();
-  ROS_INFO_STREAM("YoubotReconstructionController::YoubotReconstructionController::Successfully contacted.");
+  ROS_INFO_STREAM("YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionController::Successfully contacted.");
   
-  ROS_INFO("YoubotReconstructionController::YoubotReconstructionController::Initializing tf structures...");
+  ROS_INFO("YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionController::Initializing tf structures...");
   initializeTF();
-  ROS_INFO("YoubotReconstructionController::YoubotReconstructionController:: tf structures Initialized.");
+  ROS_INFO("YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionController:: tf structures Initialized.");
   
   // block everything until complete tf tree is available: this doesn't help
   //tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(0.0) );
@@ -62,16 +62,21 @@ YoubotReconstructionController::YoubotReconstructionController( ros::NodeHandle*
   remode_commander_ = ros_node_->advertise<std_msgs::String>( remode_control_topic, 1 );
   remode_start_.data="SET_NEXT_FRAME_IS_REFERENCE";
   remode_stopandsmooth_.data="SMOOTH_AND_STOP_UPDATING";
+  
+  // base movement initialization
+  base_move_angle_ = 0.1*6.283185307; // [rad] one tenth of a circle
+  base_radial_speed_ = 0.1*6.283185307; // [rad/s]
+  base_movement_center_ = movements::Pose( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
 }
 
-bool YoubotReconstructionController::runSingleIteration()
+bool YoubotFixedWaypointReconstructionController::runSingleIteration()
 {
   ros::spinOnce();
   
   return planAndMove();
 }
 
-movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::Duration _max_wait_time )
+movements::Pose YoubotFixedWaypointReconstructionController::getEndEffectorPoseFromTF( ros::Duration _max_wait_time )
 {
   bool new_tf_available = tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(3.0) );
   
@@ -97,7 +102,7 @@ movements::Pose YoubotReconstructionController::getEndEffectorPoseFromTF( ros::D
   return movements::Pose( translation, rotation );
 }
 
-movements::Pose YoubotReconstructionController::getCurrentLinkPose( std::string _link )
+movements::Pose YoubotFixedWaypointReconstructionController::getCurrentLinkPose( std::string _link )
 {
   bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), ros::Duration(3.0) );
   
@@ -123,7 +128,7 @@ movements::Pose YoubotReconstructionController::getCurrentLinkPose( std::string 
   return movements::Pose( translation, rotation );
 }
 
-bool YoubotReconstructionController::makeScan(double _max_dropoff)
+bool YoubotFixedWaypointReconstructionController::makeScan(double _max_dropoff)
 {
   // only for the "fixed position scan":
   moveit::planning_interface::MoveGroup::Plan plan;
@@ -192,12 +197,25 @@ bool YoubotReconstructionController::makeScan(double _max_dropoff)
     return false;
 }
 
-bool YoubotReconstructionController::moveBaseCircularlyTo( Eigen::Vector2d _target_position, Eigen::Vector2d _center )
-{
+bool YoubotFixedWaypointReconstructionController::moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed )
+{return false;
+  movements::Pose base_pose = getCurrentLinkPose("base_footprint");
+  movements::Pose object_center( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
+  //movements::Pose object_center( base_pose.position+2*base_pose.position.normalized(), Eigen::Quaterniond() );
+  
+  // start position, end position, angular speed, movement direction
+  movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, _target_position.position, _radial_speed, movements::CircularGroundPath::SHORTEST );
+  
+  double dt = 0.25;
+  boost::shared_ptr<movements::CircularGroundPath> circles = boost::dynamic_pointer_cast< movements::CircularGroundPath >( circle_seg.operator->() );
+  double time_for_move = circles->totalAngle( _center )/_radial_speed;
+  movements::PoseVector waypoints = circle_seg.path( _center, 0, time_for_move, dt );
+  
+  bool base_successfully_moved = executeMovementsTrajectoryOnBase(waypoints,1);
   return false;
 }
 
-void YoubotReconstructionController::moveBaseTo( double _x, double _y, double _theta )
+void YoubotFixedWaypointReconstructionController::moveBaseTo( double _x, double _y, double _theta )
 {
   ros::Publisher commander = ros_node_->advertise<geometry_msgs::Pose2D>("/base_controller/position_command",1);
   geometry_msgs::Pose2D command;
@@ -207,7 +225,7 @@ void YoubotReconstructionController::moveBaseTo( double _x, double _y, double _t
   commander.publish(command);
 }
 
-bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( movements::PoseVector& _path, double _dt )
+bool YoubotFixedWaypointReconstructionController::executeMovementsTrajectoryOnBase( movements::PoseVector& _path, double _dt )
 {
   control_msgs::FollowJointTrajectoryGoal traj;
   
@@ -242,7 +260,7 @@ bool YoubotReconstructionController::executeMovementsTrajectoryOnBase( movements
     return false;
 }
 
-bool YoubotReconstructionController::executeMovementsPath( movements::PoseVector& _path, moveit_msgs::Constraints* _constraints, double _max_dropoff )
+bool YoubotFixedWaypointReconstructionController::executeMovementsPath( movements::PoseVector& _path, moveit_msgs::Constraints* _constraints, double _max_dropoff )
 {
   moveit::planning_interface::MoveGroup::Plan plan;
   bool successfully_planned = filteredPlanFromMovementsPath( _path, plan, _constraints, 10, _max_dropoff );
@@ -254,7 +272,7 @@ bool YoubotReconstructionController::executeMovementsPath( movements::PoseVector
   return false;
 }
 
-bool YoubotReconstructionController::executeMoveItPlan( moveit::planning_interface::MoveGroup::Plan& _plan )
+bool YoubotFixedWaypointReconstructionController::executeMoveItPlan( moveit::planning_interface::MoveGroup::Plan& _plan )
 {
   ros::AsyncSpinner spinner(1);  
   //scene_->unlockSceneRead();   
@@ -265,14 +283,14 @@ bool YoubotReconstructionController::executeMoveItPlan( moveit::planning_interfa
   return true;
 }
 
-bool YoubotReconstructionController::isCollisionFree( planning_scene_monitor::LockedPlanningSceneRO& _scene, robot_state::RobotState& _robot )
+bool YoubotFixedWaypointReconstructionController::isCollisionFree( planning_scene_monitor::LockedPlanningSceneRO& _scene, robot_state::RobotState& _robot )
 {
   bool colliding = _scene->isStateColliding( _robot );
     
   return !colliding;
 }
 
-bool YoubotReconstructionController::planFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts )
+bool YoubotFixedWaypointReconstructionController::planFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts )
 {
         
     /*geometry_msgs::Pose current_pose = robot_->getCurrentPose().pose;
@@ -364,7 +382,7 @@ bool YoubotReconstructionController::planFromMovementsPath( movements::PoseVecto
     return true;
 }
 
-bool YoubotReconstructionController::filteredPlanFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts, double _max_dropoff )
+bool YoubotFixedWaypointReconstructionController::filteredPlanFromMovementsPath( movements::PoseVector& _waypoints, moveit::planning_interface::MoveGroup::Plan& _plan, moveit_msgs::Constraints* _path_constraints, int _planning_attempts, double _max_dropoff )
 {
     if( _path_constraints!=nullptr )
     {
@@ -463,7 +481,7 @@ bool YoubotReconstructionController::filteredPlanFromMovementsPath( movements::P
     return true;
 }
 
-moveit_msgs::OrientationConstraint YoubotReconstructionController::getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight, double _x_axis_tolerance, double _y_axis_tolerance, double _z_axis_tolerance )
+moveit_msgs::OrientationConstraint YoubotFixedWaypointReconstructionController::getFixedEEFLinkOrientationConstraint( movements::Pose& _base_pose, int _weight, double _x_axis_tolerance, double _y_axis_tolerance, double _z_axis_tolerance )
 {
   moveit_msgs::OrientationConstraint eef_orientation_constraint;
   eef_orientation_constraint.header.frame_id = "base_footprint";
@@ -478,7 +496,7 @@ moveit_msgs::OrientationConstraint YoubotReconstructionController::getFixedEEFLi
 }
 
 
-void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _name )
+void YoubotFixedWaypointReconstructionController::setEndEffectorPlanningFrame( std::string _name )
 {
   if( robot_->setEndEffector(_name) )
   {
@@ -487,7 +505,7 @@ void YoubotReconstructionController::setEndEffectorPlanningFrame( std::string _n
 }
 
 
-moveit_msgs::RobotTrajectory YoubotReconstructionController::loadUpperArmTrajectory( std::string _filename )
+moveit_msgs::RobotTrajectory YoubotFixedWaypointReconstructionController::loadUpperArmTrajectory( std::string _filename )
 {
   std::ifstream in(_filename, std::ifstream::in);
   
@@ -528,7 +546,7 @@ moveit_msgs::RobotTrajectory YoubotReconstructionController::loadUpperArmTraject
   ROS_INFO_STREAM("Number of trajectory points extracted from file is: "<<traj.points.size() );
   if( point.positions.size()!=0 )
   {
-    ROS_ERROR("YoubotReconstructionController::loadUpperArmTrajectory:: the trajectory file loaded did not contain the correct number of values, a point might be missing at the end. Continuing without it.");
+    ROS_ERROR("YoubotFixedWaypointReconstructionController::loadUpperArmTrajectory:: the trajectory file loaded did not contain the correct number of values, a point might be missing at the end. Continuing without it.");
   }
   
   moveit_msgs::RobotTrajectory new_trajectory;
@@ -537,7 +555,7 @@ moveit_msgs::RobotTrajectory YoubotReconstructionController::loadUpperArmTraject
 }
 
 
-void YoubotReconstructionController::saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory )
+void YoubotFixedWaypointReconstructionController::saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory )
 {
   std::ofstream out(_filename, std::ofstream::trunc);
   
@@ -573,7 +591,7 @@ void YoubotReconstructionController::saveUpperArmTrajectoryPositions( std::strin
   out.close();
 }
 
-void YoubotReconstructionController::initializeTF()
+void YoubotFixedWaypointReconstructionController::initializeTF()
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
   ros::Time now = ros::Time::now();
@@ -634,7 +652,7 @@ void YoubotReconstructionController::initializeTF()
   return;
 }
 
-bool YoubotReconstructionController::planAndMove()
+bool YoubotFixedWaypointReconstructionController::planAndMove()
 {
   /*std::string end_effector_name;
   end_effector_name = robot_->getEndEffector();
@@ -665,10 +683,11 @@ bool YoubotReconstructionController::planAndMove()
     //movements::Pose object_center( base_pose.position+2*base_pose.position.normalized(), Eigen::Quaterniond() );
     
     // start position, end position, angular speed, movement direction
-    movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, base_pose.position, 0.1*6.283185307, movements::CircularGroundPath::COUNTER_CLOCKWISE );
+    movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, base_pose.position, base_radial_speed_, movements::CircularGroundPath::COUNTER_CLOCKWISE );
     
     double dt = 0.25;
-    movements::PoseVector waypoints = circle_seg.path( object_center, 0, 1.25, dt );
+    double move_time = base_move_angle_/base_radial_speed_;
+    movements::PoseVector waypoints = circle_seg.path( base_movement_center_, 0, 1.25, dt );
     
     bool base_successfully_moved = executeMovementsTrajectoryOnBase(waypoints,1);
     //while( !makeScan(0.1) ){ros::spinOnce();};

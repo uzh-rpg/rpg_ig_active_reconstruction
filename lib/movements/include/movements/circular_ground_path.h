@@ -50,6 +50,9 @@ public:
   /** directly returns a KinematicMovementDescription containing a CircularGroundPath movement, see constructor for description of the parameters */
   static KinematicMovementDescription create( movements::Pose _start_point, movements::Pose _target_point, double _angular_speed, MovementDirection _direction = SHORTEST );
   
+  /** returns the total angle to move from start to end position for a given center */
+  double totalAngle( movements::Pose& _center );
+  
   virtual std::string type();
   
   virtual RelativeMovement operator()( double _time );
@@ -74,6 +77,9 @@ public:
    */
   virtual movements::Pose applyToBasePose( movements::Pose const& _path_center );
   
+  /** calculates local 2d coordinates relative to the x/y coordinates of _center */
+  static Eigen::Vector2d localCoordinates( Eigen::Vector3d const& _center, Eigen::Vector2d global_coordinates );
+  
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   Eigen::Vector2d start_point_; // [m]
@@ -82,8 +88,6 @@ private:
   MovementDirection direction_;
   double time_; //[s]
   
-  /** calculates local 2d coordinates relative to the x/y coordinates of _center */
-  Eigen::Vector2d localCoordinates( Eigen::Vector3d const& _center, Eigen::Vector2d global_coordinates );
 };
 
 }

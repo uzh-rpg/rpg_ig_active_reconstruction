@@ -51,6 +51,50 @@ KinematicMovementDescription CircularGroundPath::create( movements::Pose _start_
   return KinematicMovementDescription( new CircularGroundPath( _start_point, _target_point, _angular_speed, _direction ) );
 }
 
+double CircularGroundPath::totalAngle( movements::Pose& _center )
+{
+  if( _center.position.x()==start_point_.x() && _center.position.y()==start_point_.y() ||
+      _center.position.x()==end_point_.x() && _center.position.y()==end_point_.y()
+  )
+  {
+    throw std::invalid_argument("CircularGroundPath::totalAngle:: Invalid argument: The path center provided has the same projection as either the start- or the endpoint of the circular ground path, which is not allowed.");
+  }
+  
+  Eigen::Vector2d center( _center.position.x(), _center.position.y() );
+  Eigen::Vector2d start_local = RelativePositionCalculator::localCoordinates( _center.position, start_point_ );
+  Eigen::Vector2d end_local = RelativePositionCalculator::localCoordinates( _center.position, end_point_ );
+  
+  double phi_start_local = acos(start_local.x()/start_local.norm());
+  if( start_local.y()<0 )
+    phi_start_local = 2*M_PI - phi_start_local;
+  double phi_end_local = acos(end_local.x()/end_local.norm());
+  if( end_local.y()<0 )
+    phi_end_local = 2*M_PI - phi_end_local;
+  
+  MovementDirection direction_to_choose = direction_;
+  
+  double phi_end_localrot = angles::normalize_angle_positive( phi_end_local-phi_start_local );
+  if( direction_==SHORTEST )
+  {
+    if( phi_end_localrot > M_PI )
+      direction_to_choose = CLOCKWISE;
+    else
+      direction_to_choose = COUNTER_CLOCKWISE;
+  }
+  double total_angle_to_move;
+  if( direction_to_choose == COUNTER_CLOCKWISE )
+  {
+    if( start_point_==end_point_ )
+      total_angle_to_move = 2*M_PI;
+    else
+      total_angle_to_move = phi_end_localrot;
+  }
+  else // CLOCKWISE
+    total_angle_to_move = 2*M_PI - phi_end_localrot;
+  
+  return total_angle_to_move;
+}
+
 std::string CircularGroundPath::type()
 {
   return "CircularGroundPath";

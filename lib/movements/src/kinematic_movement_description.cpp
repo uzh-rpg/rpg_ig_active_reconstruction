@@ -37,9 +37,14 @@ RelativeMovement KinematicMovementDescription::operator()( double _time )
   return (*enwrapped_kinematic_movement_description_)(_time);
 }
 
-boost::shared_ptr<KinematicMovementDescription::KinematicMovementDescriptionInstance> KinematicMovementDescription::operator*()
+boost::shared_ptr<KinematicMovementDescription::KinematicMovementDescriptionInstance> KinematicMovementDescription::operator->()
 {
   return enwrapped_kinematic_movement_description_;
+}
+
+KinematicMovementDescription::KinematicMovementDescriptionInstance& KinematicMovementDescription::operator*()
+{
+  return *enwrapped_kinematic_movement_description_;
 }
 
 std::vector<RelativeMovement> KinematicMovementDescription::relativePath( double _start_time, double _end_time, double _step_size )

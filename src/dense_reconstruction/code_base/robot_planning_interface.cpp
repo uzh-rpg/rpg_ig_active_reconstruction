@@ -25,4 +25,9 @@ RobotPlanningInterface::RobotPlanningInterface()
   
 }
 
+boost::shared_ptr<RobotPlanningInterface::PlanningSpaceInitializationInfo::RobotSpaceInfo> RobotPlanningInterface::PlanningSpaceInitializationInfo::getSpecifics()
+{
+  return robot_specific_info_;
+}
+
 }

@@ -15,7 +15,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
  
-#include "dense_reconstruction/youbot_reconstruction_controller.h"
+#include "dense_reconstruction/youbot_planning.h"
 
 #include <random>
 
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   ros::NodeHandle n("youbot_reconstruction_controller");
   
     
-  dense_reconstruction::YoubotReconstructionController calibrator(&n);
+  dense_reconstruction::YoubotPlanner calibrator(&n);
   
   
   ros::Rate rate(0.2);

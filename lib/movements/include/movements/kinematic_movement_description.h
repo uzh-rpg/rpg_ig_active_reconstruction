@@ -41,7 +41,10 @@ public:
   RelativeMovement operator()( double _time );
   
   /** returns a pointer to the internally hold KinematicMovementDescriptionInstance */
-  boost::shared_ptr<KinematicMovementDescriptionInstance> operator*();
+  boost::shared_ptr<KinematicMovementDescriptionInstance> operator->();
+  
+  /** returns a reference to the internally hold KinematicMovementDescriptionInstance */
+  KinematicMovementDescriptionInstance& operator*();
   
     
   /** this creates a vector filled with relative movements generated from the kinematic movement description, where the first pose in the vector equals the relative movement generated for time _start_time and the last relative movement the relative movement generated at time t_last, where t_last is the largest time step retrieved by adding _step_size to _start_time that is less or equal _end_time

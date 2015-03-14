@@ -14,20 +14,27 @@ You should have received a copy of the GNU Lesser General Public License
 along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-#include <string>
+ 
+#include "dense_reconstruction/youbot_fixed_waypoint_reconstruction_controller.h"
 
-namespace dense_reconstruction
-{
+#include <random>
 
-/** interface for robot specific information that is associated with a given view */
-class ViewInfo
+using namespace std;
+
+int main(int argc, char **argv)
 {
-public:
-  ViewInfo(){};
+  ros::init(argc, argv, "youbot_reconstruction_controller");
+  ros::NodeHandle n("youbot_reconstruction_controller");
   
-  /** returns the type of the implementing class */
-  virtual std::string type()=0;
-};
-
+    
+  dense_reconstruction::YoubotFixedWaypointReconstructionController calibrator(&n);
+  
+  
+  ros::Rate rate(0.2);
+  
+  while ( calibrator.runSingleIteration() && n.ok() )
+  {
+  }
+  
+  return 0;
 } 

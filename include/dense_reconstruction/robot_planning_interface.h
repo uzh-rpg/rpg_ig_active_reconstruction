@@ -29,18 +29,34 @@ class RobotPlanningInterface
 {
 public:
   class MovementCost;
+  class PlanningSpaceInitializationInfo;
   
   RobotPlanningInterface();
   
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
    */
-  std::string initializePlanningFrame()=0;
+  virtual std::string initializePlanningFrame()=0;
+  
+  /** initializes the robot's planning space
+   * @param _info information the robot needs to setup its planning space
+   */
+  virtual bool initializePlanningSpace( PlanningSpaceInitializationInfo& _info )=0;
+  
+  /** returns the current view */
+  virtual View getCurrentView()=0;
   
   /** returns the view space that is available for planning (the idea is that it consists exclusively of poses that are considered to be reachable aforehand by the robot, considering its restraints
    * @param _space pointer to the ViewSpace object that should be filled
    * @return false if it failed
    */
-  bool getPlanningSpace( ViewSpace* _space )=0;
+  virtual bool getPlanningSpace( ViewSpace* _space )=0;
+  
+  /** returns a sub space of the view space with all view points available within a certain range _distance of _view
+   * @param _space pointer to the ViewSpace object that should be filled
+   * @param _view view from which to take the distance
+   * @return false if it failed
+   */
+  virtual bool getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance )=0;
   
   /** using an enum in order to possibly return more information than just true/false
    */
@@ -49,19 +65,19 @@ public:
   /** executes the actions needed to retrieve new data, e.g. scanning movements until remode converges
    * @return information about what happened (data received, receival failed )
    */
-  ReceiveInfo retrieveData()=0;
+  virtual ReceiveInfo retrieveData()=0;
   
   /** returns the cost to move from the current view to the indicated view
    * @param _target_view the next view
    * @return cost to move to that view
    */
-  MovementCost calculateCost( View& _target_view )=0;
+  virtual MovementCost calculateCost( View& _target_view )=0;
   
   /** tells the robot to get the camera to a new view
    * @param _target_view where to move to
    * @return false if the operation failed
    */
-  bool moveTo( View& _target_view )=0;
+  virtual bool moveTo( View& _target_view )=0;
   
 private:
 };
@@ -71,6 +87,23 @@ class RobotPlanningInterface::MovementCost
 {
 public:
   double cost; // keeping it simple
+};
+
+class RobotPlanningInterface::PlanningSpaceInitializationInfo
+{
+public:
+  class RobotSpaceInfo;
+  
+  boost::shared_ptr<RobotSpaceInfo> getSpecifics();
+private:
+  boost::shared_ptr<RobotSpaceInfo> robot_specific_info_;
+};
+
+class RobotPlanningInterface::PlanningSpaceInitializationInfo::RobotSpaceInfo
+{
+public:
+  virtual std::string type()=0;
+  
 };
 
 }

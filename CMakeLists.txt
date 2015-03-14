@@ -51,21 +51,47 @@ include_directories(include
   ${movements_INCLUDE_DIRS}
 )
 
-
-add_executable(youbot_control
-  src/dense_reconstruction/ros_nodes/develop.cpp
-  src/dense_reconstruction/code_base/youbot_reconstruction_controller.cpp
-  src/utils/ros_eigen.cpp
-  ${movement_sources}
+set(DENSE_RECONSTRUCTION_BASE_SRC
+  src/dense_reconstruction/code_base/robot_planning_interface.cpp
+  src/dense_reconstruction/code_base/view.cpp
+  src/dense_reconstruction/code_base/view_planner.cpp
+  src/dense_reconstruction/code_base/view_space.cpp
 )
 
-target_link_libraries(youbot_control
+
+add_executable(develop
+  src/dense_reconstruction/ros_nodes/develop.cpp
+  src/dense_reconstruction/code_base/youbot_planning.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+)
+
+target_link_libraries(develop
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   movements
 )
 
-add_dependencies(youbot_control
+add_dependencies(develop
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(youbot_fixed_waypoint_reconstruction
+  src/dense_reconstruction/ros_nodes/youbot_fixed_waypoint_reconstruction_node.cpp
+  src/dense_reconstruction/code_base/youbot_fixed_waypoint_reconstruction_controller.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+)
+
+target_link_libraries(youbot_fixed_waypoint_reconstruction
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(youbot_fixed_waypoint_reconstruction
  ${catkin_EXPORTED_TARGETS}
 )
 
