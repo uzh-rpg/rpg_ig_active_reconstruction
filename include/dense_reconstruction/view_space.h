@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "dense_reconstruction/view.h"
+#include <Eigen/StdVector>
 
 namespace dense_reconstruction
 {
@@ -29,7 +30,19 @@ class ViewSpace
 public:
   ViewSpace();
   
+  /** returns all view points in the view space as a vector 
+   */
+  std::vector<View, Eigen::aligned_allocator<View> >* getViewSpace();
   
+  /** returns all views within a certain range (distance) of another view
+   * @param _reference_view view from which the distances are calculated
+   * @param _distance the distance (<=)
+   * @param _sub_space vector to fill with the results
+   */
+  void getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space );
+  
+private:
+  std::vector<View, Eigen::aligned_allocator<View> > view_space_;
 };
 
 }

@@ -17,7 +17,6 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <movements/core>
-#include "dense_reconstruction/view_info.h"
 
 namespace dense_reconstruction
 {
@@ -26,6 +25,8 @@ namespace dense_reconstruction
 class View
 {
 public:
+  class ViewInfo;
+  
   View();
   View( std::string _source_frame );
   
@@ -44,16 +45,26 @@ public:
   bool& bad();
   
   /** get the associated data */
-  boost::shared_ptr<dense_reconstruction::ViewInfo> associatedData();
+  boost::shared_ptr<ViewInfo> associatedData();
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   movements::Pose pose_; /// the pose...
   std::string source_frame_; /// pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a poit in the pose frame into one in the source frame
-  boost::shared_ptr<dense_reconstruction::ViewInfo> associated_data_; /// interface that gives possibility for a robot to store robot specific data that is associated with the pose, e.g. for the Youbot some IK calculations can be made beforehand but the robot needs to know which data implements a given view
+  boost::shared_ptr<ViewInfo> associated_data_; /// interface that gives possibility for a robot to store robot specific data that is associated with the pose, e.g. for the Youbot some IK calculations can be made beforehand but the robot needs to know which data implements a given view
   bool is_reachable_; /// whether the view is reachable or not
   bool is_bad_; /// marks a bad view for whatever reason (e.g. data reception failed here or the like)
   unsigned int visited_; /// how many times this view has been visited
+};
+
+/** interface for robot specific information that is associated with a given view */
+class View::ViewInfo
+{
+public:
+  ViewInfo(){};
+  
+  /** returns the type of the implementing class */
+  virtual std::string type()=0;
 };
 
 } 

@@ -56,7 +56,7 @@ bool& View::bad()
   return is_bad_;
 }
 
-boost::shared_ptr<dense_reconstruction::ViewInfo> View::associatedData()
+boost::shared_ptr<dense_reconstruction::View::ViewInfo> View::associatedData()
 {
   return associated_data_;
 }

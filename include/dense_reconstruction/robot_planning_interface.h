@@ -56,7 +56,7 @@ public:
    * @param _view view from which to take the distance
    * @return false if it failed
    */
-  virtual bool getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance )=0;
+  //virtual bool getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance )=0;
   
   /** using an enum in order to possibly return more information than just true/false
    */

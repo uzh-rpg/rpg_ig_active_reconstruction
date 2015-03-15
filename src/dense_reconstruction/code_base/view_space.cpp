@@ -15,6 +15,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "dense_reconstruction/view_space.h"
+#include "boost/foreach.hpp"
 
 namespace dense_reconstruction
 {
@@ -22,6 +23,23 @@ namespace dense_reconstruction
 ViewSpace::ViewSpace()
 {
   
+}
+
+std::vector<View, Eigen::aligned_allocator<View> >* ViewSpace::getViewSpace()
+{
+  return &view_space_;
+}
+
+void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space )
+{
+  BOOST_FOREACH( auto view, view_space_ )
+  {
+    Eigen::Vector3d dist_vec = view.pose().position - _reference_view.pose().position;
+    if( dist_vec.norm()<=_distance )
+    {
+      _sub_space.push_back(view);
+    }
+  }
 }
 
 }

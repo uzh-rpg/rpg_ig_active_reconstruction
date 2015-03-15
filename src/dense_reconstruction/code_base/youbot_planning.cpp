@@ -16,6 +16,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 
 #include <string>
+#include <sstream>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <boost/foreach.hpp>
 #include "dense_reconstruction/youbot_planning.h"
@@ -33,6 +34,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n ):
   tf_listener_(*_n),
   base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
 {
+  data_folder_ = "/home/stewess/Documents/dense_reconstruction_precalculations/";
   planning_group_ = "arm";
   std::string remode_control_topic = "/remode/command";
   
@@ -98,10 +100,10 @@ bool YoubotPlanner::getPlanningSpace( ViewSpace* _space )
   return false;
 }
 
-bool YoubotPlanner::getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance )
-{///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*bool YoubotPlanner::getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance )
+{
   return false;
-}
+}*/
 
 RobotPlanningInterface::ReceiveInfo YoubotPlanner::retrieveData()
 {
@@ -119,6 +121,242 @@ RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target
 bool YoubotPlanner::moveTo( View& _target_view )
 {//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   return false;
+}
+
+void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
+{
+  if( loadArmSpaceDescriptionsFromFile(_radius,_min_view_distance,_view_resolution,_joint_space,_joint_trajectories) )
+    return;
+  
+  // probably not the most effective way for calculating but fast to program
+  
+  // get arm grid
+  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_value_grid;
+  getArmGrid( _view_resolution, joint_value_grid );
+    
+  // filter out grid points for which no scanning is possible, get trajectories for those points for which scanning is possible
+  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > possible_joint_values;
+  std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > trajectories;
+    
+  int nr_of_planning_attempts = 100;
+  
+  BOOST_FOREACH( auto joint_config, joint_value_grid )
+  {
+    auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
+    if( calculateScanTrajectory(joint_config,_radius,*trajectory,100) )
+    {
+      possible_joint_values.push_back(joint_config);
+      trajectories.push_back(trajectory);
+    }
+  }
+  
+  // filter out by distance
+  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > valid_joint_values;
+  std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > final_trajectories;
+  
+  for( unsigned int i=0; i<valid_joint_values.size(); i++ )
+  {
+    bool is_not_too_close = true;
+    /////////////////////////////////////////////////
+  }
+  
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // else... calculate it...
+}
+
+bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
+{
+  std::string file_name;
+  std::stringstream file_name_str;
+  
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_radius<<"_"<<_min_view_distance<<"_"<<_view_resolution<<".youbotarm";
+  file_name=file_name_str.str();
+  
+  std::ifstream in(file_name, std::ifstream::in);
+  
+  int nr_of_points;
+  if( !in>>nr_of_points )
+    return false;
+  
+  for( unsigned int i=0; i<nr_of_points ; i++ )
+  {
+    Eigen::Vector3d joint_angles;
+    
+    bool successfully_read=true;
+    
+    successfully_read = successfully_read && ( in>>joint_angles(0) );
+    successfully_read = successfully_read && ( in>>joint_angles(1) );
+    successfully_read = successfully_read && ( in>>joint_angles(2) );
+    
+    int nr_of_traj_points;
+    successfully_read = successfully_read && ( in>>nr_of_traj_points );
+    
+    _joint_space.push_back(joint_angles);
+    
+    auto trajectory = boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
+    
+    for( unsigned int t=0; t<nr_of_traj_points; t++ )
+    {
+      Eigen::Vector3d traj_point;
+    
+      successfully_read = successfully_read && ( in>>traj_point(0) );
+      successfully_read = successfully_read && ( in>>traj_point(1) );
+      successfully_read = successfully_read && ( in>>traj_point(2) );
+      
+      (*trajectory).push_back( traj_point );
+    }
+    
+    if( !successfully_read )
+    {
+      _joint_space.clear();
+      _joint_trajectories.clear();
+      return false;
+    }
+    _joint_trajectories.push_back( trajectory );
+    
+  }
+  
+  in.close();
+  
+  return true;
+}
+
+bool YoubotPlanner::saveArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
+{
+  std::string file_name;
+  std::stringstream file_name_str;
+  
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_radius<<"_"<<_min_view_distance<<"_"<<_view_resolution<<".youbotarm";
+  file_name=file_name_str.str();
+  
+  std::ofstream out(file_name, std::ofstream::trunc);
+  
+  
+  int nr_of_points = _joint_space.size();
+  if( !out<<nr_of_points )
+    return false;
+  if( _joint_trajectories.size()!=nr_of_points )
+    return false;
+  
+  for( unsigned int i=0; i<nr_of_points ; i++ )
+  {
+    Eigen::Vector3d joint_angles = _joint_space[i];
+    
+    bool successfully_wrote=true;
+    
+    successfully_wrote = successfully_wrote && ( out<<joint_angles(0) );
+    successfully_wrote = successfully_wrote && ( out<<joint_angles(1) );
+    successfully_wrote = successfully_wrote && ( out<<joint_angles(2) );
+    
+    int nr_of_traj_points = (*_joint_trajectories[i]).size();
+    successfully_wrote = successfully_wrote && ( out<<nr_of_traj_points );
+        
+    auto trajectory = _joint_trajectories[i];
+    
+    for( unsigned int t=0; t<nr_of_traj_points; t++ )
+    {
+      Eigen::Vector3d traj_point = (*trajectory)[t];
+    
+      successfully_wrote = successfully_wrote && ( out<<traj_point(0) );
+      successfully_wrote = successfully_wrote && ( out<<traj_point(1) );
+      successfully_wrote = successfully_wrote && ( out<<traj_point(2) );
+    }
+    
+    if( !successfully_wrote )
+    {
+      return false;
+    }
+    
+  }
+  
+  out.close();
+}
+
+void YoubotPlanner::getArmGrid( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
+{
+  if( loadArmGridFromFile(_resolution,_joint_values) )
+    return;
+  calculateArmGrid( _resolution,_resolution,_joint_values );
+  saveArmGridToFile( _resolution,_joint_values );
+}
+
+bool YoubotPlanner::loadArmGridFromFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
+{
+  std::string file_name;
+  std::stringstream file_name_str;
+  
+  file_name_str << data_folder_<<"YoubotArmGrid_Res"<<_resolution<<".youbotarm";
+  file_name=file_name_str.str();
+  
+  std::ifstream in(file_name, std::ifstream::in);
+  
+  bool read_successfully = true;
+  
+  int nr_of_points;
+  read_successfully = read_successfully && (in>>nr_of_points);
+  
+  for( unsigned int i=0; i<nr_of_points; i++ )
+  {
+    Eigen::Vector3d joint_value_point;
+    
+    read_successfully = read_successfully && (in>>joint_value_point(0));
+    read_successfully = read_successfully && (in>>joint_value_point(1));
+    read_successfully = read_successfully && (in>>joint_value_point(2));
+    
+    if(!read_successfully)
+    {
+      _joint_values.clear();
+      return false;
+    }
+    _joint_values.push_back(joint_value_point);
+  }
+  
+  in.close();
+  return true;
+}
+
+bool YoubotPlanner::saveArmGridToFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
+{
+  std::string file_name;
+  std::stringstream file_name_str;
+  
+  file_name_str << data_folder_<<"YoubotArmGrid_Res"<<_resolution<<".youbotarm";
+  file_name=file_name_str.str();
+  
+  std::ofstream out(file_name, std::ofstream::trunc);
+  
+  if( !(out<<_joint_values.size()) )
+    return;
+  
+  BOOST_FOREACH( auto value, _joint_values )
+  {
+    if( !(out<<value(0)<<" "<<value(1)<<" "<<value(2)<<"\n") )
+    {
+      return false;
+    }
+  }
+  out.close();
+  
+  
+  std::string file_name2;
+  std::stringstream file_name2_str;
+  
+  file_name2_str << data_folder_<<"YoubotArmGrid_Res"<<_resolution<<".youbotarm";
+  file_name2=file_name2_str.str();
+  
+  std::ofstream out(file_name2, std::ofstream::trunc);
+  
+  if( !(out<<_joint_values.size()) )
+    return;
+  
+  BOOST_FOREACH( auto value, _joint_values )
+  {
+    if( !(out<<value(0)<<" "<<value(1)<<" "<<value(2)<<"\n") )
+    {
+      return false;
+    }
+  }
+  out.close();
 }
 
 void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >* _grid )
@@ -1015,6 +1253,16 @@ bool YoubotPlanner::planAndMove()
 std::string YoubotPlanner::SpaceInfo::type()
 {
   return "YoubotPlanningSpaceInfo";
+}
+
+std::string YoubotPlanner::ViewInfo::type()
+{
+  return "YoubotViewPointInfo";
+}
+
+boost::shared_ptr<YoubotPlanner::ViewPointData> YoubotPlanner::ViewInfo::getViewPointData()
+{
+  return view_point_;
 }
 
 }

@@ -50,9 +50,11 @@ class YoubotPlanner: public RobotPlanningInterface
 {
 public:
   class SpaceInfo;
+  class ViewInfo;
+  class ViewPointData; /// view point descriptions for the youbot
   
   /// constructor
-  /** Initializes the autonomous hand eye calibrator by reading all parameters from the parameter server
+  /** initializes the youbot planner, moves the robot to the initial pose
    * @param _n handle of the node the calibrator runs in
    * @throws ROS_FATAL if not all necessary parameters are given and shuts down the node
    */
@@ -81,7 +83,7 @@ public:
    * @param _view view from which to take the distance
    * @return false if it failed
    */
-  virtual bool getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance );
+  //virtual bool getSubPlanningSpace( ViewSpace* _space, View& _view, double _distance );
   
   /** executes the actions needed to retrieve new data, e.g. scanning movements until remode converges
    * @return information about what happened (data received, receival failed )
@@ -99,6 +101,51 @@ public:
    * @return false if the operation failed
    */
   virtual bool moveTo( View& _target_view );
+  
+  /**
+   * initializes the vectors with joint values for the arm and corresponding trajectories
+   * It is attempted to load the parameter combination from file, if not the space is recalculated (time-consuming!) and then saved
+   * @param _radius radius of the scanning trajectory (max radius for spirals)
+   * @param _min_view_distance minimal distance between views in the returned space
+   * @param _view_resolution grid resolution in x- and z- axis for the point grid on which the final subset of view based on _min_view_distance is calculated [points/m] (60)
+   * @param _joint_space_ joint space values for joints 2,3 and 4
+   * @param _joint_trajectories trajectories associated with the above joint values, only defined on joints 2,3 and 4 yet though
+   */
+  void getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  
+  /**
+   * attempts to load the arm space descriptions (see getArmSpaceDescriptions(...)) from file, returns true if successful
+   */
+  bool loadArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  
+  /**
+   * attempts to save the arm space descriptions to file, using the default filename and location (data_folder_ - make sure it's valid, it's existence is not tested)
+   */
+  bool saveArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  
+  /**
+   * loads an arm grid corresponding to the given parameters (tries to load it from file: If this fails, a new grid will be generated and then saved (make sure the data_folder_ exists)
+   * @param _resolution resolution in both dimensions
+   * @param _joint_values vector that will be filled with the calculated values
+   * @param _coordinates of the points reached by the _joint_values values in 2d arm space
+   */
+  void getArmGrid( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates );
+  
+  /**
+   * attempts to load an arm grid with the given resolution from file, returns true if successful
+   * @param _resolution resolution in both dimensions
+   * @param _joint_values vector that will be filled with the calculated values
+   * @param _coordinates of the points reached by the _joint_values values in 2d arm space
+   */
+  bool loadArmGridFromFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates );
+  
+  /**
+   * attempts to save an arm grid with the given resolution to file, returns true if successful
+   * @param _resolution resolution in both dimensions
+   * @param _joint_values vector that will be filled with the calculated values
+   * @param _coordinates of the points reached by the _joint_values values in 2d arm space
+   */
+  bool saveArmGridToFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates );
   
   /**
    * calculate arm grid points based on given resolution
@@ -227,11 +274,15 @@ public:
   void saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory );
   
 private:
+  
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
+  
+  std::string data_folder_;
+  std::vector<ViewPointData, Eigen::aligned_allocator<ViewPointData> > view_point_data_;
   
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps
   double base_radial_speed_; // base speed to move [rad/s]
@@ -274,6 +325,31 @@ public:
   virtual std::string type();
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+class YoubotPlanner::ViewInfo: public View::ViewInfo
+{
+public:
+  virtual std::string type();
+  
+  boost::shared_ptr<ViewPointData> getViewPointData();
+  
+private:
+  boost::shared_ptr<ViewPointData> view_point_;
+};
+
+class YoubotPlanner::ViewPointData
+{
+public:
+  movements::Pose pose_; /// pose of view point relative to planning frame
+  
+  Eigen::Vector3d base_pos_; /// position of base (x,y,theta)
+  double joint_1_angle_; /// angle of joint 1
+  double joint_2_angle_;
+  double joint_3_angle_;
+  double joint_4_angle_;
+  boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> scan_trajectory_; // precalculated trajectory to scan at this view point
+  double joint_5_angle_;
 };
 
 }
