@@ -141,9 +141,9 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
   
   // distances relative to arm base
   double z_min = -0.14+ground_safety_distance;
-  double z_max = 0.437;
-  double y_min = -0.29; //actually x, since y is normal to the movement plane of links 2-4 in the system of link 2
-  double y_max = 0.29;
+  double z_max = 0.518;
+  double y_min = -0.55; //actually x, since y is normal to the movement plane of links 2-4 in the system of link 2
+  double y_max = 0.55;
   
   double z_step = 1/_z_res; // [m]
   double y_step = 1/_y_res; // [m]
@@ -256,8 +256,8 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
 	  if( _grid!=nullptr ) // output the relative values as well
 	  {
 	    Eigen::Vector2d grid_coordinates;
-	    grid_coordinates(0) = z;
-	    grid_coordinates(1) = y;
+	    grid_coordinates(0) = y;
+	    grid_coordinates(1) = z;
 	    _grid->push_back(grid_coordinates);
 	  }
 	  
@@ -276,6 +276,113 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
   
   ROS_INFO_STREAM("Total calculations executed: "<<total_calculations);
   ROS_INFO_STREAM("Succeeded calculations: "<<success_count);
+}
+
+bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts )
+{
+  // constructing moveit robot state
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState robot_state = current_scene->getCurrentState();
+  robot_state.setVariablePosition( "arm_joint_2", _joint_values(0) );
+  robot_state.setVariablePosition( "arm_joint_3", _joint_values(1) );
+  robot_state.setVariablePosition( "arm_joint_4", _joint_values(2) );
+  
+  //movements::Pose base_pose = linkPoseInRobotState("arm_link_5",robot_state);
+  movements::Pose link_4_pose = linkPoseInRobotState("arm_link_4",robot_state);
+  
+  // adius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
+  movements::KinMove scan = movements::InOutSpiral::create( link_4_pose.orientation, _radius, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
+  //start time, end time, time step size
+  movements::PoseVector m_waypoints = scan.path( link_4_pose, 0.5, 3.5, 0.02 );
+  
+  double max_dropoff=0.2;
+  
+  bool successfully_planned = filteredPlanFromMovementsPathForRobotState( m_waypoints, "arm_link_4", robot_state, _joint_trajectory, 1000, max_dropoff );
+  
+  return successfully_planned;
+}
+
+movements::Pose YoubotPlanner::linkPoseInRobotState( std::string _name, robot_state::RobotState& _state )
+{
+  Eigen::Affine3d link_pose = _state.getGlobalLinkTransform(_name);
+  Eigen::Quaterniond link_orientation( link_pose.rotation() );
+  Eigen::Vector3d link_translation( link_pose.translation() );
+  
+  return movements::Pose( link_translation, link_orientation );
+}
+
+bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts, double _max_dropoff )
+{
+  robot_state::RobotState state(_state);
+  
+  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > waypoints;
+  std::vector< robot_state::RobotStatePtr> trajectory;
+  
+  //construct waypoints vector
+  BOOST_FOREACH( auto pose, _waypoints )
+  {
+    geometry_msgs::Pose geo_pose = movements::toROS(pose);
+    Eigen::Affine3d affine_pose;
+    affine_pose.matrix() << st_is::transformationMatrix( geo_pose ),0,0,0,1;
+    waypoints.push_back(affine_pose);
+  }
+  double success_ratio = 0;
+  int count=0;
+  int dropped_points = 0;
+  int passed_points = _waypoints.size();
+  
+  
+  while( success_ratio!=1 && ros_node_->ok() )
+  {
+    count++;
+    success_ratio = state.computeCartesianPath( state.getJointModelGroup("arm"), trajectory, state.getLinkModel(_link_name), waypoints, true, 0.1, 0 );
+    
+    if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
+    {
+      dropped_points++;
+      
+      if( dropped_points==passed_points || _max_dropoff<=0 )
+      {
+	return false;  // too many dropped points
+      }
+      else if( _max_dropoff<1 )
+      {
+	if( (double)dropped_points/passed_points > _max_dropoff )
+	{
+	  return false; // too many dropped points
+	}
+      }
+      else
+      {
+	if( dropped_points > _max_dropoff )
+	{
+	  return false; // too many dropped points
+	}
+      }
+      
+      int valid_points = trajectory.size(); // -> also the index of the point which will be dropped
+      count = 0;
+      // drop point for which calculation failed
+      for( unsigned int i=valid_points; i<waypoints.size()-1; i++ )
+      {
+	waypoints[i]=waypoints[i+1]; // shift all later points one position forward
+      }
+      waypoints.resize( waypoints.size()-1 ); // drop last
+    }
+    
+  }
+  // success!
+  // fill output joint value path
+  BOOST_FOREACH( auto robot_state, trajectory )
+  {
+    Eigen::Vector3d joint_values;
+    joint_values(0) = robot_state->getVariablePosition("arm_joint_2");
+    joint_values(1) = robot_state->getVariablePosition("arm_joint_3");
+    joint_values(2) = robot_state->getVariablePosition("arm_joint_4");
+    _joint_values.push_back(joint_values);
+  }
+  
+  return true; 
 }
 
 bool YoubotPlanner::runSingleIteration()

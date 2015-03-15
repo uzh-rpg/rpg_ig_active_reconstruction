@@ -32,7 +32,7 @@ int main(int argc, char **argv)
   
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > grid;
-  calibrator.calculateArmGrid( 50, 50, joint_values, &grid );
+  calibrator.calculateArmGrid( 60, 60, joint_values, &grid );
   
   std::ofstream out("/home/stewess/Documents/youbot_arm_grid_50pts_per_m.txt", std::ofstream::trunc);
   BOOST_FOREACH( auto point, grid )

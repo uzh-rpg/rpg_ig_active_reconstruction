@@ -110,6 +110,32 @@ public:
    */
   void calculateArmGrid( double _y_res, double _z_res, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >* _grid=nullptr );
   
+  /**
+   * attempts to calculate a joint trajectory for a given arm joint configuration, returns true if a trajectory was successfully calculated
+   * @param _joint_values the arm joint configuration (joint_2,joint_3,joint_4)
+   * @param _radius max radius of the spiral created
+   * @param _joint_trajectory vector with the joint values that make up the trajectory (joint 2, joint 3, joint 4)
+   * @param _planning_attempts max number of planning attempts before fail is returned
+   */
+  bool calculateScanTrajectory( Eigen::Vector3d _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts=10 );
+  
+  /**
+   * returns the pose of a link _link_name in robot state _state, in the planning frame
+   */
+  movements::Pose linkPoseInRobotState( std::string _name, robot_state::RobotState& _state );
+  
+  
+  /** Calls computeCartesianPath(...) for a given robot state _state to build a moveit plan for the movements path. The movements path must be for the link _link_name. If planning fails for _planning_attempts times, the function tries to localize path points that are a problem and removes them. The maximal number or percentage of points that can be removed before the function returns failure can be specified in _max_dropoff: currently only works if the resolution (max distance between points) of the path passed is less than eef_step used in the cartesian path calculation inside the function (currently 0.1m)
+   * @param _waypoints path for the link
+   * @param _link_name name of the link for which the path is planned
+   * @param _state a robot state
+   * @param _joint_values returned path (values for joints 2,3 and 4)
+   * @param _planning_attempts number of planning attempts to be taken if planning fails before giving up
+   * @param _max_dropoff If less than 1: Represents the percentage of the maximal number of points that may be dropped to find a valid cartesian path, if equal or higher than 1 it represents the absolute number of points that may be dropped, if _max_dropoff<=0 no filter stage is run
+   * @return true if plan could be calculated, false if not
+   */
+  bool filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts=3, double _max_dropoff = 0.2 );
+  
   /// runs one step of the autonomous calibration process
   /** The method iterates through the joint space and estimates the hand-eye transformation along the way.
   * Based on the hand-eye transformation it also estimates the position of the calibration target, e.g.
