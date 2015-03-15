@@ -121,6 +121,163 @@ bool YoubotPlanner::moveTo( View& _target_view )
   return false;
 }
 
+void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >* _grid )
+{
+  if( _y_res<=0 || _z_res<=0 )
+  {
+    throw std::invalid_argument("YoubotPlanner::calculateArmGrid:: Called with negative or zero resolution which is not permitted.");
+  }
+  
+  /* from youbot specifications:
+   * 
+   * height of link 2 over ground: 0.140m (base height) + 0.147m (height of link2 relative to arm base) = 0.287m
+   * max stretch from link 2 to link 5: 0.518m (arm base to link5) - 0.147m (link2 height) = 0.371m
+   * max stretch to link5: 0.518m
+   * max stretch to link4: 0.437m
+   * max stretch from link 2 to link 4: 0.437 - 0.147 = 0.29m
+   * 
+   */
+  double ground_safety_distance = 0.04; //[m]
+  
+  // distances relative to arm base
+  double z_min = -0.14+ground_safety_distance;
+  double z_max = 0.437;
+  double y_min = -0.29; //actually x, since y is normal to the movement plane of links 2-4 in the system of link 2
+  double y_max = 0.29;
+  
+  double z_step = 1/_z_res; // [m]
+  double y_step = 1/_y_res; // [m]
+  
+  // constructing moveit robot state
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState robot_state = current_scene->getCurrentState();
+  
+  geometry_msgs::PoseStamped arm_base_transform = robot_->getCurrentPose("arm_link_1"); //T_b,a1
+  geometry_msgs::PoseStamped arm_l5_transform = robot_->getCurrentPose("arm_link_5"); //T_b,a5
+  Eigen::Matrix<double,3,4> T_ba5_1 = st_is::transformationMatrix( arm_l5_transform.pose ); //T_b,a5
+  Eigen::Matrix<double,4,4> T_ba5;
+  T_ba5<<T_ba5_1,0,0,0,1;
+  Eigen::Matrix<double,3,4> T_ba1_1 = st_is::transformationMatrix( arm_base_transform.pose ); //T_b,a1
+  Eigen::Matrix<double,4,4> T_ba1;
+  T_ba1<<T_ba1_1,0,0,0,1;
+  Eigen::Matrix<double,4,4> T_a1a5 = T_ba1.inverse()*T_ba5;
+  ROS_INFO_STREAM("the y offset is: "<< T_a1a5(1,3) );
+  
+  Eigen::Vector3d arm_base_pos =  st_is::geometryToEigen( arm_base_transform.pose.position ); //b_trans_b,a1
+  Eigen::Quaterniond arm_base_ori = st_is::geometryToEigen( arm_base_transform.pose.orientation ); // rot_b,a1
+  
+  int total_calculations=0;
+  int success_count=0;
+  
+  ROS_INFO("Start calculation of achievable grid points.");
+  // iteration...
+  for( double z = z_min; z<=z_max; z+=z_step )
+  {
+    for( double y = y_min; y<=y_max; y+=y_step )
+    {
+      // reset arm to reference pose
+      robot_state.setVariablePosition( "arm_joint_2", 1.15 );
+      robot_state.setVariablePosition( "arm_joint_3", -2.6 );
+      /*robot_state.setVariablePosition( "arm_joint_4", 3.4 );
+      Eigen::Quaterniond link_4_reference_orientation( robot_state.getGlobalLinkTransform("arm_link_4").rotation() );
+      
+       // desired target pose
+      Eigen::Vector3d rel_pos(y, 0, z); // in a1-system
+      Eigen::Vector3d rel_pos_pf = arm_base_ori*rel_pos+arm_base_pos; // transform relative pose (which is relative to arm base) to planning frame
+      
+      geometry_msgs::Pose target_pose;
+      target_pose.position = st_is::eigenToGeometry( rel_pos_pf );
+      target_pose.orientation = st_is::eigenToGeometry( link_4_reference_orientation );
+      
+      
+      // try to set target pose using inverse kinematics
+      bool success = robot_state.setFromIK( robot_state.getJointModelGroup("arm"), target_pose, 1 );
+      
+      if( success )
+      {
+	ROS_WARN("IK succeeded.");
+	ros::Duration(0.5).sleep();
+	success_count++;
+      }
+      else
+	ROS_INFO("IK failed.");
+      
+      
+      continue;*/
+      
+      // desired target pose
+      Eigen::Vector3d rel_pos(y, 0, z); // in a1-system
+      Eigen::Vector3d rel_pos_pf = arm_base_ori*rel_pos; // transform relative pose (which is relative to arm base) to planning frame
+      Eigen::Vector3d arm_link_5_pos = arm_base_pos + rel_pos_pf;
+      
+      // iterate through link 4 positions to find valuable reference pose for the given target, then keep orientation of link 5 fixed to find IK (current method needs orientation)
+      int iteration_count = 0;
+      double arm_4_pos_min = 0.03;
+      
+      for( double arm_4_pos = arm_4_pos_min; arm_4_pos<3.42; arm_4_pos+=0.1 )
+      {
+	total_calculations++;
+	
+	if( total_calculations%200==0 )
+	  ROS_INFO("Still calculating...");
+	  
+	// prefer even and upright positions of end link...
+	if( iteration_count<=3 )
+	{
+	  if( iteration_count==0 )
+	    arm_4_pos = 3.4; // turned to the left
+	  else if( iteration_count==1 )
+	    arm_4_pos = 1.88; // upright
+	  else if( iteration_count==2 )
+	    arm_4_pos = 0.36; //turned to the right
+	    
+	  iteration_count++;
+	}
+	  
+	robot_state.setVariablePosition( "arm_joint_4", arm_4_pos );
+	Eigen::Quaterniond link_5_reference_orientation( robot_state.getGlobalLinkTransform("arm_link_5").rotation() );
+	
+	geometry_msgs::Pose target_pose;
+	target_pose.position = st_is::eigenToGeometry( arm_link_5_pos );
+	target_pose.orientation = st_is::eigenToGeometry( link_5_reference_orientation );
+	
+	// try to set target pose using inverse kinematics
+	bool success = robot_state.setFromIK( robot_state.getJointModelGroup("arm"), target_pose, "arm_link_5", 1 );
+	
+	if( success )
+	{
+	  //ROS_WARN("IK succeeded.");
+	  Eigen::Vector3d joint_positions;
+	  joint_positions(0) = robot_state.getVariablePosition("arm_joint_2");
+	  joint_positions(1) = robot_state.getVariablePosition("arm_joint_3");
+	  joint_positions(2) = robot_state.getVariablePosition("arm_joint_4");
+	  _joint_values.push_back(joint_positions);
+	  
+	  if( _grid!=nullptr ) // output the relative values as well
+	  {
+	    Eigen::Vector2d grid_coordinates;
+	    grid_coordinates(0) = z;
+	    grid_coordinates(1) = y;
+	    _grid->push_back(grid_coordinates);
+	  }
+	  
+	  success_count++;
+	  break; // go to next point on success
+	}
+	//else
+	//  ROS_INFO("IK failed.");
+	
+	if( iteration_count<=3 )
+	  arm_4_pos = arm_4_pos_min; // start iteration
+      }
+            
+    }
+  }
+  
+  ROS_INFO_STREAM("Total calculations executed: "<<total_calculations);
+  ROS_INFO_STREAM("Succeeded calculations: "<<success_count);
+}
+
 bool YoubotPlanner::runSingleIteration()
 {
   ros::spinOnce();

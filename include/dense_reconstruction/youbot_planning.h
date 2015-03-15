@@ -20,7 +20,9 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/robot_state/robot_state.h>
+
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include <tf/transform_listener.h>
 
@@ -98,7 +100,17 @@ public:
    */
   virtual bool moveTo( View& _target_view );
   
-/// runs one step of the autonomous calibration process
+  /**
+   * calculate arm grid points based on given resolution
+   * @param _y_res resolution on y-axis [points/m]
+   * @param _z_res resolution on z-axis [points/m]
+   * @throws std::invalid_argument if negative or zero resolutions are given
+   * @param _joint_values joint values for links 2,3 & 4 that achieve the poses in the grid
+   * @param _grid (y/z) grid in a vector containing only poses achievable by the youbot arm (checked for self-collisions) (relative poses with respect to arm_link_2 position in the current configuration)
+   */
+  void calculateArmGrid( double _y_res, double _z_res, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >* _grid=nullptr );
+  
+  /// runs one step of the autonomous calibration process
   /** The method iterates through the joint space and estimates the hand-eye transformation along the way.
   * Based on the hand-eye transformation it also estimates the position of the calibration target, e.g.
   * the checkerboard in order to skip joint positions where the target is expected not to be visible. The
@@ -234,6 +246,8 @@ class YoubotPlanner::SpaceInfo: public RobotPlanningInterface::PlanningSpaceInit
 public:
   Eigen::Vector3d approximate_relative_object_position_; // approximate position of the object to be reconstructed relative to the initial position of the robot
   virtual std::string type();
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }

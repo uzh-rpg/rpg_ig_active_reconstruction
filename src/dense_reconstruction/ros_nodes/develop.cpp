@@ -16,6 +16,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
  
 #include "dense_reconstruction/youbot_planning.h"
+#include "boost/foreach.hpp"
 
 #include <random>
 
@@ -29,6 +30,25 @@ int main(int argc, char **argv)
     
   dense_reconstruction::YoubotPlanner calibrator(&n);
   
+  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_values;
+  std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > grid;
+  calibrator.calculateArmGrid( 50, 50, joint_values, &grid );
+  
+  std::ofstream out("/home/stewess/Documents/youbot_arm_grid_50pts_per_m.txt", std::ofstream::trunc);
+  BOOST_FOREACH( auto point, grid )
+  {
+    out<<point(0)<<" "<<point(1)<<"\n";
+  }
+  out.close();
+  
+  std::ofstream out2("/home/stewess/Documents/youbot_arm_joint_values_50pts_per_m.txt", std::ofstream::trunc);
+  BOOST_FOREACH( auto value, joint_values )
+  {
+    out2<<value(0)<<" "<<value(1)<<" "<<value(2)<<"\n";
+  }
+  out2.close();
+  
+  return 0;
   
   ros::Rate rate(0.2);
   

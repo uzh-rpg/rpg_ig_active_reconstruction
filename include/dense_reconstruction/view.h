@@ -46,6 +46,7 @@ public:
   /** get the associated data */
   boost::shared_ptr<dense_reconstruction::ViewInfo> associatedData();
   
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   movements::Pose pose_; /// the pose...
   std::string source_frame_; /// pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a poit in the pose frame into one in the source frame
