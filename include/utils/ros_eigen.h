@@ -24,6 +24,7 @@ along with ros_eigen. If not, see <http://www.gnu.org/licenses/>.
 
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
+#include "geometry_msgs/Transform.h"
 
 namespace st_is
 {
@@ -37,6 +38,7 @@ geometry_msgs::Quaternion eigenToGeometry( const Eigen::Quaterniond& _quat );
 
 /// returns the transformation matrix represented by _pose
 Eigen::Matrix<double,3,4> transformationMatrix( geometry_msgs::Pose& _pose );
+Eigen::Matrix<double,3,4> transformationMatrix( geometry_msgs::Transform& _pose );
 geometry_msgs::Pose geometryPose( Eigen::Matrix<double,3,4>& _pose );
 geometry_msgs::Pose geometryPose( Eigen::Matrix<double,4,4>& _pose );
     

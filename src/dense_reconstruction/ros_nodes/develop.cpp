@@ -49,13 +49,4 @@ int main(int argc, char **argv)
   out2.close();
   
   return 0;
-  
-  ros::Rate rate(0.2);
-  
-  while ( calibrator.runSingleIteration() && n.ok() )
-  {
-    cout<<endl<<"Working: "<<endl;
-  }
-  
-  return 0;
 } 

@@ -41,6 +41,11 @@ movements::Pose& View::pose()
   return pose_;
 }
 
+std::string& View::sourceFrame()
+{
+  return source_frame_;
+}
+
 bool& View::reachable()
 {
   return is_reachable_;
@@ -56,7 +61,7 @@ bool& View::bad()
   return is_bad_;
 }
 
-boost::shared_ptr<dense_reconstruction::View::ViewInfo> View::associatedData()
+boost::shared_ptr<dense_reconstruction::View::ViewInfo>& View::associatedData()
 {
   return associated_data_;
 }

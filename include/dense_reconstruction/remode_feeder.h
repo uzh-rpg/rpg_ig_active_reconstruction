@@ -15,8 +15,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 /** simple node can act as interface to remode, feeding it data
- * The idea is that data from different sources could be merged here (e.g. SVO, Odometry, etc), currently unfinished, just circumvents svo, thus performs quite bad:
- * Most likely I'll use it to transform the pose data issued by SVO (e.g. camera pose) into the dr_origin frame
+ * The idea was that data from different sources could be merged here (e.g. SVO, Odometry, etc), currently unfinished
+ * Not used at the moment.
  */
 
 #pragma once

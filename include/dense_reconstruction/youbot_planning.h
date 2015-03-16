@@ -27,6 +27,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <tf/transform_listener.h>
 
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
 
 #include <movements/core>
@@ -52,6 +53,10 @@ public:
   class SpaceInfo;
   class ViewInfo;
   class ViewPointData; /// view point descriptions for the youbot
+  struct BaseConfig; /// configurations for the base
+  struct Link1Config; /// configurations for link 1
+  struct ArmConfig; /// configurations for links 2,3 and 4
+  struct Link5Config; /// configurations for link 5
   
   /// constructor
   /** initializes the youbot planner, moves the robot to the initial pose
@@ -59,6 +64,9 @@ public:
    * @throws ROS_FATAL if not all necessary parameters are given and shuts down the node
    */
   YoubotPlanner( ros::NodeHandle* _n );
+  
+  /// destructor
+  ~YoubotPlanner();
   
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
    */
@@ -92,6 +100,7 @@ public:
   
   /** returns the cost to move from the current view to the indicated view
    * @param _target_view the next view
+   * @throws std::runtime_error if the type of the _target_view's associated info can't be casted to the Youbot type
    * @return cost to move to that view
    */
   virtual RobotPlanningInterface::MovementCost calculateCost( View& _target_view );
@@ -101,6 +110,23 @@ public:
    * @return false if the operation failed
    */
   virtual bool moveTo( View& _target_view );
+  
+  /** creates executable, complete robot scan trajectory for view point data
+   * @param _view The view whose trajectory plan is to be constructed
+   * @param _plan reference to the plan object which will be initialized
+   */
+  void getFullMotionPlan( ViewPointData& _view, moveit::planning_interface::MoveGroup::Plan& _plan );
+  
+  /**
+   * calculates the camera pose for a given robot configuration, using the hand-eye transformation and MoveIt forward kinematics
+   * @param _config ViewPointData with set values for all robot configurations
+   */
+  movements::Pose calculateCameraPoseFromConfiguration( ViewPointData& _config );
+  
+  /*
+   * constructs a view with a reference to the _vpd
+   */
+  View viewFromViewPointData( ViewPointData& _vpd );
   
   /**
    * initializes the vectors with joint values for the arm and corresponding trajectories
@@ -121,7 +147,7 @@ public:
   /**
    * attempts to save the arm space descriptions to file, using the default filename and location (data_folder_ - make sure it's valid, it's existence is not tested)
    */
-  bool saveArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  bool saveArmSpaceDescriptionsToFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
   
   /**
    * loads an arm grid corresponding to the given parameters (tries to load it from file: If this fails, a new grid will be generated and then saved (make sure the data_folder_ exists)
@@ -182,16 +208,7 @@ public:
    * @return true if plan could be calculated, false if not
    */
   bool filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts=3, double _max_dropoff = 0.2 );
-  
-  /// runs one step of the autonomous calibration process
-  /** The method iterates through the joint space and estimates the hand-eye transformation along the way.
-  * Based on the hand-eye transformation it also estimates the position of the calibration target, e.g.
-  * the checkerboard in order to skip joint positions where the target is expected not to be visible. The
-  * current estimate is printed to the console. At each run another joint position is assumed.
-  * @return false if all positions were covered
-  */
-  bool runSingleIteration();
-  
+    
   /** attempts to get a new end effector pose from tf (transform from end effector frame to robot base)
    * @param _max_wait_time the maximal time to wait for a new transformation to be available
    * @return empty Pose() if no complete tf tree was published for the transformation in the given time
@@ -202,6 +219,12 @@ public:
    * That is transform to transforms entities in _link frame to the planning frame
    */
   movements::Pose getCurrentLinkPose( std::string _link );
+  
+  /**
+   * transforms a pose in moveit planning frame (e.g. odom) to view plannign frame (e.g. dr_origin) using the current transform from /tf
+   * @throws std::runtime_error if the transform couldn't be retrieved in time
+   */
+  movements::Pose moveitPlanningFrameToViewPlanningFrame( movements::Pose& _moveit_pose );
   
   /** plans and executes a scanning movement from the current position of arm_link_4
    * @param _max_dropoff see filteredPlanFromMovementsPath
@@ -273,40 +296,62 @@ public:
   /** saves upper arm trajectory positions to file (links 2 through 5)*/
   void saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory );
   
+  void remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );
 private:
   
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
+  ros::Subscriber remode_topic_subsriber_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
   std::string data_folder_;
+  ViewPointData* init_view_; // initial viewpoint (most likely not part of view point grid...)
+  ViewPointData* current_view_;
   std::vector<ViewPointData, Eigen::aligned_allocator<ViewPointData> > view_point_data_;
   
+  geometry_msgs::Transform arm2image_; // from hand-eye calibration
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps
   double base_radial_speed_; // base speed to move [rad/s]
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame
   // the radius is calculated automatically by taking the distance between the movement center and the position when the movement is started
     
-  ros::Publisher remode_commander_;
+  ros::Publisher remode_commander_; /// interface to send commands to Remode
   std_msgs::String remode_stopandsmooth_;
   std_msgs::String remode_start_;
+  bool remode_has_published_; /// set by callback function if remode data was published
+  ros::Duration max_remode_wait_time_; ///max time to wait for remode to publish before receiving data assumes that it failed
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations
+  std::string view_planning_frame_; /// planning frame for views
   std::string end_effector_planning_frame_; /// name of the frame for which the end effector pose shall be controlled
   
   boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor> scene_;
   boost::shared_ptr<moveit::planning_interface::MoveGroup> robot_;
   
   tf::TransformListener tf_listener_;
-    
-  /// plans and executes a plan to the currently loaded target - blocks until completion
-  /** completion means that the robot state is closer to the target than set in the tolerance and its velocity is approximately zero in all joint
-   * @return true if movement was executed successfully
+  
+  /**
+   * loads all possible state for the base space given space initialization info
    */
-  bool planAndMove();
+  void getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vector<BaseConfig,Eigen::aligned_allocator<BaseConfig>>& _config );
+  
+  /**
+   * loads all possible state for the link1 space given space initialization info
+   */
+  void getLink1Space( boost::shared_ptr<SpaceInfo> _info, std::vector<Link1Config>& _config );
+  
+  /**
+   * loads all possible state for the arm space (links 2 to 4) given space initialization info
+   */
+  void getArmSpace( boost::shared_ptr<SpaceInfo> _info, std::vector<ArmConfig>& _config );
+  
+  /**
+   * loads all possible state for the link5 space given space initialization info
+   */
+  void getLink5Space( boost::shared_ptr<SpaceInfo> _info, std::vector<Link5Config>& _config );
   
   /// returns whether MoveIt believes the robot state represented in _robot to be free of collisions or not given the current scene (but without the calibration pattern)
   /**
@@ -318,10 +363,37 @@ private:
   
 };
 
+/// youbot planner specific parameters to setup the view space
 class YoubotPlanner::SpaceInfo: public RobotPlanningInterface::PlanningSpaceInitializationInfo::RobotSpaceInfo
 {
 public:
-  Eigen::Vector3d approximate_relative_object_position_; // approximate position of the object to be reconstructed relative to the initial position of the robot
+  SpaceInfo();
+  
+  /// expected approximate position of the object to be reconstructed relative to the initial position of the robot
+  Eigen::Vector3d approximate_relative_object_position_;
+  
+  // base space setup:
+  double base_min_radius_; /// [m] smallest radius around object on which the base may stop (isn't checked if valid, also not by moveit - make sure no collisions occur), default:1m
+  double base_max_radius_; /// [m] largest radius around object on which the base may stop, deactivated if lower than min, default:2m
+  unsigned int base_circle_traj_nr_; /// number of circles on which the base may move, if zero, 1 is assumed, if 1 the min_radius is used, default:1
+  unsigned int base_pts_per_circle_; /// nr of positions on each circle the base may stop, if zero, 8 is assumed, default:8
+  
+  // link 1 setup: (TODO:for later these values could be changed to be dependent on the radius of the circle)
+  double link_1_min_angle_; /// [rad] as given by youbot, min angle joint_1 may assume, default: 1.35 (to the left)
+  double link_1_max_angle_; /// [rad] as given by youbot, max angle joint_1 may assume, deactivated if smaller than min, default: 1.45
+  unsigned int link_1_nr_of_pos_; /// total number of positions, including min and max, if 1, min angle is used, default:1
+  
+  // arm setup:
+  double scan_radius_; /// [m] radius to scan, default:0.05
+  double arm_min_view_distance_; /// [m] closest distance two viewpoints in arm space may have, default: 0.2
+  double arm_view_resolution_; /// [pts/m] number of points generated for the arm space grid: The points of this grid are then filtered to fulfill scan_radius_ & arm_min_view_distance_, default:10
+  
+  // link 5 setup:
+  double link_5_min_angle_; /// [rad] as given by youbot, min angle for joint 5, default: 2.9 ("even")
+  double link_5_max_angle_; /// [rad] as given by youbot, max angle for joint 5, deactivated if smaller than min, default: 3.4
+  unsigned int link_5_nr_of_pos_; /// total number of positions, including min and max, if 1, min angle is used, default:1
+  
+  
   virtual std::string type();
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -330,12 +402,40 @@ public:
 class YoubotPlanner::ViewInfo: public View::ViewInfo
 {
 public:
+  ViewInfo();
+  ViewInfo( ViewPointData& _reference );
+  
   virtual std::string type();
   
-  boost::shared_ptr<ViewPointData> getViewPointData();
+  ViewPointData* getViewPointData();
   
 private:
-  boost::shared_ptr<ViewPointData> view_point_;
+  ViewPointData* view_point_;
+};
+
+struct YoubotPlanner::BaseConfig
+{
+  movements::Pose pose_; // in view planning frame!
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+struct YoubotPlanner::Link1Config
+{
+  double angle_;
+};
+
+struct YoubotPlanner::ArmConfig
+{
+  double j2_angle_;
+  double j3_angle_;
+  double j4_angle_;
+  boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > scan_trajectory_; // pointer to precalculated trajectory to scan for this arm joint configuration
+};
+
+struct YoubotPlanner::Link5Config
+{
+  double angle_;
 };
 
 class YoubotPlanner::ViewPointData
@@ -343,13 +443,12 @@ class YoubotPlanner::ViewPointData
 public:
   movements::Pose pose_; /// pose of view point relative to planning frame
   
-  Eigen::Vector3d base_pos_; /// position of base (x,y,theta)
-  double joint_1_angle_; /// angle of joint 1
-  double joint_2_angle_;
-  double joint_3_angle_;
-  double joint_4_angle_;
-  boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> scan_trajectory_; // precalculated trajectory to scan at this view point
-  double joint_5_angle_;
+  BaseConfig base_config_;
+  Link1Config link1_config_;
+  ArmConfig arm_config_;
+  Link5Config link5_config_;
+  
+  //boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> scan_trajectory_; // scan trajectory for this viewpoint; - unused: saved in arm_config_ wit less memory usage
 };
 
 }

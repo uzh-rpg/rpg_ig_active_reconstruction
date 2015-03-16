@@ -32,7 +32,12 @@ public:
   
   /** returns all view points in the view space as a vector 
    */
-  std::vector<View, Eigen::aligned_allocator<View> >* getViewSpace();
+  std::vector<View, Eigen::aligned_allocator<View> > getViewSpace();
+  
+  /** adds a new view point to the view space
+   * @param _new_vp the new view point
+   */
+  void push_back( View _new_vp );
   
   /** returns all views within a certain range (distance) of another view
    * @param _reference_view view from which the distances are calculated

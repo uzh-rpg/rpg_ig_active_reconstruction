@@ -82,6 +82,19 @@ Eigen::Matrix<double,3,4> transformationMatrix( geometry_msgs::Pose& _pose )
   return transformation_matrix;
 }
 
+
+Eigen::Matrix<double,3,4> transformationMatrix( geometry_msgs::Transform& _pose )
+{
+  Eigen::Matrix<double,3,4> transformation_matrix;
+  Eigen::Vector3d translation = geometryToEigen( _pose.translation );
+  Eigen::Quaterniond rotation = geometryToEigen( _pose.rotation );
+  
+  transformation_matrix.leftCols<3>() = rotation.toRotationMatrix();
+  transformation_matrix.rightCols<1>() = translation;
+  
+  return transformation_matrix;
+}
+
 geometry_msgs::Pose geometryPose( Eigen::Matrix<double,3,4>& _pose )
 {
   Eigen::Quaterniond rotation( _pose.leftCols<3>() );

@@ -33,6 +33,9 @@ public:
   /** grants access to the pose */
   movements::Pose& pose();
   
+  /** grants access to the source frame description */
+  std::string& sourceFrame();
+  
   /** whether this view is reachable by the robot
    */
   bool& reachable();
@@ -45,7 +48,7 @@ public:
   bool& bad();
   
   /** get the associated data */
-  boost::shared_ptr<ViewInfo> associatedData();
+  boost::shared_ptr<ViewInfo>& associatedData();
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:

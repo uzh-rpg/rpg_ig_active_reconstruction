@@ -25,9 +25,14 @@ ViewSpace::ViewSpace()
   
 }
 
-std::vector<View, Eigen::aligned_allocator<View> >* ViewSpace::getViewSpace()
+std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
 {
-  return &view_space_;
+  return view_space_;
+}
+
+void ViewSpace::push_back( View _new_vp )
+{
+  view_space_.push_back(_new_vp);
 }
 
 void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space )
