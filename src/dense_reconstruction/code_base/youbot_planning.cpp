@@ -34,7 +34,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n ):
   tf_listener_(*_n),
   base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
 {
-  data_folder_ = "/home/stewess/Documents/dense_reconstruction_precalculations/";
+  data_folder_ = "/home/stewss/Documents/dense_reconstruction_precalculations/";
   planning_group_ = "arm";
   std::string remode_control_topic = "/remode/command";
   
@@ -215,17 +215,9 @@ RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target
   // using distances between base poses as current measure
   movements::Pose current = (*current_view_).base_config_.pose_;
   
-  boost::shared_ptr<View::ViewInfo> info_reference = _target_view.associatedData();
-  
-  if( info_reference->type()!="YoubotPlanningSpaceInfo" )
-  {
-    std::string error = "YoubotPlanner::calculateCost::Called with target_view that didn't belong to Youbot. Type was '"+info_reference->type()+"' instead of 'YoubotPlanningSpaceInfo'.";
-    throw std::runtime_error(error);
-  }
-  boost::shared_ptr<YoubotPlanner::ViewInfo> info = boost::dynamic_pointer_cast<YoubotPlanner::ViewInfo>(info_reference);
-  ViewPointData* referenced_view_point = info->getViewPointData();
-  
+  ViewPointData* referenced_view_point = getCorrespondingData(_target_view);
   movements::Pose target = (*referenced_view_point).base_config_.pose_;
+  
   Eigen::Vector3d direct_path = current.position - target.position;
   
   RobotPlanningInterface::MovementCost cost;
@@ -234,8 +226,46 @@ RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target
 }
 
 bool YoubotPlanner::moveTo( View& _target_view )
-{//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  return false;
+{
+  ViewPointData* referenced_view_point = getCorrespondingData(_target_view);
+  
+  bool successfully_moved;
+   
+    
+  // move arm
+  robot_->setJointValueTarget("arm_joint_1", (*referenced_view_point).link1_config_.angle_ );
+  robot_->setJointValueTarget("arm_joint_2", (*referenced_view_point).arm_config_.j2_angle_ );
+  robot_->setJointValueTarget("arm_joint_3", (*referenced_view_point).arm_config_.j3_angle_ );
+  robot_->setJointValueTarget("arm_joint_4", (*referenced_view_point).arm_config_.j4_angle_ );
+  robot_->setJointValueTarget("arm_joint_5", (*referenced_view_point).link5_config_.angle_ );
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+  // plan and execute a path to the target state
+  successfully_moved = robot_->move();
+  spinner.stop();
+    
+  // move base
+  movements::Pose base_target_pos = (*referenced_view_point).base_config_.pose_;
+  movements::Pose base_current_pos_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
+  movements::Pose base_current_pos = moveitPlanningFrameToViewPlanningFrame( base_current_pos_rpf );
+  successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
+  
+  return successfully_moved;
+}
+
+YoubotPlanner::ViewPointData* YoubotPlanner::getCorrespondingData( View& _view )
+{
+  // find view point data corresponding to target view  
+  boost::shared_ptr<View::ViewInfo> info_reference = _view.associatedData();
+  
+  if( info_reference->type()!="YoubotPlanningSpaceInfo" )
+  {
+    std::string error = "YoubotPlanner::getCorrespondingData::Called with view that didn't belong to Youbot. Associated data type was '"+info_reference->type()+"' instead of 'YoubotPlanningSpaceInfo'.";
+    throw std::runtime_error(error);
+  }
+  boost::shared_ptr<YoubotPlanner::ViewInfo> info = boost::dynamic_pointer_cast<YoubotPlanner::ViewInfo>(info_reference);
+  
+  return info->getViewPointData();
 }
 
 void YoubotPlanner::getFullMotionPlan( ViewPointData& _view, moveit::planning_interface::MoveGroup::Plan& _plan )
@@ -1033,11 +1063,10 @@ bool YoubotPlanner::makeScan(double _max_dropoff)
 }
 
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed )
-{return false;
-  movements::Pose base_pose = getCurrentLinkPose("base_footprint");
-  movements::Pose object_center( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
-  //movements::Pose object_center( base_pose.position+2*base_pose.position.normalized(), Eigen::Quaterniond() );
-  
+{
+  movements::Pose base_pose_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
+  movements::Pose base_pose = moveitPlanningFrameToViewPlanningFrame(base_pose_rpf);
+    
   // start position, end position, angular speed, movement direction
   movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, _target_position.position, _radial_speed, movements::CircularGroundPath::SHORTEST );
   
@@ -1047,7 +1076,8 @@ bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose _target_position, move
   movements::PoseVector waypoints = circle_seg.path( _center, 0, time_for_move, dt );
   
   bool base_successfully_moved = executeMovementsTrajectoryOnBase(waypoints,1);
-  return false;
+  
+  return base_successfully_moved;
 }
 
 void YoubotPlanner::moveBaseTo( double _x, double _y, double _theta )

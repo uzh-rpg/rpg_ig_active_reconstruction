@@ -198,7 +198,7 @@ bool YoubotFixedWaypointReconstructionController::makeScan(double _max_dropoff)
 }
 
 bool YoubotFixedWaypointReconstructionController::moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed )
-{return false;
+{return false;//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   movements::Pose base_pose = getCurrentLinkPose("base_footprint");
   movements::Pose object_center( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
   //movements::Pose object_center( base_pose.position+2*base_pose.position.normalized(), Eigen::Quaterniond() );

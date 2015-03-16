@@ -50,6 +50,7 @@ namespace dense_reconstruction
 class YoubotPlanner: public RobotPlanningInterface
 {
 public:
+  
   class SpaceInfo;
   class ViewInfo;
   class ViewPointData; /// view point descriptions for the youbot
@@ -110,6 +111,12 @@ public:
    * @return false if the operation failed
    */
   virtual bool moveTo( View& _target_view );
+  
+  /** attempts to find the pointer to a ViewPointData corresponding to the view _view
+   * @param _view the view for which the corresponding ViewPointData is sought
+   * @throw std::runtime_error if _view's associated data is not of type "YoubotPlanningSpaceInfo"
+   */
+  ViewPointData* getCorrespondingData( View& _view );
   
   /** creates executable, complete robot scan trajectory for view point data
    * @param _view The view whose trajectory plan is to be constructed
@@ -215,7 +222,7 @@ public:
    */
   movements::Pose getEndEffectorPoseFromTF( ros::Duration _max_wait_time= ros::Duration(5.0) );
   
-  /** loads pose of link _link relative to the planning frame (using tf, not moveit)
+  /** loads pose of link _link relative to the robot (moveit) planning frame (using tf, not moveit)
    * That is transform to transforms entities in _link frame to the planning frame
    */
   movements::Pose getCurrentLinkPose( std::string _link );
