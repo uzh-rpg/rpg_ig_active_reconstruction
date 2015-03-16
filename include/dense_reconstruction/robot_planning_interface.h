@@ -95,6 +95,12 @@ public:
   class RobotSpaceInfo;
   
   boost::shared_ptr<RobotSpaceInfo> getSpecifics();
+  
+  /**
+   * template for setting the specifics, attempts to type cast
+   */
+  template<class T>
+  void setSpecifics( boost::shared_ptr<T> _specifics );
 private:
   boost::shared_ptr<RobotSpaceInfo> robot_specific_info_;
 };
@@ -105,5 +111,11 @@ public:
   virtual std::string type()=0;
   
 };
+
+template<class T>
+void RobotPlanningInterface::PlanningSpaceInitializationInfo::setSpecifics( boost::shared_ptr<T> _specifics )
+{
+  robot_specific_info_ = boost::dynamic_pointer_cast<RobotSpaceInfo>(_specifics);
+}
 
 }

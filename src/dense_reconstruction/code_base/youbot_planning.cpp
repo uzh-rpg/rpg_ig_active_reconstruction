@@ -97,7 +97,14 @@ bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _i
     ROS_ERROR_STREAM("YoubotPlanner::initializePlanningSpace::The PlanningSpaceInitializationInfo is of type '"<<_info.getSpecifics()->type()<<"'. It should be of type 'YoubotPlanningSpaceInfo'. Initialization is not possible.");
     return false;
   }
+  ROS_INFO("Initializing ViewSpace for the given parameters...");
+  
   boost::shared_ptr<SpaceInfo> info = boost::dynamic_pointer_cast<SpaceInfo>( _info.getSpecifics() );
+  if( base_movement_center_.position == Eigen::Vector3d(0,0,0) )
+  {
+    ROS_ERROR("YoubotPlanner::initializePlanningSpace::The provided base_movement_center_ (0,0,0) says that the object resides exactly at the position of the robot which is not possible.");
+    return false;
+  }
   base_movement_center_ = movements::Pose( info->approximate_relative_object_position_, Eigen::Quaterniond(1,0,0,0) );
   
   // build planning space
@@ -112,6 +119,13 @@ bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _i
   getArmSpace( info, arm_space );
   getLink5Space( info, link5_space );
   
+  if( base_space.size()==0 || link1_space.size()==0 || arm_space.size()==0 || link5_space.size()==0 )
+  {
+    ROS_ERROR("Initializing ViewSpace for the given parameters failed. One or more joint spaces are empty. Please check your parameter setting or contact your technical advisor.");
+    return false;
+  }
+  
+  ROS_INFO("Constructing space..");
   // initialize viewpoint space (view_point_data_) with all possible combinations
   BOOST_FOREACH( auto base_config, base_space )
   {
@@ -134,6 +148,8 @@ bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _i
       }
     }
   }
+  
+  ROS_INFO("View space setup and constructed.");
   
   return true;
 }
@@ -348,9 +364,14 @@ View YoubotPlanner::viewFromViewPointData( ViewPointData& _vpd )
 
 void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
+  ROS_ERROR("getArmSpaceDescriptions");
   if( loadArmSpaceDescriptionsFromFile(_radius,_min_view_distance,_view_resolution,_joint_space,_joint_trajectories) )
+  {
+    ROS_INFO_STREAM("Complete arm space informations for radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk: Successfully loaded.");
     return;
+  }
   
+  ROS_INFO_STREAM("No arm space information for the given  configuration radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk. New configuration is being calculated.");
   // probably not the most effective way for calculating but fast to program
   
   // get arm grid
@@ -364,17 +385,22 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > trajectories;
     
   int nr_of_planning_attempts = 100;
-  
+  ROS_INFO_STREAM("Calculating trajectories for arm grid which consists of "<<joint_value_grid.size()<<" points. Currently at most "<<nr_of_planning_attempts<<" attempts are performed for each point. Points with unfeasible trajectories are disregarded.");
+  ros::Duration(5).sleep();
   for( unsigned int i=0; i<joint_value_grid.size(); i++ )
   {
     auto joint_config = joint_value_grid[i];
     auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
+    ROS_INFO_STREAM("Calculating trajectory for grid point "<<i<<"...");
     if( calculateScanTrajectory(joint_config,_radius,*trajectory,100) )
     {
       possible_joint_values.push_back(joint_config);
       trajectories.push_back(trajectory);
       possible_coordinates.push_back(coordinate_grid[i]);
+      ROS_INFO_STREAM("Success! This is a feasible configuration for scanning movements, configuration is added.");
     }
+    else
+      ROS_INFO_STREAM("Trajectory could not be computed for this configuration, configuration is dropped.");
   }
   
   // filter out by distance
@@ -382,10 +408,13 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > valid_coordinates;
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > final_trajectories;
   
-  for( unsigned int i=0; i<valid_joint_values.size(); i++ )
+  ROS_INFO_STREAM("Currently "<<valid_joint_values.size()<<" arm grid points are valid. Filtering by min distance...");
+  ros::Duration(5).sleep();
+  
+  for( unsigned int i=0; i<possible_joint_values.size(); i++ )
   {
     bool is_not_too_close = true;
-    for( unsigned int a=0; a<valid_joint_values.size(); a++ )
+    for( unsigned int a=0; a<possible_joint_values.size(); a++ )
     {
       Eigen::Vector2d dist = possible_coordinates[i]-valid_coordinates[a];
       is_not_too_close = is_not_too_close && ( dist.norm()<=_min_view_distance );
@@ -403,11 +432,20 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   _joint_space = valid_joint_values;
   _joint_trajectories = final_trajectories;
   
-  saveArmSpaceDescriptionsToFile(_radius,_min_view_distance,_view_resolution,valid_joint_values,final_trajectories);
+  ROS_INFO_STREAM( valid_joint_values.size()<<" points are left in final arm grid." );
+  
+  if( valid_joint_values.size()!=0 )
+  {
+    saveArmSpaceDescriptionsToFile(_radius,_min_view_distance,_view_resolution,valid_joint_values,final_trajectories);
+    ROS_INFO("Grid calculation succeeded.");
+  }
+  else
+    ROS_INFO("Grid calculation failed.");
 }
 
 bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
+  ROS_INFO("well this is just weird");
   std::string file_name;
   std::stringstream file_name_str;
   
@@ -459,6 +497,7 @@ bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _mi
   }
   
   in.close();
+  ROS_INFO("well this is just weird2");
   
   return true;
 }
@@ -519,9 +558,23 @@ bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _min_
 void YoubotPlanner::getArmGrid( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
 {
   if( loadArmGridFromFile(_resolution,_joint_values,_coordinates) )
+  {
+    ROS_INFO_STREAM("Found calculated youbot arm grid with resolution "<<_resolution<<" on file and loaded it successfully.");
     return;
+  }
+  ROS_INFO_STREAM("Found no fitting grid on file, calculating new one.");
   calculateArmGrid( _resolution,_resolution,_joint_values,&_coordinates );
-  saveArmGridToFile( _resolution,_joint_values,_coordinates );
+  
+  if( _joint_values.size()!=0 )
+  {
+    ROS_INFO_STREAM("Successfully calculated arm grid with "<<_joint_values.size()<<" points. Saving it to disk.");
+    if( saveArmGridToFile( _resolution,_joint_values,_coordinates ) )
+      ROS_INFO("Grid saved.");
+    else
+      ROS_INFO("Saving the grid failed.");
+  }
+  else
+    ROS_INFO_STREAM("Arm grid calculation failed, no fitting grid points were found.");
 }
 
 bool YoubotPlanner::loadArmGridFromFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
@@ -611,7 +664,7 @@ bool YoubotPlanner::saveArmGridToFile( double _resolution, std::vector< Eigen::V
   
   std::ofstream out(file_name, std::ofstream::trunc);
   
-  if( !(out<<_joint_values.size()) )
+  if( !(out<<_joint_values.size()<<"\n") )
     return false;
   
   BOOST_FOREACH( auto value, _joint_values )
@@ -632,7 +685,7 @@ bool YoubotPlanner::saveArmGridToFile( double _resolution, std::vector< Eigen::V
   
   std::ofstream out2(file_name2, std::ofstream::trunc);
   
-  if( !(out2<<_coordinates.size()) )
+  if( !(out2<<_coordinates.size()<<"\n") )
     return false;
   
   BOOST_FOREACH( auto value, _coordinates )
@@ -679,15 +732,6 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
   robot_state::RobotState robot_state = current_scene->getCurrentState();
   
   geometry_msgs::PoseStamped arm_base_transform = robot_->getCurrentPose("arm_link_1"); //T_b,a1
-  geometry_msgs::PoseStamped arm_l5_transform = robot_->getCurrentPose("arm_link_5"); //T_b,a5
-  Eigen::Matrix<double,3,4> T_ba5_1 = st_is::transformationMatrix( arm_l5_transform.pose ); //T_b,a5
-  Eigen::Matrix<double,4,4> T_ba5;
-  T_ba5<<T_ba5_1,0,0,0,1;
-  Eigen::Matrix<double,3,4> T_ba1_1 = st_is::transformationMatrix( arm_base_transform.pose ); //T_b,a1
-  Eigen::Matrix<double,4,4> T_ba1;
-  T_ba1<<T_ba1_1,0,0,0,1;
-  Eigen::Matrix<double,4,4> T_a1a5 = T_ba1.inverse()*T_ba5;
-  ROS_INFO_STREAM("the y offset is: "<< T_a1a5(1,3) );
   
   Eigen::Vector3d arm_base_pos =  st_is::geometryToEigen( arm_base_transform.pose.position ); //b_trans_b,a1
   Eigen::Quaterniond arm_base_ori = st_is::geometryToEigen( arm_base_transform.pose.orientation ); // rot_b,a1
@@ -746,6 +790,8 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
 	
 	if( total_calculations%200==0 )
 	  ROS_INFO("Still calculating...");
+	else if( total_calculations==10118 )
+	  ROS_INFO("Yes, still calculating. Why is that so surprising?");
 	  
 	// prefer even and upright positions of end link...
 	if( iteration_count<=3 )
@@ -813,17 +859,22 @@ bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d _joint_values, doub
   robot_state.setVariablePosition( "arm_joint_3", _joint_values(1) );
   robot_state.setVariablePosition( "arm_joint_4", _joint_values(2) );
   
-  //movements::Pose base_pose = linkPoseInRobotState("arm_link_5",robot_state);
+  movements::Pose eef_pose = linkPoseInRobotState("camera",robot_state);
   movements::Pose link_4_pose = linkPoseInRobotState("arm_link_4",robot_state);
   
   // adius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
   movements::KinMove scan = movements::InOutSpiral::create( link_4_pose.orientation, _radius, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
-  //start time, end time, time step size
-  movements::PoseVector m_waypoints = scan.path( link_4_pose, 0.5, 3.5, 0.02 );
+  //start time, end time, time step size // calculate for end effector pose since that is the link for which cartesian path are planned by moveit
+  movements::PoseVector m_waypoints = scan.path( eef_pose, 0.5, 3.5, 0.02 );
   
   double max_dropoff=0.2;
-  
-  bool successfully_planned = filteredPlanFromMovementsPathForRobotState( m_waypoints, "arm_link_4", robot_state, _joint_trajectory, 1000, max_dropoff );
+  bool successfully_planned;
+  int count=0;
+  do
+  {
+    count++;
+    successfully_planned = filteredPlanFromMovementsPathForRobotState( m_waypoints, "camera", robot_state, _joint_trajectory, 3, max_dropoff, true );
+  }while(!successfully_planned && count<1000 );
   
   return successfully_planned;
 }
@@ -837,7 +888,7 @@ movements::Pose YoubotPlanner::linkPoseInRobotState( std::string _name, robot_st
   return movements::Pose( link_translation, link_orientation );
 }
 
-bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts, double _max_dropoff )
+bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts, double _max_dropoff, bool _verbose )
 {
   robot_state::RobotState state(_state);
   
@@ -856,13 +907,17 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
   int count=0;
   int dropped_points = 0;
   int passed_points = _waypoints.size();
-  
+  int total_it_count = 0;
   
   while( success_ratio!=1 && ros_node_->ok() )
   {
+    total_it_count++;
     count++;
     success_ratio = state.computeCartesianPath( state.getJointModelGroup("arm"), trajectory, state.getLinkModel(_link_name), waypoints, true, 0.1, 0 );
-    
+    if( total_it_count%10==0 && _verbose )
+    {
+      ROS_INFO_STREAM("Attempting to compute cartesian path with "<<waypoints.size()<<" waypoints. Current success ratio is "<<success_ratio<<", "<<dropped_points<<" points have been dropped out of "<<passed_points<<" which accounts for a dropoff of "<<passed_points/(double)passed_points<<"%.");
+    }
     if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
     {
       dropped_points++;
@@ -965,12 +1020,16 @@ movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link )
 
 movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements::Pose& _moveit_pose )
 {
+  /*ROS_ERROR("WARNING WARNING delete this code again before using it for non-test situations!!!");
+  return _moveit_pose;*/
+  
   ros::Time now = ros::Time::now();
   bool new_tf_available = tf_listener_.waitForTransform( view_planning_frame_,base_planning_frame_, now, ros::Duration(3.0) );
   
   if( !new_tf_available )
   {
-    throw std::runtime_error("YoubotPlanner::moveitPlanningFrameToViewPlanningFrame::Transform couldn't be retrived in time.");
+    std::string message = "YoubotPlanner::moveitPlanningFrameToViewPlanningFrame::Transform from child"+base_planning_frame_+" to source "+view_planning_frame_+" couldn't be retrieved in time.";
+    throw std::runtime_error(message);
   }
   tf::StampedTransform base_pose_tf;
   geometry_msgs::TransformStamped base_pose_ros;
@@ -1525,6 +1584,8 @@ void YoubotPlanner::initializeTF()
 
 void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vector< BaseConfig,Eigen::aligned_allocator<BaseConfig> >& _config )
 {
+  ROS_INFO("Setting up joint space for base...");
+  
   double min_radius = _info->base_min_radius_;
   double max_radius = _info->base_max_radius_;
   unsigned int base_circle_traj_nr = _info->base_circle_traj_nr_;
@@ -1545,7 +1606,7 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
     }
   }
   
-  if( base_pts_per_circle==0 )
+  if( base_pts_per_circle<=0 )
     base_pts_per_circle=8;
   
   movements::Pose current_base_pos_rpf = getCurrentLinkPose("base_footprint");
@@ -1553,6 +1614,7 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
   movements::Pose movement_center = base_movement_center_;
   Eigen::Vector3d c2b = current_base_pos.position - movement_center.position; // vector center to base
   c2b.normalize();
+    
   
   BOOST_FOREACH( auto radius, radius_set )
   {
@@ -1562,7 +1624,7 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
     // construct circle movement with 2pi per sec radial speed
     movements::KinMove circle = movements::CircularGroundPath::create( circle_start.position, circle_start.position, 2*3.141592654, movements::CircularGroundPath::COUNTER_CLOCKWISE );
     
-    double time_step = 1/base_pts_per_circle;
+    double time_step = 1.0/base_pts_per_circle;
     for( double time = 0; time<1; time+=time_step )
     {
       BaseConfig new_config;
@@ -1574,6 +1636,8 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
 
 void YoubotPlanner::getLink1Space( boost::shared_ptr<SpaceInfo> _info, std::vector<Link1Config>& _config )
 {
+  ROS_INFO("Setting up joint space for arm link 1.");
+  
   double link_1_min_angle = _info->link_1_min_angle_;
   double link_1_max_angle = _info->link_1_max_angle_;
   unsigned int link_1_nr_of_pos = _info->link_1_nr_of_pos_;
@@ -1603,6 +1667,8 @@ void YoubotPlanner::getLink1Space( boost::shared_ptr<SpaceInfo> _info, std::vect
 
 void YoubotPlanner::getArmSpace( boost::shared_ptr<SpaceInfo> _info, std::vector<ArmConfig>& _config )
 {
+  ROS_INFO("Setting up joint space for arm links 2, 3 and 4.");
+  
   double scan_radius = _info->scan_radius_;
   double arm_min_view_distance = _info->arm_min_view_distance_;
   double arm_view_resolution = _info->arm_view_resolution_;
@@ -1626,6 +1692,8 @@ void YoubotPlanner::getArmSpace( boost::shared_ptr<SpaceInfo> _info, std::vector
 
 void YoubotPlanner::getLink5Space( boost::shared_ptr<SpaceInfo> _info, std::vector<Link5Config>& _config )
 {
+  ROS_INFO("Setting up joint space for arm link 5.");
+  
   double link_5_min_angle = _info->link_5_min_angle_;
   double link_5_max_angle = _info->link_5_max_angle_;
   unsigned int link_5_nr_of_pos = _info->link_5_nr_of_pos_;
@@ -1668,7 +1736,7 @@ YoubotPlanner::SpaceInfo::SpaceInfo()
   ,link_5_max_angle_(3.4)
   ,link_5_nr_of_pos_(1)
 {
-  
+  approximate_relative_object_position_<<0,0,0;
 }
 
 std::string YoubotPlanner::SpaceInfo::type()

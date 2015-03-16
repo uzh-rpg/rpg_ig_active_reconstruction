@@ -210,11 +210,12 @@ public:
    * @param _link_name name of the link for which the path is planned
    * @param _state a robot state
    * @param _joint_values returned path (values for joints 2,3 and 4)
-   * @param _planning_attempts number of planning attempts to be taken if planning fails before giving up
+   * @param _planning_attempts number of planning attempts to be taken if planning fails before dropping points
    * @param _max_dropoff If less than 1: Represents the percentage of the maximal number of points that may be dropped to find a valid cartesian path, if equal or higher than 1 it represents the absolute number of points that may be dropped, if _max_dropoff<=0 no filter stage is run
+   * @param _verbose if true then information about the calculation process is writtento ROS_INFO
    * @return true if plan could be calculated, false if not
    */
-  bool filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts=3, double _max_dropoff = 0.2 );
+  bool filteredPlanFromMovementsPathForRobotState( const movements::PoseVector& _waypoints, std::string _link_name, const robot_state::RobotState& _state, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, int _planning_attempts=3, double _max_dropoff = 0.2, bool _verbose=false );
     
   /** attempts to get a new end effector pose from tf (transform from end effector frame to robot base)
    * @param _max_wait_time the maximal time to wait for a new transformation to be available

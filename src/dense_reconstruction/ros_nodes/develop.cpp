@@ -16,6 +16,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
  
 #include "dense_reconstruction/youbot_planning.h"
+#include "dense_reconstruction/robot_planning_interface.h"
 #include "boost/foreach.hpp"
 
 #include <random>
@@ -26,13 +27,28 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "youbot_reconstruction_controller");
   ros::NodeHandle n("youbot_reconstruction_controller");
-  
     
-  dense_reconstruction::YoubotPlanner calibrator(&n);
+  dense_reconstruction::YoubotPlanner youbot(&n);
+  youbot.initializePlanningFrame();
+  
+  dense_reconstruction::RobotPlanningInterface::PlanningSpaceInitializationInfo simple_setup;
+  boost::shared_ptr<dense_reconstruction::YoubotPlanner::SpaceInfo> specifics( new dense_reconstruction::YoubotPlanner::SpaceInfo() );
+  
+  specifics->approximate_relative_object_position_ << 1,0,0;
+  specifics->base_pts_per_circle_ = 2;
+  specifics->arm_min_view_distance_ = 0.3;
+  specifics->arm_view_resolution_ = 10; // [pts/m]
+  
+  simple_setup.setSpecifics(specifics);
+  
+  youbot.initializePlanningSpace(simple_setup);
+  
+  return 0;
+  
   
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > grid;
-  calibrator.calculateArmGrid( 60, 60, joint_values, &grid );
+  youbot.calculateArmGrid( 60, 60, joint_values, &grid );
   
   std::ofstream out("/home/stewess/Documents/youbot_arm_grid_50pts_per_m.txt", std::ofstream::trunc);
   BOOST_FOREACH( auto point, grid )
