@@ -29,12 +29,13 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 namespace dense_reconstruction
 {
 
-YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n ):
-  ros_node_(_n),
-  tf_listener_(*_n),
-  base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
+YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
+  :ros_node_(_n)
+  ,tf_listener_(*_n)
+  ,base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
 {
-  data_folder_ = "/home/stewss/Documents/dense_reconstruction_precalculations/";
+  data_folder_set_ = ros_node_->getParam("data_folder",data_folder_);
+  
   planning_group_ = "arm";
   std::string remode_control_topic = "/remode/command";
   
@@ -364,11 +365,13 @@ View YoubotPlanner::viewFromViewPointData( ViewPointData& _vpd )
 
 void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
-  ROS_ERROR("getArmSpaceDescriptions");
-  if( loadArmSpaceDescriptionsFromFile(_radius,_min_view_distance,_view_resolution,_joint_space,_joint_trajectories) )
+  if(data_folder_set_)
   {
-    ROS_INFO_STREAM("Complete arm space informations for radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk: Successfully loaded.");
-    return;
+    if( loadArmSpaceDescriptionsFromFile(_radius,_min_view_distance,_view_resolution,_joint_space,_joint_trajectories) )
+    {
+      ROS_INFO_STREAM("Complete arm space informations for radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk: Successfully loaded.");
+      return;
+    }
   }
   
   ROS_INFO_STREAM("No arm space information for the given  configuration radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk. New configuration is being calculated.");
@@ -436,7 +439,8 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   
   if( valid_joint_values.size()!=0 )
   {
-    saveArmSpaceDescriptionsToFile(_radius,_min_view_distance,_view_resolution,valid_joint_values,final_trajectories);
+    if( data_folder_set_ )
+      saveArmSpaceDescriptionsToFile(_radius,_min_view_distance,_view_resolution,valid_joint_values,final_trajectories);
     ROS_INFO("Grid calculation succeeded.");
   }
   else
@@ -557,21 +561,28 @@ bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _min_
 
 void YoubotPlanner::getArmGrid( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
 {
-  if( loadArmGridFromFile(_resolution,_joint_values,_coordinates) )
+  if(data_folder_set_)
   {
-    ROS_INFO_STREAM("Found calculated youbot arm grid with resolution "<<_resolution<<" on file and loaded it successfully.");
-    return;
+    if( loadArmGridFromFile(_resolution,_joint_values,_coordinates) )
+    {
+      ROS_INFO_STREAM("Found calculated youbot arm grid with resolution "<<_resolution<<" on file and loaded it successfully.");
+      return;
+    }
   }
   ROS_INFO_STREAM("Found no fitting grid on file, calculating new one.");
   calculateArmGrid( _resolution,_resolution,_joint_values,&_coordinates );
   
   if( _joint_values.size()!=0 )
   {
-    ROS_INFO_STREAM("Successfully calculated arm grid with "<<_joint_values.size()<<" points. Saving it to disk.");
-    if( saveArmGridToFile( _resolution,_joint_values,_coordinates ) )
-      ROS_INFO("Grid saved.");
-    else
-      ROS_INFO("Saving the grid failed.");
+    ROS_INFO_STREAM("Successfully calculated arm grid with "<<_joint_values.size()<<" points.");
+    if(data_folder_set_)
+    {
+      ROS_INFO_STREAM("Saving it to disk.");
+      if( saveArmGridToFile( _resolution,_joint_values,_coordinates ) )
+	ROS_INFO("Grid saved.");
+      else
+	ROS_INFO("Saving the grid failed.");
+    }
   }
   else
     ROS_INFO_STREAM("Arm grid calculation failed, no fitting grid points were found.");

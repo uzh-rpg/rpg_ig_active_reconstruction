@@ -314,6 +314,7 @@ private:
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
+  bool data_folder_set_;
   std::string data_folder_;
   ViewPointData* init_view_; // initial viewpoint (most likely not part of view point grid...)
   ViewPointData* current_view_;

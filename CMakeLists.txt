@@ -59,7 +59,7 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
 )
 
 
-add_executable(develop
+add_executable(youbot_interface
   src/dense_reconstruction/ros_nodes/develop.cpp
   src/dense_reconstruction/code_base/youbot_planning.cpp
   src/utils/ros_eigen.cpp
@@ -67,13 +67,13 @@ add_executable(develop
   ${DENSE_RECONSTRUCTION_BASE_SRC}
 )
 
-target_link_libraries(develop
+target_link_libraries(youbot_interface
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   movements
 )
 
-add_dependencies(develop
+add_dependencies(youbot_interface
  ${catkin_EXPORTED_TARGETS}
 )
 
