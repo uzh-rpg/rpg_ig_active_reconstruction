@@ -32,15 +32,17 @@ namespace dense_reconstruction
 YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   :ros_node_(_n)
   ,tf_listener_(*_n)
-  ,base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
+  ,base_trajectory_sender_("/base_controller/follow_joint_trajectory", true)
 {
-  data_folder_set_ = ros_node_->getParam("data_folder",data_folder_);
+  data_folder_set_ = ros_node_->getParam("/dense_reconstruction/youbot_interface/data_folder",data_folder_);
+  if( !data_folder_set_ )
+    ROS_WARN("No data folder was set on parameter server. Precomputed arm configurations will not be loaded or stored.");
   
   planning_group_ = "arm";
   std::string remode_control_topic = "/remode/command";
   
+  //moveit::planning_interface::MoveGroup::Options mg_options(planning_group_,"robot_description",*ros_node_);
   robot_ = boost::shared_ptr<moveit::planning_interface::MoveGroup>( new moveit::planning_interface::MoveGroup(planning_group_) );
-  
   
   //setEndEffectorPlanningFrame("camera");
   base_planning_frame_="odom";
@@ -365,59 +367,85 @@ View YoubotPlanner::viewFromViewPointData( ViewPointData& _vpd )
 
 void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
-  if(data_folder_set_)
-  {
-    if( loadArmSpaceDescriptionsFromFile(_radius,_min_view_distance,_view_resolution,_joint_space,_joint_trajectories) )
-    {
-      ROS_INFO_STREAM("Complete arm space informations for radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk: Successfully loaded.");
-      return;
-    }
-  }
   
-  ROS_INFO_STREAM("No arm space information for the given  configuration radius = "<<_radius<<", min view distance = "<<_min_view_distance<<" and view resolution = "<<_view_resolution<<" found on disk. New configuration is being calculated.");
-  // probably not the most effective way for calculating but fast to program
-  
-  // get arm grid
-  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_value_grid;
-  std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > coordinate_grid;
-  getArmGrid( _view_resolution, joint_value_grid, coordinate_grid );
-    
   // filter out grid points for which no scanning is possible, get trajectories for those points for which scanning is possible
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > possible_joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > possible_coordinates;
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > trajectories;
-    
-  int nr_of_planning_attempts = 100;
-  ROS_INFO_STREAM("Calculating trajectories for arm grid which consists of "<<joint_value_grid.size()<<" points. Currently at most "<<nr_of_planning_attempts<<" attempts are performed for each point. Points with unfeasible trajectories are disregarded.");
-  ros::Duration(5).sleep();
-  for( unsigned int i=0; i<joint_value_grid.size(); i++ )
+  
+  bool recalculate_arm_space = true;
+  if(data_folder_set_) // try to load data from file
   {
-    auto joint_config = joint_value_grid[i];
-    auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
-    ROS_INFO_STREAM("Calculating trajectory for grid point "<<i<<"...");
-    if( calculateScanTrajectory(joint_config,_radius,*trajectory,100) )
+    if( loadArmSpaceDescriptionsFromFile(_radius,_view_resolution,possible_joint_values,possible_coordinates,trajectories) )
     {
-      possible_joint_values.push_back(joint_config);
-      trajectories.push_back(trajectory);
-      possible_coordinates.push_back(coordinate_grid[i]);
-      ROS_INFO_STREAM("Success! This is a feasible configuration for scanning movements, configuration is added.");
+      ROS_INFO_STREAM("Complete arm space informations for radius = "<<_radius<<" and view resolution = "<<_view_resolution<<" found on disk: Successfully loaded.");
+      recalculate_arm_space = false;
+    }
+  }
+  if(recalculate_arm_space)
+  {
+    ROS_INFO_STREAM("No arm space information for the given  configuration radius = "<<_radius<<" and view resolution = "<<_view_resolution<<" found on disk. New configuration is being calculated.");
+    // probably not the most effective way for calculating but fast to program
+    
+    // get arm grid
+    std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_value_grid;
+    std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > coordinate_grid;
+    getArmGrid( _view_resolution, joint_value_grid, coordinate_grid );
+      
+      
+    int nr_of_planning_attempts = 1; // the robot state cartesian path computation method looks deterministic
+    ROS_INFO_STREAM("Calculating trajectories for arm grid which consists of "<<joint_value_grid.size()<<" points. Currently at most "<<nr_of_planning_attempts<<" attempts are performed for each point. Points with unfeasible trajectories are disregarded.");
+    ros::Duration(5).sleep();
+    for( unsigned int i=0; i<joint_value_grid.size(); i++ )
+    {
+      auto joint_config = joint_value_grid[i];
+      auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
+      ROS_INFO_STREAM("Calculating trajectory for grid point "<<i<<"/"<<joint_value_grid.size()<<"...");
+      if( calculateScanTrajectory(joint_config,_radius,*trajectory,nr_of_planning_attempts) )
+      {
+	possible_joint_values.push_back(joint_config);
+	trajectories.push_back(trajectory);
+	possible_coordinates.push_back(coordinate_grid[i]);
+	ROS_INFO_STREAM("Success! This is a feasible configuration for scanning movements, configuration is added.");
+	ros::Duration(1).sleep();
+      }
+      else
+      {
+	ROS_INFO_STREAM("Trajectory could not be computed for this configuration, configuration is dropped.");
+	ros::Duration(1).sleep();
+      }
+    }
+    
+    if( possible_joint_values.size()!=0 )
+    {
+      ROS_INFO("Grid calculation succeeded.");
+      if( data_folder_set_ )
+      {
+	ROS_INFO("Attempting to save calculated data.");
+	if( saveArmSpaceDescriptionsToFile(_radius,_view_resolution,possible_joint_values, possible_coordinates, trajectories) )
+	{
+	  ROS_INFO("Data saved.");
+	}
+	else
+	  ROS_INFO("Failed to save data.");
+      }
     }
     else
-      ROS_INFO_STREAM("Trajectory could not be computed for this configuration, configuration is dropped.");
+      ROS_INFO("Grid calculation failed.");
+    
   }
-  
-  // filter out by distance
+  // filter data by distance
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > valid_joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > valid_coordinates;
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > final_trajectories;
   
-  ROS_INFO_STREAM("Currently "<<valid_joint_values.size()<<" arm grid points are valid. Filtering by min distance...");
+  ROS_INFO_STREAM(""<<possible_joint_values.size()<<" feasible arm grid points were found. Filtering by min distance...");
   ros::Duration(5).sleep();
   
   for( unsigned int i=0; i<possible_joint_values.size(); i++ )
   {
     bool is_not_too_close = true;
-    for( unsigned int a=0; a<possible_joint_values.size(); a++ )
+    for( unsigned int a=0; a<valid_joint_values.size(); a++ )
     {
       Eigen::Vector2d dist = possible_coordinates[i]-valid_coordinates[a];
       is_not_too_close = is_not_too_close && ( dist.norm()<=_min_view_distance );
@@ -437,29 +465,20 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   
   ROS_INFO_STREAM( valid_joint_values.size()<<" points are left in final arm grid." );
   
-  if( valid_joint_values.size()!=0 )
-  {
-    if( data_folder_set_ )
-      saveArmSpaceDescriptionsToFile(_radius,_min_view_distance,_view_resolution,valid_joint_values,final_trajectories);
-    ROS_INFO("Grid calculation succeeded.");
-  }
-  else
-    ROS_INFO("Grid calculation failed.");
 }
 
-bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
+bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
-  ROS_INFO("well this is just weird");
   std::string file_name;
   std::stringstream file_name_str;
   
-  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_radius<<"_"<<_min_view_distance<<"_"<<_view_resolution<<".youbotarm";
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
   file_name=file_name_str.str();
   
   std::ifstream in(file_name, std::ifstream::in);
   
   int nr_of_points;
-  if( !in>>nr_of_points )
+  if( !(in>>nr_of_points) )
     return false;
   
   for( unsigned int i=0; i<nr_of_points ; i++ )
@@ -472,10 +491,18 @@ bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _mi
     successfully_read = successfully_read && ( in>>joint_angles(1) );
     successfully_read = successfully_read && ( in>>joint_angles(2) );
     
-    int nr_of_traj_points;
-    successfully_read = successfully_read && ( in>>nr_of_traj_points );
     
     _joint_space.push_back(joint_angles);
+    
+    Eigen::Vector2d grid_coordinates;
+    
+    successfully_read = successfully_read && ( in>>grid_coordinates(0) );
+    successfully_read = successfully_read && ( in>>grid_coordinates(1) );
+    
+    _coordinates.push_back(grid_coordinates);
+    
+    int nr_of_traj_points;
+    successfully_read = successfully_read && ( in>>nr_of_traj_points );
     
     auto trajectory = boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
     
@@ -493,6 +520,7 @@ bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _mi
     if( !successfully_read )
     {
       _joint_space.clear();
+      _coordinates.clear();
       _joint_trajectories.clear();
       return false;
     }
@@ -501,26 +529,25 @@ bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _mi
   }
   
   in.close();
-  ROS_INFO("well this is just weird2");
   
   return true;
 }
 
-bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
+bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
 {
   std::string file_name;
   std::stringstream file_name_str;
   
-  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_radius<<"_"<<_min_view_distance<<"_"<<_view_resolution<<".youbotarm";
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
   file_name=file_name_str.str();
   
   std::ofstream out(file_name, std::ofstream::trunc);
   
   
   int nr_of_points = _joint_space.size();
-  if( !out<<nr_of_points )
+  if( !(out<<nr_of_points) )
     return false;
-  if( _joint_trajectories.size()!=nr_of_points )
+  if( _joint_trajectories.size()!=nr_of_points || nr_of_points!=_coordinates.size() )
     return false;
   
   for( unsigned int i=0; i<nr_of_points ; i++ )
@@ -529,12 +556,16 @@ bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _min_
     
     bool successfully_wrote=true;
     
-    successfully_wrote = successfully_wrote && ( out<<joint_angles(0) );
-    successfully_wrote = successfully_wrote && ( out<<joint_angles(1) );
-    successfully_wrote = successfully_wrote && ( out<<joint_angles(2) );
+    successfully_wrote = successfully_wrote && ( out<<" "<<joint_angles(0) );
+    successfully_wrote = successfully_wrote && ( out<<" "<<joint_angles(1) );
+    successfully_wrote = successfully_wrote && ( out<<" "<<joint_angles(2) );
+    
+    Eigen::Vector2d coordinates = _coordinates[i];
+    successfully_wrote = successfully_wrote && ( out<<" "<<coordinates(0) );
+    successfully_wrote = successfully_wrote && ( out<<" "<<coordinates(1) );
     
     int nr_of_traj_points = (*_joint_trajectories[i]).size();
-    successfully_wrote = successfully_wrote && ( out<<nr_of_traj_points );
+    successfully_wrote = successfully_wrote && ( out<<" "<<nr_of_traj_points );
         
     auto trajectory = _joint_trajectories[i];
     
@@ -542,9 +573,9 @@ bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _min_
     {
       Eigen::Vector3d traj_point = (*trajectory)[t];
     
-      successfully_wrote = successfully_wrote && ( out<<traj_point(0) );
-      successfully_wrote = successfully_wrote && ( out<<traj_point(1) );
-      successfully_wrote = successfully_wrote && ( out<<traj_point(2) );
+      successfully_wrote = successfully_wrote && ( out<<" "<<traj_point(0) );
+      successfully_wrote = successfully_wrote && ( out<<" "<<traj_point(1) );
+      successfully_wrote = successfully_wrote && ( out<<" "<<traj_point(2) );
     }
     
     if( !successfully_wrote )
@@ -586,6 +617,7 @@ void YoubotPlanner::getArmGrid( double _resolution, std::vector< Eigen::Vector3d
   }
   else
     ROS_INFO_STREAM("Arm grid calculation failed, no fitting grid points were found.");
+  ros::Duration(5).sleep();
 }
 
 bool YoubotPlanner::loadArmGridFromFile( double _resolution, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_values, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates )
@@ -884,8 +916,10 @@ bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d _joint_values, doub
   do
   {
     count++;
-    successfully_planned = filteredPlanFromMovementsPathForRobotState( m_waypoints, "camera", robot_state, _joint_trajectory, 3, max_dropoff, true );
-  }while(!successfully_planned && count<1000 );
+    if( count%5==0)
+      ROS_INFO_STREAM("Attempt "<<count<<"/"<<_planning_attempts);
+    successfully_planned = filteredPlanFromMovementsPathForRobotState( m_waypoints, "camera", robot_state, _joint_trajectory, 1, max_dropoff, false );
+  }while(!successfully_planned && count<_planning_attempts );
   
   return successfully_planned;
 }
@@ -927,7 +961,7 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
     success_ratio = state.computeCartesianPath( state.getJointModelGroup("arm"), trajectory, state.getLinkModel(_link_name), waypoints, true, 0.1, 0 );
     if( total_it_count%10==0 && _verbose )
     {
-      ROS_INFO_STREAM("Attempting to compute cartesian path with "<<waypoints.size()<<" waypoints. Current success ratio is "<<success_ratio<<", "<<dropped_points<<" points have been dropped out of "<<passed_points<<" which accounts for a dropoff of "<<passed_points/(double)passed_points<<"%.");
+      ROS_INFO_STREAM("Attempting to compute cartesian path with "<<waypoints.size()<<" waypoints. Current success ratio is "<<success_ratio<<", "<<dropped_points<<" points have been dropped out of "<<passed_points<<" which accounts for a dropoff of "<<100.0*dropped_points/(double)passed_points<<"%.");
     }
     if( success_ratio!=1 && count>_planning_attempts ) // filter stage - only if necessary: a little complicated since working with vectors (which is given)
     {

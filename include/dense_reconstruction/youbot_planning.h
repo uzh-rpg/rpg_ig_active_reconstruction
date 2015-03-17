@@ -149,12 +149,12 @@ public:
   /**
    * attempts to load the arm space descriptions (see getArmSpaceDescriptions(...)) from file, returns true if successful
    */
-  bool loadArmSpaceDescriptionsFromFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  bool loadArmSpaceDescriptionsFromFile( double _radius, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
   
   /**
    * attempts to save the arm space descriptions to file, using the default filename and location (data_folder_ - make sure it's valid, it's existence is not tested)
    */
-  bool saveArmSpaceDescriptionsToFile( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
+  bool saveArmSpaceDescriptionsToFile( double _radius, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> >& _coordinates, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories );
   
   /**
    * loads an arm grid corresponding to the given parameters (tries to load it from file: If this fails, a new grid will be generated and then saved (make sure the data_folder_ exists)

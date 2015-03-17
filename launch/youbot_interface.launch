@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-  
-  <node pkg="dense_reconstruction" type="youbot_interface" name="youbot_interface" clear_params="true" output="screen">
+  <!--ns="dense_reconstruction"-->
+  <node pkg="dense_reconstruction" type="youbot_interface" name="youbot_interface"  clear_params="true" output="screen">
     <param name="data_folder" value="$(find dense_reconstruction)/data/" />
   </node>
 

@@ -26,7 +26,7 @@ using namespace std;
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "youbot_reconstruction_controller");
-  ros::NodeHandle n("youbot_reconstruction_controller");
+  ros::NodeHandle n;
     
   dense_reconstruction::YoubotPlanner youbot(&n);
   youbot.initializePlanningFrame();
