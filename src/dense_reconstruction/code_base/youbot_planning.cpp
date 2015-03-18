@@ -106,7 +106,7 @@ bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _i
   ROS_INFO("Initializing ViewSpace for the given parameters...");
   
   boost::shared_ptr<SpaceInfo> info = boost::dynamic_pointer_cast<SpaceInfo>( _info.getSpecifics() );
-  if( base_movement_center_.position == Eigen::Vector3d(0,0,0) )
+  if( info->approximate_relative_object_position_ == Eigen::Vector3d(0,0,0) )
   {
     ROS_ERROR("YoubotPlanner::initializePlanningSpace::The provided base_movement_center_ (0,0,0) says that the object resides exactly at the position of the robot which is not possible.");
     return false;
@@ -286,20 +286,6 @@ bool YoubotPlanner::moveTo( View& _target_view )
       std::cout<<std::endl<<"x:"<<base_target_pos.position.x();
       std::cout<<std::endl<<"y:"<<base_target_pos.position.y();
       std::cout<<std::endl<<"z:"<<base_target_pos.position.z();
-  movements::Pose base_current_pos_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
-  movements::Pose base_current_pos;
-  try
-  {
-    if( plan_base_in_global_frame_ )
-      base_current_pos = moveitPlanningFrameToViewPlanningFrame( base_current_pos_rpf );
-    else
-      base_current_pos = base_current_pos_rpf;
-  }
-  catch(std::runtime_error& e)
-  {
-    ROS_WARN_STREAM("YoubotPlanner::moveTo::"<<e.what()<<".. Using local moveit planning frame instead.");
-    base_current_pos = base_current_pos_rpf;
-  }
   successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
   
   if( successfully_moved )
@@ -1319,7 +1305,19 @@ bool YoubotPlanner::makeScan(double _max_dropoff)
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed )
 {
   movements::Pose base_pose_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
-  movements::Pose base_pose = moveitPlanningFrameToViewPlanningFrame(base_pose_rpf);
+  movements::Pose base_pose;
+  try
+  {
+    if( plan_base_in_global_frame_ )
+      movements::Pose base_pose = moveitPlanningFrameToViewPlanningFrame(base_pose_rpf);
+    else
+      base_pose = base_pose_rpf;
+  }
+  catch(std::runtime_error& e)
+  {
+    ROS_WARN_STREAM("YoubotPlanner::moveTo::"<<e.what()<<".. Using local moveit planning frame instead.");
+    base_pose = base_pose_rpf;
+  }
     
   // start position, end position, angular speed, movement direction
   movements::KinMove circle_seg = movements::CircularGroundPath::create( base_pose.position, _target_position.position, _radial_speed, movements::CircularGroundPath::SHORTEST );
@@ -1837,11 +1835,12 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
       BaseConfig new_config;
       new_config.pose_ = movement_center + circle(time);
       _config.push_back(new_config);
-      std::cout<<std::endl<<"base pose is:";
+      
+      /*std::cout<<std::endl<<"base pose is:";
       std::cout<<std::endl<<"position:";
       std::cout<<std::endl<<"x:"<<new_config.pose_.position.x();
       std::cout<<std::endl<<"y:"<<new_config.pose_.position.y();
-      std::cout<<std::endl<<"z:"<<new_config.pose_.position.z();
+      std::cout<<std::endl<<"z:"<<new_config.pose_.position.z();*/
     }
   }
 }

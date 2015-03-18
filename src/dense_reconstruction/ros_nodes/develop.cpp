@@ -48,11 +48,10 @@ int main(int argc, char **argv)
     
   dense_reconstruction::View current_view = youbot.getCurrentView();
   
-  cout<<"current view:"<<endl;
-  cout<<current_view;
-  
-  
   using namespace dense_reconstruction;
+   std::vector<View, Eigen::aligned_allocator<View> > view_space_copy = view_space.getViewSpace();
+  
+  
   
   dense_reconstruction::View closest = view_space.getAClosestNeighbour(current_view);
   
@@ -62,7 +61,17 @@ int main(int argc, char **argv)
   YoubotPlanner::ViewPointData* data = info->getViewPointData();
   ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
   
-  youbot.moveTo(closest);  
+  youbot.moveTo(view_space_copy[0]);  
+  youbot.retrieveData();
+  youbot.moveTo(view_space_copy[1]);  
+  youbot.retrieveData();
+  youbot.moveTo(view_space_copy[2]);  
+  youbot.retrieveData();
+  youbot.moveTo(view_space_copy[3]);  
+  youbot.retrieveData();
+  youbot.moveTo(view_space_copy[4]);  
+  youbot.retrieveData();
+  youbot.moveTo(view_space_copy[5]);  
   youbot.retrieveData();
   
   
