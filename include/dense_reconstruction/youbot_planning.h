@@ -336,6 +336,7 @@ private:
   std::vector<ViewPointData, Eigen::aligned_allocator<ViewPointData> > view_point_data_;
   
   geometry_msgs::Transform arm2image_; // from hand-eye calibration
+  bool plan_base_in_global_frame_; // true: global view planning frame is used for planning base paths. false: the moveit planning frame is used (e.g. odom)
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps
   double base_radial_speed_; // base speed to move [rad/s]
   double scan_radius_; // for now...

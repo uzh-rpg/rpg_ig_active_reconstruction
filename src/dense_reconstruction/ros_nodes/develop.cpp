@@ -63,6 +63,7 @@ int main(int argc, char **argv)
   ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
   
   youbot.moveTo(closest);  
+  youbot.retrieveData();
   
   
   ROS_INFO("If the program terminates now it has reached the correct exit point");

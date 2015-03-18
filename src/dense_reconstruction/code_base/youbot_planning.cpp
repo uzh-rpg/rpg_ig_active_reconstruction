@@ -33,6 +33,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   :ros_node_(_n)
   ,tf_listener_(*_n)
   ,base_trajectory_sender_("/base_controller/follow_joint_trajectory", true)
+  ,plan_base_in_global_frame_(true)
 {
   data_folder_set_ = ros_node_->getParam("/youbot_interface/data_folder",data_folder_);
   if( !data_folder_set_ )
@@ -45,6 +46,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   robot_ = boost::shared_ptr<moveit::planning_interface::MoveGroup>( new moveit::planning_interface::MoveGroup(planning_group_) );
   
   //setEndEffectorPlanningFrame("camera");
+  plan_base_in_global_frame_ = false;
   base_planning_frame_="odom";
   view_planning_frame_="dr_origin";
   
@@ -200,9 +202,7 @@ RobotPlanningInterface::ReceiveInfo YoubotPlanner::retrieveData()
   
   moveit::planning_interface::MoveGroup::Plan scan;
   getFullMotionPlan( *current_view_, scan );
-  
-  ROS_INFO_STREAM("Gonna execute trajectory with "<<scan.trajectory_.joint_trajectory.points.size()<<" points which will take about "<<0.2*scan.trajectory_.joint_trajectory.points.size()<<" seconds.");
-  
+    
   if( scan.trajectory_.joint_trajectory.points.size()!=0 )
   {
     remode_commander_.publish(remode_start_);
@@ -280,8 +280,26 @@ bool YoubotPlanner::moveTo( View& _target_view )
     
   // move base
   movements::Pose base_target_pos = (*referenced_view_point).base_config_.pose_;
+  
+      std::cout<<std::endl<<"base pose to move to is:";
+      std::cout<<std::endl<<"position:";
+      std::cout<<std::endl<<"x:"<<base_target_pos.position.x();
+      std::cout<<std::endl<<"y:"<<base_target_pos.position.y();
+      std::cout<<std::endl<<"z:"<<base_target_pos.position.z();
   movements::Pose base_current_pos_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
-  movements::Pose base_current_pos = moveitPlanningFrameToViewPlanningFrame( base_current_pos_rpf );
+  movements::Pose base_current_pos;
+  try
+  {
+    if( plan_base_in_global_frame_ )
+      base_current_pos = moveitPlanningFrameToViewPlanningFrame( base_current_pos_rpf );
+    else
+      base_current_pos = base_current_pos_rpf;
+  }
+  catch(std::runtime_error& e)
+  {
+    ROS_WARN_STREAM("YoubotPlanner::moveTo::"<<e.what()<<".. Using local moveit planning frame instead.");
+    base_current_pos = base_current_pos_rpf;
+  }
   successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
   
   if( successfully_moved )
@@ -1041,8 +1059,8 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
 {
   robot_state::RobotState state(_state);
   
-  /*std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > waypoints;
-  //std::vector< robot_state::RobotStatePtr> trajectory;
+  std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > waypoints;
+  std::vector< robot_state::RobotStatePtr> trajectory;
   
   //construct waypoints vector
   BOOST_FOREACH( auto pose, _waypoints )
@@ -1051,23 +1069,23 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
     Eigen::Affine3d affine_pose;
     affine_pose.matrix() << st_is::transformationMatrix( geo_pose ),0,0,0,1;
     waypoints.push_back(affine_pose);
-  }*/
+  }
   double success_ratio = 0;
   int count=0;
   int dropped_points = 0;
   int passed_points = _waypoints.size();
   int total_it_count = 0;
   
-  robot_->setStartState(_state);
-  std::vector<geometry_msgs::Pose> waypoints = movements::toROS(_waypoints);
-  moveit_msgs::RobotTrajectory trajectory;
+  //robot_->setStartState(_state);
+  //std::vector<geometry_msgs::Pose> waypoints = movements::toROS(_waypoints);
+  //moveit_msgs::RobotTrajectory trajectory;
   
   while( success_ratio!=1 && ros_node_->ok() )
   {
     total_it_count++;
     count++;
-    success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
-    //success_ratio = state.computeCartesianPath( state.getJointModelGroup("arm"), trajectory, state.getLinkModel(_link_name), waypoints, true, 0.1, 0 );
+    //success_ratio=robot_->computeCartesianPath( waypoints, 0.1,0 /*0.2 = ~10 degree max dist in config space, 0 disables it*/, trajectory );
+    success_ratio = state.computeCartesianPath( state.getJointModelGroup("arm"), trajectory, state.getLinkModel(_link_name), waypoints, true, 0.1, 0 );
     if( total_it_count%10==0 && _verbose )
     {
       ROS_INFO_STREAM("Attempting to compute cartesian path with "<<waypoints.size()<<" waypoints. Current success ratio is "<<success_ratio<<", "<<dropped_points<<" points have been dropped out of "<<passed_points<<" which accounts for a dropoff of "<<100.0*dropped_points/(double)passed_points<<"%.");
@@ -1095,7 +1113,7 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
 	}
       }
       
-      int valid_points = trajectory.joint_trajectory.points.size(); // -> also the index of the point which will be dropped
+      int valid_points = trajectory.size(); // -> also the index of the point which will be dropped
       count = 0;
       // drop point for which calculation failed
       for( unsigned int i=valid_points; i<waypoints.size()-1; i++ )
@@ -1108,15 +1126,15 @@ bool YoubotPlanner::filteredPlanFromMovementsPathForRobotState( const movements:
   }
   // success!
   // fill output joint value path
-  BOOST_FOREACH( auto robot_state, trajectory.joint_trajectory.points )
+  BOOST_FOREACH( auto robot_state, trajectory )
   {
     Eigen::Vector3d joint_values;
-    joint_values(0) = robot_state.positions[1];
-    joint_values(1) = robot_state.positions[2];
-    joint_values(2) = robot_state.positions[3];
+    joint_values(0) = robot_state->getVariablePosition("arm_joint_2");
+    joint_values(1) = robot_state->getVariablePosition("arm_joint_3");
+    joint_values(2) = robot_state->getVariablePosition("arm_joint_4");
     _joint_values.push_back(joint_values);
   }
-  robot_->setStartStateToCurrentState();
+  //robot_->setStartStateToCurrentState();
   return true; 
 }
 
@@ -1790,7 +1808,10 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
   movements::Pose current_base_pos;
   try
   {
-    current_base_pos = moveitPlanningFrameToViewPlanningFrame( current_base_pos_rpf ); // ok, not really necessary...
+    if( plan_base_in_global_frame_ )
+      current_base_pos = moveitPlanningFrameToViewPlanningFrame( current_base_pos_rpf ); // ok, not really necessary...
+    else
+      current_base_pos = current_base_pos_rpf;
   }
   catch(std::runtime_error& e)
   {
@@ -1816,8 +1837,8 @@ void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vecto
       BaseConfig new_config;
       new_config.pose_ = movement_center + circle(time);
       _config.push_back(new_config);
-      std::cout<<"base pose is:";
-      std::cout<<"position:";
+      std::cout<<std::endl<<"base pose is:";
+      std::cout<<std::endl<<"position:";
       std::cout<<std::endl<<"x:"<<new_config.pose_.position.x();
       std::cout<<std::endl<<"y:"<<new_config.pose_.position.y();
       std::cout<<std::endl<<"z:"<<new_config.pose_.position.z();
