@@ -149,6 +149,9 @@ private:
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
+  bool data_folder_set_;
+  std::string data_folder_;
+  
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps
   double base_radial_speed_; // base speed to move [rad/s]
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame

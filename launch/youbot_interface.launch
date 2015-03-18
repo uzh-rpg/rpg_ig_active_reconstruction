@@ -3,6 +3,12 @@
   <!--ns="dense_reconstruction"-->
   <node pkg="dense_reconstruction" type="youbot_interface" name="youbot_interface"  clear_params="true" output="screen">
     <param name="data_folder" value="$(find dense_reconstruction)/data/" />
+    <!--
+    <param name="init/joint_1" value="1.35" />
+    <param name="init/joint_2" value="0.7" />
+    <param name="init/joint_3" value="-1.0" />
+    <param name="init/joint_4" value="2.2" />
+    <param name="init/joint_5" value="2.9" />-->
   </node>
 
   

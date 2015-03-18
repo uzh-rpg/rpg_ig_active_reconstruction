@@ -37,13 +37,40 @@ int main(int argc, char **argv)
   specifics->approximate_relative_object_position_ << 1,0,0;
   specifics->base_pts_per_circle_ = 2;
   specifics->arm_min_view_distance_ = 0.3;
-  specifics->arm_view_resolution_ = 10; // [pts/m]
+  specifics->arm_view_resolution_ = 100; // [pts/m]
   
   simple_setup.setSpecifics(specifics);
   
   youbot.initializePlanningSpace(simple_setup);
   
+  dense_reconstruction::ViewSpace view_space;
+  youbot.getPlanningSpace( &view_space );
+    
+  dense_reconstruction::View current_view = youbot.getCurrentView();
+  
+  cout<<"current view:"<<endl;
+  cout<<current_view;
+  
+  
+  using namespace dense_reconstruction;
+  
+  dense_reconstruction::View closest = view_space.getAClosestNeighbour(current_view);
+  
+  /*
+  boost::shared_ptr<dense_reconstruction::View::ViewInfo> info_reference = closest.associatedData();
+  boost::shared_ptr<YoubotPlanner::ViewInfo> info = boost::dynamic_pointer_cast<YoubotPlanner::ViewInfo>(info_reference);
+  YoubotPlanner::ViewPointData* data = info->getViewPointData();
+  ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
+  
+  youbot.moveTo(closest);  
+  
+  
+  ROS_INFO("If the program terminates now it has reached the correct exit point");
   return 0;
+  
+  
+  
+  
   
   
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_values;

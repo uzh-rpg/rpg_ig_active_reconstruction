@@ -55,3 +55,18 @@ Pose& Pose::operator+=( movements::CombinedRelativeMovement  _second )
 }
 
 }
+
+std::ostream& operator<<(std::ostream& _out, movements::Pose& _pose )
+{
+  _out<<"Pose:\n";
+  _out<<"  position: \n";
+  _out<<"    x: "<<_pose.position.x()<<"\n";
+  _out<<"    y: "<<_pose.position.y()<<"\n";
+  _out<<"    z: "<<_pose.position.z()<<"\n";
+  _out<<"  orientation: \n";
+  _out<<"    x: "<<_pose.orientation.x()<<"\n";
+  _out<<"    y: "<<_pose.orientation.y()<<"\n";
+  _out<<"    z: "<<_pose.orientation.z()<<"\n";
+  _out<<"    w: "<<_pose.orientation.w()<<"\n";
+  return _out;
+}

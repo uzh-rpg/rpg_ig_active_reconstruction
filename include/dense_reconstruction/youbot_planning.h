@@ -112,6 +112,16 @@ public:
    */
   virtual bool moveTo( View& _target_view );
   
+  /**
+   * moves the arm into initial pose and sets this position as the current view
+   */
+  bool assumeAndSetInitialPose();
+  
+  /**
+   * moves the arm into the positions given by the joints (no collision checking, no boundary checking!)
+   */
+  bool assumeArmPosition( const std::vector<double>& _joint_values );
+  
   /** attempts to find the pointer to a ViewPointData corresponding to the view _view
    * @param _view the view for which the corresponding ViewPointData is sought
    * @throw std::runtime_error if _view's associated data is not of type "YoubotPlanningSpaceInfo"
@@ -229,7 +239,12 @@ public:
   movements::Pose getCurrentLinkPose( std::string _link );
   
   /**
-   * transforms a pose in moveit planning frame (e.g. odom) to view plannign frame (e.g. dr_origin) using the current transform from /tf
+   * returns the pose of link _link relative to global view planning frame (e.g. dr_origin)
+   */
+  movements::Pose getCurrentGlobalLinkPose( std::string _link );
+  
+  /**
+   * transforms a pose in moveit planning frame (e.g. odom) to view planning frame (e.g. dr_origin) using the current transform from /tf
    * @throws std::runtime_error if the transform couldn't be retrieved in time
    */
   movements::Pose moveitPlanningFrameToViewPlanningFrame( movements::Pose& _moveit_pose );
@@ -317,12 +332,13 @@ private:
   bool data_folder_set_;
   std::string data_folder_;
   ViewPointData* init_view_; // initial viewpoint (most likely not part of view point grid...)
-  ViewPointData* current_view_;
+  ViewPointData* current_view_; // =nullptr if invalid
   std::vector<ViewPointData, Eigen::aligned_allocator<ViewPointData> > view_point_data_;
   
   geometry_msgs::Transform arm2image_; // from hand-eye calibration
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps
   double base_radial_speed_; // base speed to move [rad/s]
+  double scan_radius_; // for now...
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame
   // the radius is calculated automatically by taking the distance between the movement center and the position when the movement is started
     

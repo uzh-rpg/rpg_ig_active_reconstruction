@@ -33,6 +33,10 @@ YoubotFixedWaypointReconstructionController::YoubotFixedWaypointReconstructionCo
   tf_listener_(*_n),
   base_trajectory_sender_("base_controller/follow_joint_trajectory", true)
 {
+  data_folder_set_ = ros_node_->getParam("/dense_reconstruction/youbot_interface/data_folder",data_folder_);
+  if( !data_folder_set_ )
+    ROS_WARN("No data folder was set on parameter server. Precomputed arm configurations will not be loaded or stored.");
+  
   planning_group_ = "arm";
   std::string remode_control_topic = "/remode/command";
   
@@ -143,7 +147,7 @@ bool YoubotFixedWaypointReconstructionController::makeScan(double _max_dropoff)
   else
   {
     // try to load trajectory
-    plan.trajectory_ = loadUpperArmTrajectory( "/home/stewss/Documents/YoubotTrajectories/YoubotSpinTrajectory_LM.traj" );
+    plan.trajectory_ = loadUpperArmTrajectory( data_folder_set_+"data/YoubotSpinTrajectory_LM.traj" );
     if( !plan.trajectory_.joint_trajectory.points.empty() ) // got plan from file
     {
       ROS_INFO("Loaded trajectory from file.");

@@ -39,6 +39,17 @@ public:
    */
   void push_back( View _new_vp );
   
+  /** returns the view closest to the position passed, ignoring orientation. If more than one views in the view space have the same distance, the first found is returned
+   * @param _view the view for which the closest other view is sought
+   * @throws std::runtime_error if the view space is empty
+   */
+  View getAClosestNeighbour( View& _view );
+  
+  /**
+   * return the size of the view space
+   */
+  unsigned int size();
+  
   /** returns all views within a certain range (distance) of another view
    * @param _reference_view view from which the distances are calculated
    * @param _distance the distance (<=)

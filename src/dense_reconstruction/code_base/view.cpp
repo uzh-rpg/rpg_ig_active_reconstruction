@@ -68,3 +68,18 @@ boost::shared_ptr<dense_reconstruction::View::ViewInfo>& View::associatedData()
 
 
 }
+
+std::ostream& operator<<(std::ostream& _out, dense_reconstruction::View& _view )
+{
+  _out<<"Pose:\n";
+  _out<<"  position: \n";
+  _out<<"    x: "<<_view.pose().position.x()<<"\n";
+  _out<<"    y: "<<_view.pose().position.y()<<"\n";
+  _out<<"    z: "<<_view.pose().position.z()<<"\n";
+  _out<<"  orientation: \n";
+  _out<<"    x: "<<_view.pose().orientation.x()<<"\n";
+  _out<<"    y: "<<_view.pose().orientation.y()<<"\n";
+  _out<<"    z: "<<_view.pose().orientation.z()<<"\n";
+  _out<<"    w: "<<_view.pose().orientation.w()<<"\n";
+  return _out;
+}

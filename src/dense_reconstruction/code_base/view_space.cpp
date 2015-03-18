@@ -35,6 +35,34 @@ void ViewSpace::push_back( View _new_vp )
   view_space_.push_back(_new_vp);
 }
 
+View ViewSpace::getAClosestNeighbour( View& _view )
+{
+  if( view_space_.empty() )
+    throw std::runtime_error("ViewSpace::getAClosestNeighbour::Cannot find a closest neighbour since the view space is empty.");
+    
+  Eigen::Vector3d probe = _view.pose().position;
+  View closest = view_space_[0];
+  Eigen::Vector3d dist_vec = probe - closest.pose().position;
+  double distance = dist_vec.norm();
+  
+  BOOST_FOREACH( auto view, view_space_ )
+  {
+    dist_vec = probe - view.pose().position;
+    double norm = dist_vec.norm();
+    if( norm<distance )
+    {
+      distance=norm;
+      closest = view;
+    }
+  }
+  return closest;
+}
+
+unsigned int ViewSpace::size()
+{
+  return view_space_.size();
+}
+
 void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space )
 {
   BOOST_FOREACH( auto view, view_space_ )

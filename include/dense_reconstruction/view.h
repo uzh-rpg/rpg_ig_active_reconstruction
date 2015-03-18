@@ -71,3 +71,5 @@ public:
 };
 
 } 
+
+std::ostream& operator<<(std::ostream& _out, dense_reconstruction::View& _view );

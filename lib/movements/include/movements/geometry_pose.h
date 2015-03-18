@@ -49,3 +49,5 @@ namespace movements
   
   typedef std::vector<movements::Pose,Eigen::aligned_allocator<movements::Pose> > PoseVector;
 }
+
+std::ostream& operator<<(std::ostream& _out, movements::Pose& _pose );
