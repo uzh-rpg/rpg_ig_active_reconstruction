@@ -313,6 +313,9 @@ public:
   /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf */
   void initializeTF();
   
+  /** attempts to load the initialization trajectory from file init_trajectory in data folder */
+  bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );
+  
   /** loads an upper arm trajectory form files saved with saveUpperArmTrajectoryPositions */
   moveit_msgs::RobotTrajectory loadUpperArmTrajectory( std::string _filename );
   

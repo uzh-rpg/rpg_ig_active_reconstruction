@@ -280,12 +280,12 @@ bool YoubotPlanner::moveTo( View& _target_view )
     
   // move base
   movements::Pose base_target_pos = (*referenced_view_point).base_config_.pose_;
-  
+  /*
       std::cout<<std::endl<<"base pose to move to is:";
       std::cout<<std::endl<<"position:";
       std::cout<<std::endl<<"x:"<<base_target_pos.position.x();
       std::cout<<std::endl<<"y:"<<base_target_pos.position.y();
-      std::cout<<std::endl<<"z:"<<base_target_pos.position.z();
+      std::cout<<std::endl<<"z:"<<base_target_pos.position.z();*/
   successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
   
   if( successfully_moved )
@@ -300,9 +300,9 @@ bool YoubotPlanner::assumeAndSetInitialPose()
   ROS_INFO("Assuming initial pose...");
   
   double j1_pose = 1.35;
-  double j2_pose = 0.7;
-  double j3_pose = -1.0;
-  double j4_pose = 2.2;
+  double j2_pose = 0.500612;
+  double j3_pose = -1.09678;
+  double j4_pose = 2.60026;
   double j5_pose = 2.9;
   
   ros_node_->getParam("/youbot_interface/init/joint_1",j1_pose);
@@ -334,9 +334,12 @@ bool YoubotPlanner::assumeAndSetInitialPose()
   Eigen::Vector3d arm_pos(j2_pose,j3_pose,j4_pose);
   boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > trajectory( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
   
-  if( !calculateScanTrajectory(arm_pos, scan_radius_, *trajectory, 5) )
+  if( !loadInitTrajectory(trajectory) )
   {
-    ROS_WARN("Could not compute scan trajectory for initial pose, data retrieval might not be possible without moving to another pose first.");
+    /*if( !calculateScanTrajectory(arm_pos, scan_radius_, *trajectory, 5) )
+    {
+      ROS_WARN("Could not compute scan trajectory for initial pose, data retrieval might not be possible without moving to another pose first.");
+    }*/
   }
   
   init_view_ = new ViewPointData();
@@ -1619,6 +1622,29 @@ void YoubotPlanner::setEndEffectorPlanningFrame( std::string _name )
   {
     end_effector_planning_frame_ = _name;
   }
+}
+
+bool YoubotPlanner::loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory )
+{
+  std::ifstream in(data_folder_set_+"data/init_trajectory.traj", std::ifstream::in);
+  
+  double number_of_points;
+  bool successful = (in>>number_of_points);
+  
+  for( unsigned int i=0; i<number_of_points; i++ )
+  {
+    Eigen::Vector3d traj_point;
+    successful = successful && ( in>>traj_point(0) );
+    successful = successful && ( in>>traj_point(1) );
+    successful = successful && ( in>>traj_point(2) );
+    if(!successful)
+    {
+      (*_trajectory).clear();
+      return false;
+    }
+    (*_trajectory).push_back(traj_point);
+  }
+  return true;
 }
 
 

@@ -61,16 +61,24 @@ int main(int argc, char **argv)
   YoubotPlanner::ViewPointData* data = info->getViewPointData();
   ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
   
+  ROS_INFO("Initial scannning");
+  youbot.retrieveData();
+  ROS_INFO("To view 1");
   youbot.moveTo(view_space_copy[0]);  
   youbot.retrieveData();
+  ROS_INFO("To view 2");
   youbot.moveTo(view_space_copy[1]);  
   youbot.retrieveData();
+  ROS_INFO("To view 3");
   youbot.moveTo(view_space_copy[2]);  
   youbot.retrieveData();
+  ROS_INFO("To view 4");
   youbot.moveTo(view_space_copy[3]);  
   youbot.retrieveData();
+  ROS_INFO("To view 5");
   youbot.moveTo(view_space_copy[4]);  
   youbot.retrieveData();
+  ROS_INFO("To view 6");
   youbot.moveTo(view_space_copy[5]);  
   youbot.retrieveData();
   
