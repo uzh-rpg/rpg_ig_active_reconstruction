@@ -249,12 +249,6 @@ public:
    */
   movements::Pose moveitPlanningFrameToViewPlanningFrame( movements::Pose& _moveit_pose );
   
-  /** plans and executes a scanning movement from the current position of arm_link_4
-   * @param _max_dropoff see filteredPlanFromMovementsPath
-   * @return true if successful, false if not
-   */
-  bool makeScan( double _max_dropoff=0.2 );
-  
   /** moves the base to the target position on a circular (but with varying radius) trajectory around the given _center
    * @return true if successful, false if not
    */
@@ -315,12 +309,6 @@ public:
   
   /** attempts to load the initialization trajectory from file init_trajectory in data folder */
   bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );
-  
-  /** loads an upper arm trajectory form files saved with saveUpperArmTrajectoryPositions */
-  moveit_msgs::RobotTrajectory loadUpperArmTrajectory( std::string _filename );
-  
-  /** saves upper arm trajectory positions to file (links 2 through 5)*/
-  void saveUpperArmTrajectoryPositions( std::string _filename, const moveit_msgs::RobotTrajectory& _trajectory );
   
   void remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );
 private:
