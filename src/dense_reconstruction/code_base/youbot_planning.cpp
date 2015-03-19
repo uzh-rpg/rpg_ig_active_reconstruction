@@ -25,6 +25,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <geometry_msgs/Pose2D.h>
 #include <movements/circular_ground_path.h>
 #include "dense_reconstruction/PoseSetter.h"
+#include "dense_reconstruction/remode_data_retriever.h"
 
 namespace dense_reconstruction
 {
@@ -35,12 +36,26 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,base_trajectory_sender_("/base_controller/follow_joint_trajectory", true)
   ,plan_base_in_global_frame_(true)
 {
-  data_folder_set_ = ros_node_->getParam("/youbot_interface/data_folder",data_folder_);
+  std::string interface_namespace="/youbot_interface";
+  data_folder_set_ = ros_node_->getParam(interface_namespace+"/data_folder",data_folder_);
   if( !data_folder_set_ )
     ROS_WARN("No data folder was set on parameter server. Precomputed arm configurations will not be loaded or stored.");
   
+  std::string data_module_type;
+  if( !ros_node_->getParam(interface_namespace+"/data_retreiver_type",data_module_type) )
+  {
+    ROS_WARN_STREAM("YoubotPlanner::No data retreiver type set on '"<<interface_namespace<<"/data_retreiver_type"<<"', using default 'remode'.");
+    data_module_type = "remode";
+  }
+  if( data_module_type=="remode" )
+  {
+    data_retreiver_ = boost::shared_ptr<DataRetrievalModule>( new RemodeDataRetriever(this) );
+  }
+  else
+    ROS_ERROR_STREAM("Data retrieval type '"<<data_module_type<<"' is unknown. Data retrieval won't be possible.");
+    
+  
   planning_group_ = "arm";
-  std::string remode_control_topic = "/remode/command";
   
   //moveit::planning_interface::MoveGroup::Options mg_options(planning_group_,"robot_description",*ros_node_);
   robot_ = boost::shared_ptr<moveit::planning_interface::MoveGroup>( new moveit::planning_interface::MoveGroup(planning_group_) );
@@ -58,14 +73,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   
   // block everything until complete tf tree is available: this doesn't help
   //tf_listener_.waitForTransform( "/base_footprint","/camera", ros::Time::now(), ros::Duration(0.0) );
-  
-  remode_commander_ = ros_node_->advertise<std_msgs::String>( remode_control_topic, 1 );
-  remode_start_.data="SET_NEXT_FRAME_IS_REFERENCE";
-  remode_stopandsmooth_.data="SMOOTH_AND_STOP_UPDATING";
-  remode_has_published_=false;
-  max_remode_wait_time_ = ros::Duration(3.0); // 3 seconds
-  remode_topic_subsriber_ = ros_node_->subscribe( "/remode/pointcloud",1, &dense_reconstruction::YoubotPlanner::remodeCallback, this );
-  
+    
   // base movement initialization
   base_move_angle_ = 0.1*6.283185307; // [rad] one tenth of a circle
   base_radial_speed_ = 0.1*6.283185307; // [rad/s]
@@ -193,52 +201,7 @@ bool YoubotPlanner::getPlanningSpace( ViewSpace* _space )
 
 RobotPlanningInterface::ReceiveInfo YoubotPlanner::retrieveData()
 {
-  if( current_view_==nullptr )
-  {
-    // TODO in unknown pose: replan!
-    ROS_WARN("YoubotPlanner::retrieveData::Cannot retrieve data because current view is unknown and thus no scanning movement is available. Retrieving data failed.");
-    return RobotPlanningInterface::RECEPTION_FAILED;
-  }
-  
-  moveit::planning_interface::MoveGroup::Plan scan;
-  getFullMotionPlan( *current_view_, scan );
-    
-  if( scan.trajectory_.joint_trajectory.points.size()!=0 )
-  {
-    remode_commander_.publish(remode_start_);
-    bool remode_has_published_ = false;
-    
-    executeMoveItPlan( scan );
-    
-    remode_commander_.publish(remode_stopandsmooth_);
-    
-    ros::Time publish_time = ros::Time::now();
-    while( !remode_has_published_ && ros_node_->ok() ) // wait for remode to publish
-    {
-      if( ros::Time::now() > (publish_time+max_remode_wait_time_) )
-      {
-	ROS_WARN("No data retrieved in time.");
-	break; // no data received, waited long enough
-      }
-      ros::Duration(0.005).sleep();
-      ros::spinOnce();
-    }
-    
-    if( remode_has_published_ )
-    {
-      return RobotPlanningInterface::RECEIVED;
-    }
-    else
-    {
-      return RobotPlanningInterface::RECEPTION_FAILED;
-    }
-  }
-  else
-  {
-    ROS_WARN("YoubotPlanner::retrieveData::Cannot retrieve data because the scanning view path associated with the current view was empty. Retrieving data failed.");
-    return RobotPlanningInterface::RECEPTION_FAILED;
-  }
-  
+  return data_retreiver_->retrieveData();
 }
 
 RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target_view )
@@ -503,47 +466,53 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
     std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > coordinate_grid;
     getArmGrid( _view_resolution, joint_value_grid, coordinate_grid );
       
+    if( data_retreiver_->movementNeeded() )
+    {
+      int nr_of_planning_attempts = 1; // the robot state cartesian path computation method looks deterministic
+      ROS_INFO_STREAM("Calculating trajectories for arm grid which consists of "<<joint_value_grid.size()<<" points. Currently at most "<<nr_of_planning_attempts<<" attempts are performed for each point. Points with unfeasible trajectories are disregarded.");
       
-    int nr_of_planning_attempts = 1; // the robot state cartesian path computation method looks deterministic
-    ROS_INFO_STREAM("Calculating trajectories for arm grid which consists of "<<joint_value_grid.size()<<" points. Currently at most "<<nr_of_planning_attempts<<" attempts are performed for each point. Points with unfeasible trajectories are disregarded.");
-    ros::Duration(5).sleep();
-    for( unsigned int i=0; i<joint_value_grid.size(); i++ )
-    {
-      auto joint_config = joint_value_grid[i];
-      auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
-      ROS_INFO_STREAM("Calculating trajectory for grid point "<<i<<"/"<<joint_value_grid.size()<<"... Currently "<<possible_joint_values.size()<<" feasible configurations have been found.");
-      if( calculateScanTrajectory(joint_config,_radius,*trajectory,nr_of_planning_attempts) )
+      for( unsigned int i=0; i<joint_value_grid.size(); i++ )
       {
-	possible_joint_values.push_back(joint_config);
-	trajectories.push_back(trajectory);
-	possible_coordinates.push_back(coordinate_grid[i]);
-	ROS_INFO_STREAM("Success! This is a feasible configuration for scanning movements, configuration is added.");
-	ros::Duration(1).sleep();
-      }
-      else
-      {
-	ROS_INFO_STREAM("Trajectory could not be computed for this configuration, configuration is dropped.");
-	ros::Duration(1).sleep();
-      }
-    }
-    
-    if( possible_joint_values.size()!=0 )
-    {
-      ROS_INFO("Grid calculation succeeded.");
-      if( data_folder_set_ )
-      {
-	ROS_INFO("Attempting to save calculated data.");
-	if( saveArmSpaceDescriptionsToFile(_radius,_view_resolution,possible_joint_values, possible_coordinates, trajectories) )
+	auto joint_config = joint_value_grid[i];
+	auto trajectory = boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > >( new std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >() );
+	ROS_INFO_STREAM("Calculating trajectory for grid point "<<i<<"/"<<joint_value_grid.size()<<"... Currently "<<possible_joint_values.size()<<" feasible configurations have been found.");
+	if( calculateScanTrajectory(joint_config,_radius,*trajectory,nr_of_planning_attempts) )
 	{
-	  ROS_INFO("Data saved.");
+	  possible_joint_values.push_back(joint_config);
+	  trajectories.push_back(trajectory);
+	  possible_coordinates.push_back(coordinate_grid[i]);
+	  ROS_INFO_STREAM("Success! This is a feasible configuration for scanning movements, configuration is added.");
+	  ros::Duration(1).sleep();
 	}
 	else
-	  ROS_INFO("Failed to save data.");
+	{
+	  ROS_INFO_STREAM("Trajectory could not be computed for this configuration, configuration is dropped.");
+	  ros::Duration(1).sleep();
+	}
       }
+      
+      if( possible_joint_values.size()!=0 )
+      {
+	ROS_INFO("Grid calculation succeeded.");
+	if( data_folder_set_ )
+	{
+	  ROS_INFO("Attempting to save calculated data.");
+	  if( saveArmSpaceDescriptionsToFile(_radius,_view_resolution,possible_joint_values, possible_coordinates, trajectories) )
+	  {
+	    ROS_INFO("Data saved.");
+	  }
+	  else
+	    ROS_INFO("Failed to save data.");
+	}
+      }
+      else
+	ROS_INFO("Grid calculation failed.");
     }
     else
-      ROS_INFO("Grid calculation failed.");
-    
+    {
+      possible_joint_values = joint_value_grid;
+      possible_coordinates = coordinate_grid;      
+    }
   }
   // make sure trajectories are collision-free!
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > collision_free_joint_values;
@@ -558,7 +527,8 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
   
   for( unsigned int i=0; i<possible_joint_values.size(); i++ )
   {    
-    ROS_INFO_STREAM("Checking configuration for arm grid point nr. "<<i<<".");
+    if( i%10==0 )
+      ROS_INFO_STREAM("Checking configuration for arm grid point nr. "<<i<<"/"<<possible_joint_values.size()<<".");
     
     // first: test grid point configuration
     state_to_check.setVariablePosition("arm_joint_2",possible_joint_values[i](0) );
@@ -644,7 +614,8 @@ bool YoubotPlanner::loadArmSpaceDescriptionsFromFile( double _radius, double _vi
   std::string file_name;
   std::stringstream file_name_str;
   
-  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
+  //file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<data_retreiver_->movementConfigurationDescription()<<".youbotarm";
   file_name=file_name_str.str();
   
   std::ifstream in(file_name, std::ifstream::in);
@@ -710,7 +681,8 @@ bool YoubotPlanner::saveArmSpaceDescriptionsToFile( double _radius, double _view
   std::string file_name;
   std::stringstream file_name_str;
   
-  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
+  //file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<"InOutSpiral"<<"_"<<_radius<<".youbotarm";
+  file_name_str << data_folder_<<"YoubotArmPosPreCalc_"<<_view_resolution<<"_"<<data_retreiver_->movementConfigurationDescription()<<".youbotarm";
   file_name=file_name_str.str();
   
   std::ofstream out(file_name, std::ofstream::trunc);
@@ -1075,12 +1047,13 @@ bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d _joint_values, doub
   robot_state.setVariablePosition( "arm_joint_4", _joint_values(2) );
   
   movements::Pose eef_pose = linkPoseInRobotState("camera",robot_state);
-  movements::Pose link_4_pose = linkPoseInRobotState("arm_link_4",robot_state);
   
-  // adius, 4 turns/sec, 0.025 m/s radial speed ->2s to reach limit
-  movements::KinMove scan = movements::InOutSpiral::create( link_4_pose.orientation, _radius, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
+  movements::KinMove scan;
+  movements::KinMove::PathInfo info;
+  data_retreiver_->getRetrievalMovement( robot_state, &scan, &info );
+  
   //start time, end time, time step size // calculate for end effector pose since that is the link for which cartesian path are planned by moveit
-  movements::PoseVector m_waypoints = scan.path( eef_pose, 0.5, 3.5, 0.02 );
+  movements::PoseVector m_waypoints = scan.path( eef_pose, info.start_time, info.end_time, 0.02 );
   
   double max_dropoff=0.2;
   bool successfully_planned;
@@ -1638,11 +1611,6 @@ bool YoubotPlanner::loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::V
     (*_trajectory).push_back(traj_point);
   }
   return true;
-}
-
-void YoubotPlanner::remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg )
-{
-  remode_has_published_ = true;
 }
 
 void YoubotPlanner::initializeTF()

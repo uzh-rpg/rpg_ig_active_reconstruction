@@ -56,6 +56,7 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
   src/dense_reconstruction/code_base/view.cpp
   src/dense_reconstruction/code_base/view_planner.cpp
   src/dense_reconstruction/code_base/view_space.cpp
+  src/dense_reconstruction/code_base/remode_data_retriever.cpp
 )
 
 

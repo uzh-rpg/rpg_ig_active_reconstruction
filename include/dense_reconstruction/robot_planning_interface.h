@@ -30,6 +30,7 @@ class RobotPlanningInterface
 public:
   class MovementCost;
   class PlanningSpaceInitializationInfo;
+  class DataRetrievalModule;
   
   RobotPlanningInterface();
   
@@ -113,6 +114,16 @@ class RobotPlanningInterface::PlanningSpaceInitializationInfo::RobotSpaceInfo
 public:
   virtual std::string type()=0;
   
+};
+
+/// module for retrieving data, encapsulates the interface to the stereo reconstruction module (e.g. REMODE)
+class RobotPlanningInterface::DataRetrievalModule
+{
+public:
+  /**
+   * attempts to retrieve data and reports on success, call is blocking
+   */
+  virtual ReceiveInfo retrieveData()=0;
 };
 
 template<class T>

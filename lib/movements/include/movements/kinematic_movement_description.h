@@ -28,8 +28,10 @@ class KinematicMovementDescription
 {
 public:
   class KinematicMovementDescriptionInstance;
+  struct PathInfo;
   
   /// constructor
+  KinematicMovementDescription(){};
   KinematicMovementDescription( KinematicMovementDescriptionInstance* _to_enwrap );
   
   /** returns the type of the enclosed kinematic movement */
@@ -94,6 +96,12 @@ public:
    * @param _step_size time step size [s]
    */
   virtual movements::PoseVector path( movements::Pose _base_pose, double _start_time, double _end_time, double _step_size );
+};
+
+struct KinematicMovementDescription::PathInfo
+{
+  double start_time;
+  double end_time;
 };
 
 template<class MovementT>

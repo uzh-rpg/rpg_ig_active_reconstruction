@@ -58,6 +58,8 @@ public:
   struct Link1Config; /// configurations for link 1
   struct ArmConfig; /// configurations for links 2,3 and 4
   struct Link5Config; /// configurations for link 5
+  class DataRetrievalModule; /// interface to dense reconstruction nodes (e.g. REMODE)
+  friend class RemodeDataRetriever;
   
   /// constructor
   /** initializes the youbot planner, moves the robot to the initial pose
@@ -309,8 +311,6 @@ public:
   
   /** attempts to load the initialization trajectory from file init_trajectory in data folder */
   bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );
-  
-  void remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );
 private:
   
   ros::NodeHandle* ros_node_;
@@ -319,6 +319,8 @@ private:
   ros::Subscriber remode_topic_subsriber_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
+  
+  boost::shared_ptr<DataRetrievalModule> data_retreiver_;
   
   bool data_folder_set_;
   std::string data_folder_;
@@ -333,12 +335,6 @@ private:
   double scan_radius_; // for now...
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame
   // the radius is calculated automatically by taking the distance between the movement center and the position when the movement is started
-    
-  ros::Publisher remode_commander_; /// interface to send commands to Remode
-  std_msgs::String remode_stopandsmooth_;
-  std_msgs::String remode_start_;
-  bool remode_has_published_; /// set by callback function if remode data was published
-  ros::Duration max_remode_wait_time_; ///max time to wait for remode to publish before receiving data assumes that it failed
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations
@@ -401,7 +397,7 @@ public:
   unsigned int link_1_nr_of_pos_; /// total number of positions, including min and max, if 1, min angle is used, default:1
   
   // arm setup:
-  double scan_radius_; /// [m] radius to scan, default:0.05
+  double scan_radius_; /// [m] radius to scan, default:0.05 //REMODE-SPECIFIC: MOVED OUT OF HERE!
   double arm_min_view_distance_; /// [m] closest distance two viewpoints in arm space may have, default: 0.2
   double arm_view_resolution_; /// [pts/m] number of points generated for the arm space grid: The points of this grid are then filtered to fulfill scan_radius_ & arm_min_view_distance_, default:10
   
@@ -466,6 +462,36 @@ public:
   Link5Config link5_config_;
   
   //boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> scan_trajectory_; // scan trajectory for this viewpoint; - unused: saved in arm_config_ wit less memory usage
+};
+
+class YoubotPlanner::DataRetrievalModule: public RobotPlanningInterface::DataRetrievalModule
+{
+public:
+  /**
+   * attempts to retrieve data and reports on success, call is blocking
+   */
+  virtual RobotPlanningInterface::ReceiveInfo retrieveData()=0;
+  
+  /**
+   * returns a string that describes the movement executed, if any, e.g. 'InOutSpiral_0.05'
+   * This used to name configuration files
+   */
+  virtual std::string movementConfigurationDescription()=0;
+  
+  /**
+   * returns true if a movement needs to be executed in order to retrieve data
+   */
+  virtual bool movementNeeded()=0;
+  
+  /**
+   * If a trajectory is necessary to retrieve data, this function is used to calculate it
+   * @param _state state of the robot for which trajectory shall be calculated (currently only trajectories for arm links 2..4 are supported)
+   * @param _retrieval_movement The trajectory
+   * @param _additional_info at what time the trajectory shall start and at what it shall end
+   * @return true if a trajectory is needed, false if not (which leaves the _retrieval_movement untouched)
+   */
+  virtual bool getRetrievalMovement( robot_state::RobotState& _state, movements::KinematicMovementDescription* _retrieval_movement, movements::KinematicMovementDescription::PathInfo* _additional_info )=0;
+  
 };
 
 }
