@@ -336,10 +336,11 @@ bool YoubotPlanner::assumeAndSetInitialPose()
   
   if( !loadInitTrajectory(trajectory) )
   {
-    /*if( !calculateScanTrajectory(arm_pos, scan_radius_, *trajectory, 5) )
+    ROS_WARN("Did not find initial trajectory on file.");
+    if( !calculateScanTrajectory(arm_pos, scan_radius_, *trajectory, 5) )
     {
       ROS_WARN("Could not compute scan trajectory for initial pose, data retrieval might not be possible without moving to another pose first.");
-    }*/
+    }
   }
   
   init_view_ = new ViewPointData();
@@ -1557,7 +1558,7 @@ void YoubotPlanner::setEndEffectorPlanningFrame( std::string _name )
 
 bool YoubotPlanner::loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory )
 {
-  std::ifstream in(data_folder_set_+"data/init_trajectory.traj", std::ifstream::in);
+  std::ifstream in(data_folder_+"init_trajectory.traj", std::ifstream::in);
   
   double number_of_points;
   bool successful = (in>>number_of_points);
