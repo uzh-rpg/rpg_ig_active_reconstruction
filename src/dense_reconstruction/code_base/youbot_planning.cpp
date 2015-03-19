@@ -545,29 +545,90 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
       ROS_INFO("Grid calculation failed.");
     
   }
+  // make sure trajectories are collision-free!
+  std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > collision_free_joint_values;
+  std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > collision_free_coordinates;
+  std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > collision_free_trajectories;
+  unsigned int collisions = 0;
+  
+  ROS_INFO_STREAM(""<<possible_joint_values.size()<<" feasible arm grid points were found. Testing for (self-)collisions...");
+  
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState state_to_check = current_scene->getCurrentState();
+  
+  for( unsigned int i=0; i<possible_joint_values.size(); i++ )
+  {    
+    ROS_INFO_STREAM("Checking configuration for arm grid point nr. "<<i<<".");
+    
+    // first: test grid point configuration
+    state_to_check.setVariablePosition("arm_joint_2",possible_joint_values[i](0) );
+    state_to_check.setVariablePosition("arm_joint_3",possible_joint_values[i](1) );
+    state_to_check.setVariablePosition("arm_joint_4",possible_joint_values[i](2) );
+    
+    if( !isCollisionFree( current_scene, state_to_check ) )
+    {
+      collisions++;
+      continue;
+    }
+    
+    // second: check all trajectory points (if any)
+    if( trajectories[i]!=nullptr )
+    {
+      bool is_collision_free = true;
+      
+      for( unsigned int j=0; j<(*trajectories[i]).size(); j++ )
+      {
+	state_to_check.setVariablePosition("arm_joint_2",(*trajectories[i])[j](0) );
+	state_to_check.setVariablePosition("arm_joint_3",(*trajectories[i])[j](1) );
+	state_to_check.setVariablePosition("arm_joint_4",(*trajectories[i])[j](2) );
+	
+	if( !isCollisionFree( current_scene, state_to_check ) )
+	{
+	  is_collision_free = false;
+	  continue;
+	}
+      }
+      
+      if( !is_collision_free ) // drop trajectory even if only one point is in collision
+      {
+	collisions++;
+	continue;
+      }
+    }
+    
+    // made it here: should be collision free...
+    collision_free_joint_values.push_back(possible_joint_values[i]);
+    collision_free_coordinates.push_back(possible_coordinates[i]);
+    collision_free_trajectories.push_back(trajectories[i]);
+  }
+  
+  if( collisions==0 )
+    ROS_INFO("No collisions were found in configurations.");
+  else
+    ROS_INFO_STREAM("In "<<collisions<<" configurations a collision was found. These configurations were dropped.");
+  
   // filter data by distance
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > valid_joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > valid_coordinates;
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > final_trajectories;
   
-  ROS_INFO_STREAM(""<<possible_joint_values.size()<<" feasible arm grid points were found. Filtering by min distance...");
-  ros::Duration(5).sleep();
+  ROS_INFO_STREAM(""<<collision_free_joint_values.size()<<" feasible arm grid points were found. Filtering by min distance...");
   
-  for( unsigned int i=0; i<possible_joint_values.size(); i++ )
+  for( unsigned int i=0; i<collision_free_joint_values.size(); i++ )
   {
     bool is_not_too_close = true;
     for( unsigned int a=0; a<valid_joint_values.size(); a++ )
     {
-      Eigen::Vector2d dist = possible_coordinates[i]-valid_coordinates[a];
+      Eigen::Vector2d dist = collision_free_coordinates[i]-valid_coordinates[a];
       is_not_too_close = ( dist.norm()>=_min_view_distance );
       if(!is_not_too_close)
 	break; // already invalid
     }
     if( is_not_too_close )
     {
-      valid_joint_values.push_back(possible_joint_values[i]);
-      valid_coordinates.push_back(possible_coordinates[i]);
-      final_trajectories.push_back(trajectories[i]);
+      valid_joint_values.push_back(collision_free_joint_values[i]);
+      valid_coordinates.push_back(collision_free_coordinates[i]);
+      final_trajectories.push_back(collision_free_trajectories[i]);
     }
   }
   
