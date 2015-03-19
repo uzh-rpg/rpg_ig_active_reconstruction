@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include <sstream>
+#include <angles/angles.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <boost/foreach.hpp>
 #include "dense_reconstruction/youbot_planning.h"
@@ -78,6 +79,23 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   base_move_angle_ = 0.1*6.283185307; // [rad] one tenth of a circle
   base_radial_speed_ = 0.1*6.283185307; // [rad/s]
   base_movement_center_ = movements::Pose( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
+  
+  // cost function value setup
+  if( !ros_node_->getParam(interface_namespace+"/cost_function/delta",cost_delta_) )
+  {
+    cost_delta_ = 1.0;
+    ROS_WARN_STREAM("YoubotPlanner::No delta value set for cost function on '"<<interface_namespace<<"/cost_function/delta"<<"', using default of "<<cost_delta_<<"[1/m].");
+  }
+  if( !ros_node_->getParam(interface_namespace+"/cost_function/epsilon",cost_epsilon_) )
+  {
+    cost_epsilon_ = 0.0;
+    ROS_WARN_STREAM("YoubotPlanner::No epsilon value set for cost function on '"<<interface_namespace<<"/cost_function/delta"<<"', using default of "<<cost_epsilon_<<".");
+  }
+  if( !ros_node_->getParam(interface_namespace+"/cost_function/alpha",cost_alpha_) )
+  {
+    cost_alpha_ = 1.0;
+    ROS_WARN_STREAM("YoubotPlanner::No alpha value set for cost function on '"<<interface_namespace<<"/cost_function/alpha"<<"', using default of "<<cost_alpha_<<".");
+  }
   
   
   // move arm into initial pose
@@ -213,17 +231,117 @@ RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target
     return cost; // TODO: just read current configuration
   }
   
-  // using distances between base poses as current measure
-  movements::Pose current = (*current_view_).base_config_.pose_;
+  ViewPointData* target_view;
+  try
+  {
+    target_view = getCorrespondingData(_target_view);
+  }
+  catch( std::runtime_error& e )
+  {
+    RobotPlanningInterface::MovementCost cost;
+    cost.exception = RobotPlanningInterface::MovementCost::INVALID_TARGET_STATE;
+    return cost;
+  }
   
-  ViewPointData* referenced_view_point = getCorrespondingData(_target_view);
-  movements::Pose target = (*referenced_view_point).base_config_.pose_;
-  
-  Eigen::Vector3d direct_path = current.position - target.position;
   
   RobotPlanningInterface::MovementCost cost;
-  cost.cost = direct_path.norm();
+  cost.cost =  cost_delta_*( baseDistanceCost(current_view_,target_view) + cost_alpha_*armDistanceCost(current_view_,target_view) ) + cost_epsilon_*energyCost(current_view_,target_view);
+  
   return cost;
+}
+
+double YoubotPlanner::baseDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state )
+{
+  movements::Pose origin = (*_start_state).base_config_.pose_;
+  movements::Pose target = (*_target_state).base_config_.pose_;
+  
+  double origin_theta;
+  if( origin.orientation.z()>0 )
+    origin_theta = 2*acos( origin.orientation.w() );
+  else
+    origin_theta = 2*acos( -origin.orientation.w() );
+  
+  double target_theta;
+  if( target.orientation.z()>0 )
+    target_theta = 2*acos( target.orientation.w() );
+  else
+    target_theta = 2*acos( -target.orientation.w() );
+  
+  double x_dist = origin.position(0) - target.position(0);
+  double y_dist = origin.position(1) - target.position(1);
+  
+  double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
+  double ang_dist = fabs(origin_theta - target_theta);
+  
+  double youbot_base_mid_to_wheel = 0.27934; // [m]
+  
+  return pos_dist + youbot_base_mid_to_wheel*ang_dist;
+}
+
+double YoubotPlanner::armDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state )
+{
+  // TODO: current state calculations could be buffered for as long as robot isn't moved
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState robot_state = current_scene->getCurrentState();
+  
+  std::vector<double> effective_movement_radius(5);
+  std::vector<double> absolut_angle(5);
+  
+  // calculate 'effective movement radius' for each link
+  
+  // link1: arm moves in z/x plane relative to link 1 -> look only at projection on x-axis!
+  movements::Pose link_1_from_l2 = relativeLinkPoseInRobotState("arm_link_2","arm_link_1",robot_state);
+  movements::Pose link_1_from_l3 =  relativeLinkPoseInRobotState("arm_link_3","arm_link_1",robot_state);
+  movements::Pose link_1_from_l4 =  relativeLinkPoseInRobotState("arm_link_4","arm_link_1",robot_state);
+  movements::Pose link_1_from_l5 =  relativeLinkPoseInRobotState("arm_link_5","arm_link_1",robot_state);
+  
+  effective_movement_radius[0] = std::max( std::max(link_1_from_l2.position(0),link_1_from_l3.position(0)), std::max(link_1_from_l4.position(0),link_1_from_l5.position(0)) );
+  
+  // link2: arm moves in z/x plane, but projections on z-axis matter
+  movements::Pose link_2_from_l3 = relativeLinkPoseInRobotState("arm_link_3","arm_link_2",robot_state);
+  movements::Pose link_2_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_2",robot_state);
+  movements::Pose link_2_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_2",robot_state);
+  effective_movement_radius[1] = std::max( std::max(link_2_from_l3.position(2),link_2_from_l4.position(2)),link_2_from_l5.position(2));
+  
+  // link3: analog to link 2
+  movements::Pose link_3_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_3",robot_state);
+  movements::Pose link_3_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_3",robot_state);
+  effective_movement_radius[2] = std::max( link_3_from_l4.position(2),link_3_from_l5.position(2));
+  
+  // link4: since only taking distances to link 5 into account, this length is constant
+  effective_movement_radius[3] = 0.032; // [m] - from spec sheet
+  
+  // link5: do not really care, cheap movements
+  effective_movement_radius[4] = 0.020;
+  
+  // angular differences
+  absolut_angle[0] = std::fabs(_start_state->link1_config_.angle_ - _target_state->link1_config_.angle_);
+  absolut_angle[1] = std::fabs(_start_state->arm_config_.j2_angle_ - _target_state->arm_config_.j2_angle_);
+  absolut_angle[2] = std::fabs(_start_state->arm_config_.j3_angle_ - _target_state->arm_config_.j3_angle_);
+  absolut_angle[3] = std::fabs(_start_state->arm_config_.j4_angle_ - _target_state->arm_config_.j4_angle_);
+  absolut_angle[4] = std::fabs(_start_state->link5_config_.angle_ - _target_state->link5_config_.angle_);
+  
+  // distance cost representation
+  double arm_distance_cost = 0;
+  for( unsigned int i=0;i<5;i++ )
+  {
+    arm_distance_cost += effective_movement_radius[i]*absolut_angle[i];
+  }
+  return arm_distance_cost;
+}
+
+double YoubotPlanner::energyCost( ViewPointData* _start_state, ViewPointData* _target_state )
+{
+  unsigned int nr_of_actuated_joints = 0;
+    
+  nr_of_actuated_joints += 4*( (*_start_state).base_config_.pose_!=(*_target_state).base_config_.pose_ ); // 4 wheels of the base
+  nr_of_actuated_joints += (_start_state->link1_config_.angle_ != _target_state->link1_config_.angle_);
+  nr_of_actuated_joints += (_start_state->arm_config_.j2_angle_ != _target_state->arm_config_.j2_angle_);
+  nr_of_actuated_joints += (_start_state->arm_config_.j3_angle_ != _target_state->arm_config_.j3_angle_);
+  nr_of_actuated_joints += (_start_state->arm_config_.j4_angle_ != _target_state->arm_config_.j4_angle_);
+  nr_of_actuated_joints += (_start_state->link5_config_.angle_ != _target_state->link5_config_.angle_);
+  
+  return nr_of_actuated_joints;
 }
 
 bool YoubotPlanner::moveTo( View& _target_view )
@@ -1075,6 +1193,19 @@ movements::Pose YoubotPlanner::linkPoseInRobotState( std::string _name, robot_st
   Eigen::Affine3d link_pose = _state.getGlobalLinkTransform(_name);
   Eigen::Quaterniond link_orientation( link_pose.rotation() );
   Eigen::Vector3d link_translation( link_pose.translation() );
+  
+  return movements::Pose( link_translation, link_orientation );
+}
+
+movements::Pose YoubotPlanner::relativeLinkPoseInRobotState( std::string _source_link, std::string _target_link, robot_state::RobotState& _state )
+{
+  Eigen::Affine3d t_GS = _state.getGlobalLinkTransform(_source_link);
+  Eigen::Affine3d t_GT = _state.getGlobalLinkTransform(_target_link);
+  
+  Eigen::Affine3d t_TS = t_GT.inverse()*t_GS;
+  
+  Eigen::Quaterniond link_orientation( t_TS.rotation() );
+  Eigen::Vector3d link_translation( t_TS.translation() );
   
   return movements::Pose( link_translation, link_orientation );
 }

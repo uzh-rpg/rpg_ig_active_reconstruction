@@ -32,6 +32,22 @@ Pose::Pose( Eigen::Vector3d _position, Eigen::Quaterniond _orientation ):
   
 }
 
+bool Pose::operator!=( const movements::Pose& _to_compare )
+{
+  return (position(0)!=_to_compare.position(0)) ||
+  (position(1)!=_to_compare.position(1)) ||
+  (position(2)!=_to_compare.position(2)) ||
+  (orientation.x()!=_to_compare.orientation.x()) ||
+  (orientation.y()!=_to_compare.orientation.y()) ||
+  (orientation.z()!=_to_compare.orientation.z()) ||
+  (orientation.w()!=_to_compare.orientation.w());
+}
+
+bool Pose::operator==( const movements::Pose& _to_compare )
+{
+  return !operator!=(_to_compare);
+}
+
 movements::Pose Pose::operator+( movements::RelativeMovement _second )
 {
   return _second.applyToBasePose(*this);

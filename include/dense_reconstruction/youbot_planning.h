@@ -108,6 +108,17 @@ public:
    */
   virtual RobotPlanningInterface::MovementCost calculateCost( View& _target_view );
   
+  /** calculates a distance cost for the base
+   */
+  double baseDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state );
+  
+  /** calculates distance cost for arm - ATTENTION: internally the current robot state is used, thus the function should in its current implementation only be used if _start_state actually represents the current state of the robot too
+   */
+  double armDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state );
+  
+  /** calculates energy representation cost (currently this is just the number of actuated joints/wheels for a movement)*/
+  double energyCost( ViewPointData* _start_state, ViewPointData* _target_state );
+  
    /** tells the robot to get the camera to a new view
    * @param _target_view where to move to
    * @return false if the operation failed
@@ -215,6 +226,11 @@ public:
    * returns the pose of a link _link_name in robot state _state, in the planning frame
    */
   movements::Pose linkPoseInRobotState( std::string _name, robot_state::RobotState& _state );
+  
+  /**
+   * returns the transform (pose) of a link _source_link relative to another link _target_link for the given robot state _state
+   */
+  movements::Pose relativeLinkPoseInRobotState( std::string _source_link, std::string _target_link, robot_state::RobotState& _state );
   
   
   /** Calls computeCartesianPath(...) for a given robot state _state to build a moveit plan for the movements path. The movements path must be for the link _link_name. If planning fails for _planning_attempts times, the function tries to localize path points that are a problem and removes them. The maximal number or percentage of points that can be removed before the function returns failure can be specified in _max_dropoff: currently only works if the resolution (max distance between points) of the path passed is less than eef_step used in the cartesian path calculation inside the function (currently 0.1m)
@@ -345,6 +361,11 @@ private:
   boost::shared_ptr<moveit::planning_interface::MoveGroup> robot_;
   
   tf::TransformListener tf_listener_;
+  
+  // cost function parameters
+  double cost_delta_;
+  double cost_epsilon_;
+  double cost_alpha_;
   
   /**
    * loads all possible state for the base space given space initialization info

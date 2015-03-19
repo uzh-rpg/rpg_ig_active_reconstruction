@@ -89,7 +89,7 @@ class RobotPlanningInterface::MovementCost
 public:
   double cost; // keeping it simple
   /// possible exceptions:: INFINITE_COST: do not move to target view, INVALID_STATE: robot is in state which somehow prevents it from calculating a cost, but the movement might be possible
-  enum Exception{ COST_UNKNOWN, INFINITE_COST, INVALID_STATE };
+  enum Exception{ COST_UNKNOWN, INFINITE_COST, INVALID_STATE, INVALID_TARGET_STATE };
   Exception exception;
 };
 

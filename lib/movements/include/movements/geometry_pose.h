@@ -34,6 +34,9 @@ namespace movements
     Eigen::Vector3d position;
     Eigen::Quaterniond orientation;
     
+    bool operator!=( const movements::Pose& _to_compare );
+    bool operator==( const movements::Pose& _to_compare );
+    
     /** executes a relative movement on the pose */
     Pose operator+( movements::RelativeMovement  _second );
     /** executes a combined relative movement on the pose */
