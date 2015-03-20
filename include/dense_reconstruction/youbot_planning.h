@@ -106,13 +106,22 @@ public:
    * @throws std::runtime_error if the type of the _target_view's associated info can't be casted to the Youbot type
    * @return cost to move to that view
    */
-  virtual RobotPlanningInterface::MovementCost calculateCost( View& _target_view );
+  virtual RobotPlanningInterface::MovementCost movementCost( View& _target_view );
+  
+  /** returns the cost to move from start view to target view
+   * @param _start_view the start view
+   * @param _target_view the target view
+   * @return cost for the movement
+   */
+  virtual MovementCost movementCost( View& _start_view, View& _target_view );
   
   /** calculates a distance cost for the base
    */
   double baseDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state );
   
-  /** calculates distance cost for arm - ATTENTION: internally the current robot state is used, thus the function should in its current implementation only be used if _start_state actually represents the current state of the robot too
+  /** calculates distance cost for arm
+   * For the cost calculations the geometry given with the start state is used
+   * The pointers are not checked again for validity - If they're invalid this will throw segmentation faults!
    */
   double armDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state );
   

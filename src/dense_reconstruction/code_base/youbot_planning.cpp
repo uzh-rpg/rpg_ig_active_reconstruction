@@ -93,7 +93,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   }
   if( !ros_node_->getParam(interface_namespace+"/cost_function/alpha",cost_alpha_) )
   {
-    cost_alpha_ = 1.0;
+    cost_alpha_ = 0.25; // thus counts 4x less than base
     ROS_WARN_STREAM("YoubotPlanner::No alpha value set for cost function on '"<<interface_namespace<<"/cost_function/alpha"<<"', using default of "<<cost_alpha_<<".");
   }
   
@@ -222,13 +222,46 @@ RobotPlanningInterface::ReceiveInfo YoubotPlanner::retrieveData()
   return data_retreiver_->retrieveData();
 }
 
-RobotPlanningInterface::MovementCost YoubotPlanner::calculateCost( View& _target_view )
+RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _target_view )
 {
   if( current_view_==nullptr )
   {
     RobotPlanningInterface::MovementCost cost;
     cost.exception = RobotPlanningInterface::MovementCost::INVALID_STATE;
     return cost; // TODO: just read current configuration
+  }
+  
+  ViewPointData* target_view;
+  try
+  {
+    target_view = getCorrespondingData(_target_view);
+  }
+  catch( std::runtime_error& e )
+  {
+    RobotPlanningInterface::MovementCost cost;
+    cost.exception = RobotPlanningInterface::MovementCost::INVALID_TARGET_STATE;
+    return cost;
+  }
+  
+  
+  RobotPlanningInterface::MovementCost cost;
+  cost.cost =  cost_delta_*( baseDistanceCost(current_view_,target_view) + cost_alpha_*armDistanceCost(current_view_,target_view) ) + cost_epsilon_*energyCost(current_view_,target_view);
+  
+  return cost;
+}
+
+RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_view, View& _target_view )
+{
+  ViewPointData* start_view;
+  try
+  {
+    start_view = getCorrespondingData(_target_view);
+  }
+  catch( std::runtime_error& e )
+  {
+    RobotPlanningInterface::MovementCost cost;
+    cost.exception = RobotPlanningInterface::MovementCost::INVALID_START_STATE;
+    return cost;
   }
   
   ViewPointData* target_view;
@@ -281,8 +314,15 @@ double YoubotPlanner::baseDistanceCost( ViewPointData* _start_state, ViewPointDa
 double YoubotPlanner::armDistanceCost( ViewPointData* _start_state, ViewPointData* _target_state )
 {
   // TODO: current state calculations could be buffered for as long as robot isn't moved
+  // build start state
   planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
   robot_state::RobotState robot_state = current_scene->getCurrentState();
+  robot_state.setVariablePosition( "arm_joint_1", _start_state->link1_config_.angle_ );
+  robot_state.setVariablePosition( "arm_joint_2", _start_state->arm_config_.j2_angle_ );
+  robot_state.setVariablePosition( "arm_joint_3", _start_state->arm_config_.j3_angle_ );
+  robot_state.setVariablePosition( "arm_joint_4", _start_state->arm_config_.j4_angle_ );
+  robot_state.setVariablePosition( "arm_joint_5", _start_state->link5_config_.angle_ );
+  
   
   std::vector<double> effective_movement_radius(5);
   std::vector<double> absolut_angle(5);

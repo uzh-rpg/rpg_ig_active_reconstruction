@@ -64,32 +64,33 @@ int main(int argc, char **argv)
   ROS_INFO("Initial scannning");
   youbot.retrieveData();
   ROS_INFO("To view 1");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[0]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[0]).cost );
   youbot.moveTo(view_space_copy[0]);  
   youbot.retrieveData();
   ROS_INFO("To view 2");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[1]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[1]).cost );
   youbot.moveTo(view_space_copy[1]);  
   youbot.retrieveData();
   ROS_INFO("To view 3");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[2]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[2]).cost );
   youbot.moveTo(view_space_copy[2]);  
   youbot.retrieveData();
   ROS_INFO("To view 4");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[3]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[3]).cost );
   youbot.moveTo(view_space_copy[3]);  
   youbot.retrieveData();
   ROS_INFO("To view 5");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[4]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[4]).cost );
   youbot.moveTo(view_space_copy[4]);  
   youbot.retrieveData();
   ROS_INFO("To view 6");
-  ROS_INFO_STREAM("Cost is: "<<youbot.calculateCost(view_space_copy[5]).cost );
+  ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[5]).cost );
   youbot.moveTo(view_space_copy[5]);  
   youbot.retrieveData();
   
   
   ROS_INFO("If the program terminates now it has reached the correct exit point");
+  ros::shutdown();
   return 0;
   
   

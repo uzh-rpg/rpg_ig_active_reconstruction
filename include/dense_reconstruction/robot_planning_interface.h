@@ -72,7 +72,14 @@ public:
    * @param _target_view the next view
    * @return cost to move to that view
    */
-  virtual MovementCost calculateCost( View& _target_view )=0;
+  virtual MovementCost movementCost( View& _target_view )=0;
+  
+  /** returns the cost to move from start view to target view
+   * @param _start_view the start view
+   * @param _target_view the target view
+   * @return cost for the movement
+   */
+  virtual MovementCost movementCost( View& _start_view, View& _target_view )=0;
   
   /** tells the robot to get the camera to a new view
    * @param _target_view where to move to
@@ -89,7 +96,7 @@ class RobotPlanningInterface::MovementCost
 public:
   double cost; // keeping it simple
   /// possible exceptions:: INFINITE_COST: do not move to target view, INVALID_STATE: robot is in state which somehow prevents it from calculating a cost, but the movement might be possible
-  enum Exception{ COST_UNKNOWN, INFINITE_COST, INVALID_STATE, INVALID_TARGET_STATE };
+  enum Exception{ COST_UNKNOWN, INFINITE_COST, INVALID_STATE, INVALID_TARGET_STATE, INVALID_START_STATE };
   Exception exception;
 };
 
