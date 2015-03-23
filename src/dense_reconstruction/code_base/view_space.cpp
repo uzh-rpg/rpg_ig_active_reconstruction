@@ -25,9 +25,9 @@ ViewSpace::ViewSpace()
   
 }
 
-void ViewSpace::fromMsg( const ViewSpaceMsgConstPtr& _msg )
+void ViewSpace::fromMsg( const ViewSpaceMsg& _msg )
 {
-  BOOST_FOREACH( auto view_msg, _msg->views )
+  BOOST_FOREACH( auto view_msg, _msg.views )
   {
     view_space_.push_back( View(view_msg) );
   }

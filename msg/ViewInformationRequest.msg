@@ -13,6 +13,12 @@ float64 ray_resolution_x
 # How many rays are cast per pixel on the image's y-axis to obtain the information [rays/px]
 float64 ray_resolution_y
 
+# raycasting subwindow
+uint32 max_x
+uint32 min_x
+uint32 max_y
+uint32 min_y
+
 # Each i-th voxel on the ray well be included for calculation (if set to zero, 1 will be used instead as default)
 uint32 ray_step_size
 

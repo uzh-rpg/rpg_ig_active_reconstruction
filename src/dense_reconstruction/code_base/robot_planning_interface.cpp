@@ -38,4 +38,10 @@ MovementCostMsg RobotPlanningInterface::MovementCost::toMsg()
   return msg;
 }
 
+void RobotPlanningInterface::MovementCost::fromMsg( MovementCostMsg& _msg )
+{
+  cost = _msg.cost;
+  exception = RobotPlanningInterface::MovementCost::Exception(_msg.exception);
+}
+
 }

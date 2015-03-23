@@ -16,7 +16,13 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+
+#include "ros/ros.h"
+#include <movements/core>
+#include <movements/ros_movements.h>
+
 #include "dense_reconstruction/robot_planning_interface.h"
+#include "dense_reconstruction/ViewInformationReturn.h"
 
 
 namespace dense_reconstruction
@@ -27,10 +33,56 @@ namespace dense_reconstruction
 class ViewPlanner
 {
 public:
-  ViewPlanner( boost::shared_ptr<RobotPlanningInterface> _pi );
+  ViewPlanner( ros::NodeHandle& _n );
+  
+  /** attempts to load the view space from service
+   * returns true if successful
+   */
+  bool getViewSpace();
+  
+  /**
+   * retrieves the current view by calling the service
+   */
+  bool getCurrentView( View& _output);
+  
+  /**
+   * retrieves data by calling the surface
+   */
+  bool retrieveData( RobotPlanningInterface::ReceiveInfo& _output );
+  
+  /**
+   * gets the movement cost for given start- and endpoints
+   * returns true if calling the service was successful
+   */
+  bool movementCost( RobotPlanningInterface::MovementCost& _output, View& _start_view, View& _target_view );
+  
+  /**
+   * calls the service to move the robot somewhere
+   * Returns true if calling the service was successful
+   */
+  bool moveTo( bool& _output, View& _target_view );
+  
+  /**
+   * retreives expected informations for given poses (if more than one then it's a path into the future)
+   * @param _output the calculated information  values for the given metrics
+   * @param _poses the last pose is the one for which the information is sought, optional other poses describe a path into the future before the sought view information
+   * @param _metric_names set of metrics to use to calculate the information
+   * @return true if the view information service was called successfully
+   */
+  bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses, std::vector<std::string>& _metric_names );
   
 private:
-  boost::shared_ptr<RobotPlanningInterface> pi_;
+  std::string planning_frame_;
+  
+  ViewSpace view_space_;
+  
+  ros::NodeHandle nh_;
+  ros::ServiceClient view_space_retriever_;
+  ros::ServiceClient current_view_retriever_;
+  ros::ServiceClient data_retriever_;
+  ros::ServiceClient cost_retriever_;
+  ros::ServiceClient view_information_retriever_;
+  ros::ServiceClient robot_mover_;
 };
 
 }

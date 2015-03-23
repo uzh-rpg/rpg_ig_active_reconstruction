@@ -32,7 +32,7 @@ public:
   ViewSpace();
   
   /** set view space from message, overwrites all previous data */
-  void fromMsg( const ViewSpaceMsgConstPtr& _msg );
+  void fromMsg( const ViewSpaceMsg& _msg );
   
   /** returns all view points in the view space as a vector 
    */

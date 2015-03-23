@@ -100,7 +100,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   planning_space_initialization_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/planning_space_initialization", &YoubotPlanner::planningSpaceInitService, this );
   feasible_view_space_request_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/feasible_view_space", &YoubotPlanner::feasibleViewSpaceRequestService, this );
   current_view_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/current_view", &YoubotPlanner::currentViewService, this );
-  retrieve_data_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/retrieve_daata", &YoubotPlanner::retrieveDataService, this );
+  retrieve_data_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/retrieve_data", &YoubotPlanner::retrieveDataService, this );
   movement_cost_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/movement_cost", &YoubotPlanner::movementCostService, this );
   move_to_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/move_to", &YoubotPlanner::moveToService, this );
   

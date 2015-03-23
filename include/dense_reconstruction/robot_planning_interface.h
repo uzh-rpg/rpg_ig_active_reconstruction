@@ -112,6 +112,11 @@ public:
   /** converts the cost to a message
    */
   MovementCostMsg toMsg();
+  
+  /**
+   * loads from msg
+   */
+  void fromMsg( MovementCostMsg& _msg );
 };
 
 class RobotPlanningInterface::PlanningSpaceInitializationInfo
