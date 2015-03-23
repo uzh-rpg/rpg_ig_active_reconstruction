@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
  
 #include "dense_reconstruction/youbot_planning.h"
 #include "dense_reconstruction/robot_planning_interface.h"
+#include "dense_reconstruction/ViewInformationReturn.h"
 #include "boost/foreach.hpp"
 
 #include <random>
@@ -27,7 +28,63 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "youbot_reconstruction_controller");
   ros::NodeHandle n;
+  
+  // octomap information service test
+  
+  dense_reconstruction::YoubotPlanner youbot(&n);
+  youbot.initializePlanningFrame();
+  
+  dense_reconstruction::RobotPlanningInterface::PlanningSpaceInitializationInfo simple_setup;
+  boost::shared_ptr<dense_reconstruction::YoubotPlanner::SpaceInfo> specifics( new dense_reconstruction::YoubotPlanner::SpaceInfo() );
+  
+  specifics->approximate_relative_object_position_ << 1,0,0;
+  specifics->base_pts_per_circle_ = 2;
+  specifics->arm_min_view_distance_ = 0.3;
+  specifics->arm_view_resolution_ = 100; // [pts/m]
+  
+  simple_setup.setSpecifics(specifics);
+  
+  youbot.initializePlanningSpace(simple_setup);
+  
+  dense_reconstruction::ViewSpace view_space;
+  youbot.getPlanningSpace( &view_space );
+  
+  using namespace dense_reconstruction;
+  std::vector<View, Eigen::aligned_allocator<View> > view_space_copy = view_space.getViewSpace();
+  
+  
+  ViewInformationReturn service;
+  service.request.call.poses.push_back( movements::toROS( view_space_copy[0].pose()) );
+  service.request.call.ray_resolution_x = 0.2;
+  service.request.call.ray_resolution_y = 0.2;
+  service.request.call.min_ray_depth = 0.05;
+  service.request.call.max_ray_depth = 1.5;
+  service.request.call.occupied_passthrough_threshold = 0;
+  service.request.call.metric_names.push_back("NrOfUnknownVoxels");
+  
+  while(true)
+  {
+    char egal;
+    std::cin>>egal; // just get time to shut down gazebo and start up octomap and the bag
     
+    if( !ros::service::call("/dense_reconstruction/octomap/information", service) )
+    {
+      ROS_INFO("Server call failed");
+    }
+    else
+    {
+      for(int i=0;i<service.response.expected_information.metric_names.size();++i)
+      {
+	using namespace std;
+	cout<<service.response.expected_information.metric_names[i]<<": "<<service.response.expected_information.values[i]<<endl;
+      }
+    }
+  }
+  
+  return 0;
+  
+  /*
+  // YoubotPlanner tests
   dense_reconstruction::YoubotPlanner youbot(&n);
   youbot.initializePlanningFrame();
   
@@ -60,7 +117,7 @@ int main(int argc, char **argv)
   boost::shared_ptr<YoubotPlanner::ViewInfo> info = boost::dynamic_pointer_cast<YoubotPlanner::ViewInfo>(info_reference);
   YoubotPlanner::ViewPointData* data = info->getViewPointData();
   ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
-  
+  /*
   ROS_INFO("Initial scannning");
   youbot.retrieveData();
   ROS_INFO("To view 1");
@@ -116,5 +173,5 @@ int main(int argc, char **argv)
   }
   out2.close();
   
-  return 0;
+  return 0;*/
 } 
