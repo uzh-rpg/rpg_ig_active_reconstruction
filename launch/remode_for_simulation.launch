@@ -15,11 +15,11 @@
     <param name="min_depth" value="0.2" />
     <param name="max_depth" value="2.0" />
     <param name="eta_inlier" value="0.7" /> <!-- bound for inliers (lower->more inliers) -->
-    <param name="eta_outlier" value="0.05" /> <!-- bound for outliers (bigger->more outliers) -_>
+    <param name="eta_outlier" value="0.05" /> <!-- bound for outliers (bigger->more outliers) -->
     <param name="ncc_threshold" value="0.5" />
     <param name="required_completion_percentage" value="0.5" />
     <param name="distance_between_keyframes" value="0.5" />
-    <param name="use_gpu" value="true" />
+    <param name="use_gpu" value="false" />
 
     <param name="save_depthmap" value="False" />
     <param name="pyr_init_level" value="0" />

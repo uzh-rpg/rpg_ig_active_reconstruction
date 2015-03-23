@@ -16,10 +16,15 @@ find_package(catkin REQUIRED COMPONENTS
   svo_msgs
   message_generation
   std_msgs
+  octomap_server
 )
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS system ) #accumulators bind ref)
+
+find_package(PCL REQUIRED QUIET COMPONENTS common sample_consensus io segmentation filters)
+
+find_package(octomap REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -28,20 +33,28 @@ add_subdirectory(lib)
 
 find_package(Eigen REQUIRED)
 
+add_message_files(
+  FILES
+  ViewInformation.msg
+  ViewInformationRequest.msg
+)
+
 add_service_files(
   FILES
   PoseSetter.srv
   IsOk.srv
+  ViewInformationReturn.srv
 )
 
 generate_messages(
   DEPENDENCIES
+  std_msgs
   geometry_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server
   DEPENDS opencv opencv2 Eigen
 )
 
@@ -50,6 +63,8 @@ include_directories(include
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   ${movements_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 set(DENSE_RECONSTRUCTION_BASE_SRC
