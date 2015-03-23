@@ -69,10 +69,11 @@ public:
    * @param _metric_names set of metrics to use to calculate the information
    * @return true if the view information service was called successfully
    */
-  bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses, std::vector<std::string>& _metric_names );
+  bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses );
   
 private:
   std::string planning_frame_;
+  std::vector<std::string> metrics_to_use_;
   
   ViewSpace view_space_;
   

@@ -30,6 +30,18 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   cost_retriever_ = nh_.serviceClient<dense_reconstruction::MovementCostCalculation>("/dense_reconstruction/robot_interface/movement_cost");
   view_information_retriever_ = nh_.serviceClient<dense_reconstruction::ViewInformationReturn>("/dense_reconstruction/3d_model/information");
   robot_mover_ = nh_.serviceClient<dense_reconstruction::MoveToOrder>("/dense_reconstruction/robot_interface/move_to");
+  
+  planning_frame_ = "dr_origin";
+  metrics_to_use_.push_back("NrOfUnknownVoxels");
+  metrics_to_use_.push_back("AverageUncertainty");
+  metrics_to_use_.push_back("AverageEndPointUncertainty");
+  metrics_to_use_.push_back("UnknownObjectSideFrontier");
+  metrics_to_use_.push_back("UnknownObjectVolumeFrontier");
+  metrics_to_use_.push_back("ClassicFrontier");
+  metrics_to_use_.push_back("EndNodeOccupancySum");
+  metrics_to_use_.push_back("TotalOccupancyCertainty");
+  metrics_to_use_.push_back("TotalNrOfOccupieds");
+  
 }
 
 bool ViewPlanner::getViewSpace()
@@ -106,11 +118,11 @@ bool ViewPlanner::moveTo( bool& _output, View& _target_view )
   return response;
 }
 
-bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses, std::vector<std::string>& _metric_names )
+bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses )
 {
   ViewInformationReturn request;
   request.request.call.poses = movements::toROS(_poses);
-  request.request.call.metric_names = _metric_names;
+  request.request.call.metric_names = metrics_to_use_;
   
   request.request.call.ray_resolution_x = 0.5;
   request.request.call.ray_resolution_y = 0.5;
