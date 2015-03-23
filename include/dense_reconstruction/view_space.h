@@ -38,6 +38,22 @@ public:
    */
   std::vector<View, Eigen::aligned_allocator<View> > getViewSpace();
   
+  /** returns indexes of all view points in the view space as a vector that are reachable, have never been visited and are not "bad"
+   */
+  void getGoodViewSpace( std::vector<unsigned int>& _out );
+  
+  /**
+   * returns the view corresponding to index _index.
+   * @throws std::invalid_argument if _index is invalid
+   */
+  View getView( unsigned int _index );
+  
+  void setBad( unsigned int _index );
+  void setGood( unsigned int _index );
+  void setVisited( unsigned int _index );
+  void setUnReachable( unsigned int _index );
+  void setReachable( unsigned int _index );
+  
   /** adds a new view point to the view space
    * @param _new_vp the new view point
    */

@@ -38,6 +38,68 @@ std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
   return view_space_;
 }
 
+void ViewSpace::getGoodViewSpace( std::vector<unsigned int>& _out )
+{
+  for( unsigned int i=0; i<view_space_.size(); ++i )
+  {
+    if( view_space_[i].reachable() && view_space_[i].timesVisited()==0 && !view_space_[i].bad() )
+    {
+      _out.push_back(i);
+    }
+  }
+}
+
+View ViewSpace::getView( unsigned int _index )
+{
+  if( _index>=view_space_.size() )
+  {
+    throw std::invalid_argument("ViewSpace::getView: the given index is out of range");
+  }
+  return view_space_[_index];
+}
+
+void ViewSpace::setBad( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    view_space_[_index].bad()=true;
+  }
+}
+
+void ViewSpace::setGood( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    view_space_[_index].bad()=false;
+  }
+}
+
+void ViewSpace::setVisited( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    int count = view_space_[_index].timesVisited()+1;
+    view_space_[_index].timesVisited() = count;
+  }
+}
+
+void ViewSpace::setUnReachable( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    view_space_[_index].reachable()=false;
+  }
+}
+
+void ViewSpace::setReachable( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    view_space_[_index].reachable()=true;
+  }
+}
+
+
 void ViewSpace::push_back( View _new_vp )
 {
   view_space_.push_back(_new_vp);

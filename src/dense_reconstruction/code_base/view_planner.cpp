@@ -22,6 +22,10 @@ namespace dense_reconstruction
 
 ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   :nh_(_n)
+  ,start_(false)
+  ,pause_(false)
+  ,stop_and_print_(false)
+  ,reinit_(false)
 {
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
@@ -30,7 +34,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   cost_retriever_ = nh_.serviceClient<dense_reconstruction::MovementCostCalculation>("/dense_reconstruction/robot_interface/movement_cost");
   view_information_retriever_ = nh_.serviceClient<dense_reconstruction::ViewInformationReturn>("/dense_reconstruction/3d_model/information");
   robot_mover_ = nh_.serviceClient<dense_reconstruction::MoveToOrder>("/dense_reconstruction/robot_interface/move_to");
-  
+    
   planning_frame_ = "dr_origin";
   metrics_to_use_.push_back("NrOfUnknownVoxels");
   metrics_to_use_.push_back("AverageUncertainty");
@@ -42,6 +46,88 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   metrics_to_use_.push_back("TotalOccupancyCertainty");
   metrics_to_use_.push_back("TotalNrOfOccupieds");
   
+  command_ = nh_.subscribe( "/dense_reconstruction/view_planner/command", 1, &ViewPlanner::commandCallback, this );
+}
+
+void ViewPlanner::run()
+{
+  while( !start_ ) // wait for start signal
+  {
+    waitAndSpin();
+  }
+  // get view space from robot_interface
+  while( !getViewSpace() )
+  {
+    ROS_INFO("View space service not available yet. Waiting...");
+    waitAndSpin(2);
+  }
+  
+  // get current view
+  while( !getCurrentView(current_view_) )
+  {
+    ROS_INFO("Attempting to retrieve start view. Waiting...");
+    waitAndSpin(2);
+  }
+  
+  // gather initial data
+  RobotPlanningInterface::ReceiveInfo receive_info;
+  bool receive_service_succeeded = false;
+  do
+  {
+    receive_service_succeeded = retrieveData(receive_info);
+  }while( !receive_service_succeeded || receive_info!=RobotPlanningInterface::RECEIVED );
+  
+  // enter loop
+  do
+  {
+    // possibly build subspace of complete space
+    std::vector<unsigned int> views_to_consider;
+    determineAvailableViewSpace( views_to_consider );
+    
+    // get movement costs
+    std::vector<double> cost(views_to_consider.size());
+    for( unsigned int i=0; i<cost.size(); i++ )
+    {
+      RobotPlanningInterface::MovementCost cost_description;
+      View target = view_space_.getView( views_to_consider[i] );
+      movementCost( cost_description, current_view_, target );
+      
+      if( cost_description.exception!=RobotPlanningInterface::MovementCost::NONE )
+      {
+	view_space_.setBad( views_to_consider[i] ); // don't consider that view
+      }
+      else
+      {
+	cost[i] = cost_description.cost;
+      }
+    }
+    
+    // get expected informations for each
+    std::vector< std::vector<double> > information(views_to_consider.size());
+    for( unsigned int i=0; i<information.size(); i++ )
+    {
+      View target_view = view_space_.getView( views_to_consider[i] );
+      
+      movements::PoseVector target_positions;
+      target_positions.push_back( target_view.pose() );
+      
+      getViewInformation( information[i], target_positions );
+    }
+    
+  }while(!stop_and_print_);
+  
+  /////////////////// PRINT INFORMATION ////////////////////////
+}
+
+void ViewPlanner::waitAndSpin(double _sec)
+{
+  ros::Duration(0.5).sleep();
+  ros::spinOnce();
+}
+
+void ViewPlanner::determineAvailableViewSpace( std::vector<unsigned int>& _output )
+{
+  view_space_.getGoodViewSpace(_output);
 }
 
 bool ViewPlanner::getViewSpace()
@@ -147,6 +233,32 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   }
   
   return response;
+}
+
+void ViewPlanner::commandCallback( const std_msgs::StringConstPtr& _msg )
+{
+  if( _msg->data=="START" )
+  {
+    start_ = true;
+    pause_ = false;
+    stop_and_print_ = false;
+  }
+  else if( _msg->data=="PAUSE" )
+  {
+    start_ = false;
+    pause_ = true;
+    stop_and_print_ = false;
+  }
+  else if( _msg->data=="STOP_AND_PRINT" )
+  {
+    start_ = false;
+    pause_ = false;
+    stop_and_print_ = true;
+  }
+  else if( _msg->data=="REINIT" )
+  {
+    reinit_ = true;
+  }
 }
 
 

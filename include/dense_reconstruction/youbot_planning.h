@@ -380,7 +380,6 @@ private:
   ros::ServiceServer retrieve_data_server_;
   ros::ServiceServer movement_cost_server_;
   ros::ServiceServer move_to_server_;
-  ros::Subscriber remode_topic_subsriber_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   

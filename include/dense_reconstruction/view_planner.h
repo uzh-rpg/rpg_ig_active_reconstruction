@@ -23,6 +23,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/robot_planning_interface.h"
 #include "dense_reconstruction/ViewInformationReturn.h"
+#include "std_msgs/String.h"
 
 
 namespace dense_reconstruction
@@ -34,6 +35,21 @@ class ViewPlanner
 {
 public:
   ViewPlanner( ros::NodeHandle& _n );
+  
+  /**
+   * starts the view planner, it will however only start taking actions when it gets the command on the "dense_reconstruction/view_planner/command" topic
+   */
+  void run();
+  
+  /**
+   * waits and spins once
+   */
+  void waitAndSpin( double _sec=0.5 );
+  
+  /**
+   * to calculate a subset, e.g. to limit the range in which the next view is sought, so far it only filters out already visited or bad positions
+   */
+  void determineAvailableViewSpace( std::vector<unsigned int>& _output );
   
   /** attempts to load the view space from service
    * returns true if successful
@@ -71,13 +87,25 @@ public:
    */
   bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses );
   
+  void commandCallback( const std_msgs::StringConstPtr& _msg );
 private:
   std::string planning_frame_;
   std::vector<std::string> metrics_to_use_;
   
   ViewSpace view_space_;
   
+  View current_view_;
+  
+  bool start_;
+  bool pause_;
+  bool stop_and_print_;
+  bool reinit_;
+  
+  std::vector< std::vector<double> > planning_data_; /// container for data gathered during planning: visited views, informations and costs
+  
   ros::NodeHandle nh_;
+  ros::Subscriber command_;
+  
   ros::ServiceClient view_space_retriever_;
   ros::ServiceClient current_view_retriever_;
   ros::ServiceClient data_retriever_;
