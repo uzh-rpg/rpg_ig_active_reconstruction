@@ -1,0 +1,286 @@
+tested with view space consisting of 6 positions, 2 opposing base positions with 3 arm positions each
+-----------------------------------------------------------------------------------------------
+
+on empty octomap:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Pose: 0
+NrOfUnknownVoxels: 799676
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+Pose: 1
+NrOfUnknownVoxels: 799612
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+Pose: 2
+NrOfUnknownVoxels: 798758
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+Pose: 3
+NrOfUnknownVoxels: 799676
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+Pose: 4
+NrOfUnknownVoxels: 799612
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+Pose: 5
+NrOfUnknownVoxels: 798758
+AverageUncertainty: 1
+AverageEndPointUncertainty: -nan
+UnknownObjectSideFrontier: 0
+UnknownObjectVolumeFrontier: 0
+ClassicFrontier: 0
+
+
+after one insertion:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Pose: 0
+NrOfUnknownVoxels: 738589
+AverageUncertainty: 0.993686
+AverageEndPointUncertainty: 0.945692
+UnknownObjectSideFrontier: 58
+UnknownObjectVolumeFrontier: 4025
+ClassicFrontier: 781
+
+
+Pose: 1
+NrOfUnknownVoxels: 717694
+AverageUncertainty: 0.986675
+AverageEndPointUncertainty: 0.946785
+UnknownObjectSideFrontier: 26
+UnknownObjectVolumeFrontier: 796
+ClassicFrontier: 836
+
+
+Pose: 2
+NrOfUnknownVoxels: 708283
+AverageUncertainty: 0.982306
+AverageEndPointUncertainty: 0.9473
+UnknownObjectSideFrontier: 28
+UnknownObjectVolumeFrontier: 699
+ClassicFrontier: 1641
+
+
+Pose: 3
+NrOfUnknownVoxels: 785879
+AverageUncertainty: 0.998246
+AverageEndPointUncertainty: 0.837762
+UnknownObjectSideFrontier: 109
+UnknownObjectVolumeFrontier: 11084
+ClassicFrontier: 392
+
+
+Pose: 4
+NrOfUnknownVoxels: 783261
+AverageUncertainty: 0.998169
+AverageEndPointUncertainty: 0.846939
+UnknownObjectSideFrontier: 124
+UnknownObjectVolumeFrontier: 16059
+ClassicFrontier: 353
+
+
+Pose: 5
+NrOfUnknownVoxels: 781287
+AverageUncertainty: 0.998346
+AverageEndPointUncertainty: 0.868718
+UnknownObjectSideFrontier: 117
+UnknownObjectVolumeFrontier: 11560
+ClassicFrontier: 312
+
+
+
+after two insertions:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Pose: 0
+NrOfUnknownVoxels: 715235
+AverageUncertainty: 0.988159
+AverageEndPointUncertainty: 0.912177
+UnknownObjectSideFrontier: 105
+UnknownObjectVolumeFrontier: 5064
+ClassicFrontier: 1184
+
+
+Pose: 1
+NrOfUnknownVoxels: 695944
+AverageUncertainty: 0.973259
+AverageEndPointUncertainty: 0.921457
+UnknownObjectSideFrontier: 28
+UnknownObjectVolumeFrontier: 526
+ClassicFrontier: 1345
+
+
+Pose: 2
+NrOfUnknownVoxels: 675826
+AverageUncertainty: 0.963581
+AverageEndPointUncertainty: 0.926829
+UnknownObjectSideFrontier: 48
+UnknownObjectVolumeFrontier: 1186
+ClassicFrontier: 3827
+
+
+Pose: 3
+NrOfUnknownVoxels: 778963
+AverageUncertainty: 0.996709
+AverageEndPointUncertainty: 0.787428
+UnknownObjectSideFrontier: 134
+UnknownObjectVolumeFrontier: 8650
+ClassicFrontier: 626
+
+
+Pose: 4
+NrOfUnknownVoxels: 769260
+AverageUncertainty: 0.995853
+AverageEndPointUncertainty: 0.80211
+UnknownObjectSideFrontier: 165
+UnknownObjectVolumeFrontier: 13468
+ClassicFrontier: 707
+
+
+Pose: 5
+NrOfUnknownVoxels: 769008
+AverageUncertainty: 0.996367
+AverageEndPointUncertainty: 0.815217
+UnknownObjectSideFrontier: 154
+UnknownObjectVolumeFrontier: 9445
+ClassicFrontier: 547
+
+
+
+after three insertions:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Pose: 0
+NrOfUnknownVoxels: 688048
+AverageUncertainty: 0.984912
+AverageEndPointUncertainty: 0.821608
+UnknownObjectSideFrontier: 240
+UnknownObjectVolumeFrontier: 11184
+ClassicFrontier: 1420
+
+
+Pose: 1
+NrOfUnknownVoxels: 667575
+AverageUncertainty: 0.96126
+AverageEndPointUncertainty: 0.883963
+UnknownObjectSideFrontier: 34
+UnknownObjectVolumeFrontier: 498
+ClassicFrontier: 1471
+
+
+Pose: 2
+NrOfUnknownVoxels: 610603
+AverageUncertainty: 0.934385
+AverageEndPointUncertainty: 0.870452
+UnknownObjectSideFrontier: 101
+UnknownObjectVolumeFrontier: 963
+ClassicFrontier: 4363
+
+
+Pose: 3
+NrOfUnknownVoxels: 776828
+AverageUncertainty: 0.995197
+AverageEndPointUncertainty: 0.666553
+UnknownObjectSideFrontier: 142
+UnknownObjectVolumeFrontier: 8973
+ClassicFrontier: 615
+
+
+Pose: 4
+NrOfUnknownVoxels: 766610
+AverageUncertainty: 0.993873
+AverageEndPointUncertainty: 0.703421
+UnknownObjectSideFrontier: 172
+UnknownObjectVolumeFrontier: 13867
+ClassicFrontier: 644
+
+
+Pose: 5
+NrOfUnknownVoxels: 765858
+AverageUncertainty: 0.994784
+AverageEndPointUncertainty: 0.693687
+UnknownObjectSideFrontier: 167
+UnknownObjectVolumeFrontier: 10091
+ClassicFrontier: 533
+
+
+
+after last insertion:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Pose: 0
+NrOfUnknownVoxels: 680809
+AverageUncertainty: 0.982355
+AverageEndPointUncertainty: 0.783387
+UnknownObjectSideFrontier: 205
+UnknownObjectVolumeFrontier: 8849
+ClassicFrontier: 1295
+
+
+Pose: 1
+NrOfUnknownVoxels: 660844
+AverageUncertainty: 0.959508
+AverageEndPointUncertainty: 0.865557
+UnknownObjectSideFrontier: 39
+UnknownObjectVolumeFrontier: 497
+ClassicFrontier: 1461
+
+
+Pose: 2
+NrOfUnknownVoxels: 572523
+AverageUncertainty: 0.919034
+AverageEndPointUncertainty: 0.855374
+UnknownObjectSideFrontier: 92
+UnknownObjectVolumeFrontier: 696
+ClassicFrontier: 4478
+
+
+Pose: 3
+NrOfUnknownVoxels: 775271
+AverageUncertainty: 0.994997
+AverageEndPointUncertainty: 0.653006
+UnknownObjectSideFrontier: 158
+UnknownObjectVolumeFrontier: 10309
+ClassicFrontier: 638
+
+
+Pose: 4
+NrOfUnknownVoxels: 765377
+AverageUncertainty: 0.993548
+AverageEndPointUncertainty: 0.691613
+UnknownObjectSideFrontier: 174
+UnknownObjectVolumeFrontier: 14252
+ClassicFrontier: 667
+
+
+Pose: 5
+NrOfUnknownVoxels: 764451
+AverageUncertainty: 0.994511
+AverageEndPointUncertainty: 0.687399
+UnknownObjectSideFrontier: 180
+UnknownObjectVolumeFrontier: 10846
+ClassicFrontier: 538

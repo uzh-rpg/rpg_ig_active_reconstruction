@@ -13,6 +13,9 @@ float64 ray_resolution_x
 # How many rays are cast per pixel on the image's y-axis to obtain the information [rays/px]
 float64 ray_resolution_y
 
+# Each i-th voxel on the ray well be included for calculation (if set to zero, 1 will be used instead as default)
+uint32 ray_step_size
+
 # Minimal range for rays (if the camera position happens to be at an occupied voxel, this enforces raycasting), origin of ray will be offset by this length once to attempt a recast
 float64 min_ray_depth
 

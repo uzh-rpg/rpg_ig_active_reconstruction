@@ -54,29 +54,42 @@ int main(int argc, char **argv)
   
   
   ViewInformationReturn service;
-  service.request.call.poses.push_back( movements::toROS( view_space_copy[0].pose()) );
-  service.request.call.ray_resolution_x = 0.2;
-  service.request.call.ray_resolution_y = 0.2;
+  service.request.call.poses.resize(1);
+  service.request.call.poses[0] = movements::toROS( view_space_copy[0].pose());
+  service.request.call.ray_resolution_x = 0.1;
+  service.request.call.ray_resolution_y = 0.1;
+  service.request.call.ray_step_size = 2;
   service.request.call.min_ray_depth = 0.05;
   service.request.call.max_ray_depth = 1.5;
   service.request.call.occupied_passthrough_threshold = 0;
   service.request.call.metric_names.push_back("NrOfUnknownVoxels");
+  service.request.call.metric_names.push_back("AverageUncertainty");
+  service.request.call.metric_names.push_back("AverageEndPointUncertainty");
+  service.request.call.metric_names.push_back("UnknownObjectSideFrontier");
+  service.request.call.metric_names.push_back("UnknownObjectVolumeFrontier");
+  service.request.call.metric_names.push_back("ClassicFrontier");
   
   while(true)
   {
     char egal;
     std::cin>>egal; // just get time to shut down gazebo and start up octomap and the bag
     
-    if( !ros::service::call("/dense_reconstruction/octomap/information", service) )
+    for( unsigned int i=0; i<view_space_copy.size(); ++i )
     {
-      ROS_INFO("Server call failed");
-    }
-    else
-    {
-      for(int i=0;i<service.response.expected_information.metric_names.size();++i)
+      service.request.call.poses[0] = movements::toROS( view_space_copy[i].pose());
+      if( !ros::service::call("/dense_reconstruction/octomap/information", service) )
+      {
+	ROS_INFO("Server call failed");
+      }
+      else
       {
 	using namespace std;
-	cout<<service.response.expected_information.metric_names[i]<<": "<<service.response.expected_information.values[i]<<endl;
+	cout<<endl<<"Pose: "<<i<<endl;
+	for(int i=0;i<service.response.expected_information.metric_names.size();++i)
+	{
+	  cout<<service.response.expected_information.metric_names[i]<<": "<<service.response.expected_information.values[i]<<endl;
+	}
+	cout<<endl;
       }
     }
   }
