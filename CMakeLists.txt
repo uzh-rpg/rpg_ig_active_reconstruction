@@ -37,6 +37,9 @@ add_message_files(
   FILES
   ViewInformation.msg
   ViewInformationRequest.msg
+  ViewMsg.msg
+  ViewSpaceMsg.msg
+  MovementCostMsg.msg
 )
 
 add_service_files(
@@ -44,6 +47,12 @@ add_service_files(
   PoseSetter.srv
   IsOk.srv
   ViewInformationReturn.srv
+  PlanningSpaceInitializationInfoMsg.srv
+  FeasibleViewSpaceRequest.srv
+  ViewRequest.srv
+  RetrieveData.srv
+  MovementCostCalculation.srv
+  MoveToOrder.srv
 )
 
 generate_messages(

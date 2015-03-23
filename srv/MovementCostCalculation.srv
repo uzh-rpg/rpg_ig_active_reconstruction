@@ -1,0 +1,4 @@
+dense_reconstruction/ViewMsg start_view
+dense_reconstruction/ViewMsg target_view
+---
+dense_reconstruction/MovementCostMsg movement_cost

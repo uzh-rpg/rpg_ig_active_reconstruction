@@ -30,4 +30,12 @@ boost::shared_ptr<RobotPlanningInterface::PlanningSpaceInitializationInfo::Robot
   return robot_specific_info_;
 }
 
+MovementCostMsg RobotPlanningInterface::MovementCost::toMsg()
+{
+  MovementCostMsg msg;
+  msg.cost = cost;
+  msg.exception = exception;
+  return msg;
+}
+
 }

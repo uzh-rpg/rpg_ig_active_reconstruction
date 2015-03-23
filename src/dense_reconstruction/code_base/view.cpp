@@ -15,6 +15,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "dense_reconstruction/view.h"
+#include <movements/ros_movements.h>
 
 namespace dense_reconstruction
 {
@@ -34,6 +35,29 @@ source_frame_(_source_frame),
   visited_(0)
 {
   
+}
+
+View::View( ViewMsg& _msg )
+{
+  pose_ = movements::fromROS(_msg.pose);
+  source_frame_ = _msg.source_frame;
+  is_reachable_ = _msg.is_reachable;
+  is_bad_ = _msg.is_bad;
+  visited_ = _msg.visited;
+  additional_fields_names_ = _msg.associated_names;
+  additional_fields_values_ = _msg.associated_values;
+}
+
+ViewMsg View::toMsg()
+{
+  ViewMsg msg;
+  msg.pose = movements::toROS(pose_);
+  msg.source_frame = source_frame_;
+  msg.is_bad = is_bad_;
+  msg.visited = visited_;
+  msg.associated_names = additional_fields_names_;
+  msg.associated_values = additional_fields_values_;
+  return msg;
 }
 
 movements::Pose& View::pose()

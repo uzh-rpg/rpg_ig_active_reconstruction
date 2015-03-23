@@ -25,6 +25,14 @@ ViewSpace::ViewSpace()
   
 }
 
+void ViewSpace::fromMsg( const ViewSpaceMsgConstPtr& _msg )
+{
+  BOOST_FOREACH( auto view_msg, _msg->views )
+  {
+    view_space_.push_back( View(view_msg) );
+  }
+}
+
 std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
 {
   return view_space_;

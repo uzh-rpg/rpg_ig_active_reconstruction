@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include <movements/core>
+#include "dense_reconstruction/ViewMsg.h"
 
 namespace dense_reconstruction
 {
@@ -29,6 +30,12 @@ public:
   
   View();
   View( std::string _source_frame );
+  
+  /** constructs the view from a message
+   */
+  View( ViewMsg& _msg );
+  
+  ViewMsg toMsg();
   
   /** grants access to the pose */
   movements::Pose& pose();
@@ -55,6 +62,8 @@ private:
   movements::Pose pose_; /// the pose...
   std::string source_frame_; /// pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a poit in the pose frame into one in the source frame
   boost::shared_ptr<ViewInfo> associated_data_; /// interface that gives possibility for a robot to store robot specific data that is associated with the pose, e.g. for the Youbot some IK calculations can be made beforehand but the robot needs to know which data implements a given view
+  std::vector<std::string> additional_fields_names_;
+  std::vector<double> additional_fields_values_;
   bool is_reachable_; /// whether the view is reachable or not
   bool is_bad_; /// marks a bad view for whatever reason (e.g. data reception failed here or the like)
   unsigned int visited_; /// how many times this view has been visited

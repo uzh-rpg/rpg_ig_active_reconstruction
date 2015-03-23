@@ -97,9 +97,16 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
     ROS_WARN_STREAM("YoubotPlanner::No alpha value set for cost function on '"<<interface_namespace<<"/cost_function/alpha"<<"', using default of "<<cost_alpha_<<".");
   }
   
+  planning_space_initialization_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/planning_space_initialization", &YoubotPlanner::planningSpaceInitService, this );
+  feasible_view_space_request_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/feasible_view_space", &YoubotPlanner::feasibleViewSpaceRequestService, this );
+  current_view_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/current_view", &YoubotPlanner::currentViewService, this );
+  retrieve_data_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/retrieve_daata", &YoubotPlanner::retrieveDataService, this );
+  movement_cost_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/movement_cost", &YoubotPlanner::movementCostService, this );
+  move_to_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/move_to", &YoubotPlanner::moveToService, this );
+  
   
   // move arm into initial pose
-  assumeAndSetInitialPose();
+  assumeAndSetInitialPose(); ////////////////////////////////////////////////////////// move out of here - needs to happen after SVO initialization
 }
 
 YoubotPlanner::~YoubotPlanner()
@@ -595,6 +602,39 @@ View YoubotPlanner::viewFromViewPointData( ViewPointData& _vpd )
   boost::shared_ptr<ViewInfo> reference( new ViewInfo(_vpd) );
   new_view.associatedData() = reference;
   return new_view;
+}
+
+View YoubotPlanner::viewFromViewMsg( ViewMsg& _msg )
+{
+  YoubotPlanner::ViewInfo view_info(_msg);
+  
+  return viewFromViewPointData( view_point_data_[view_info.idx()] );
+}
+
+ViewMsg YoubotPlanner::viewMsgFromViewPointData( ViewPointData& _vpd )
+{
+  ViewMsg msg;
+  msg.pose = movements::toROS( _vpd.pose_ );
+  msg.source_frame = view_planning_frame_;
+  msg.is_reachable = true;
+  msg.is_bad = false;
+  msg.visited = 0;
+  
+  msg.associated_names.push_back("idx");
+  
+  double index;
+  for( unsigned int i=0; i<view_point_data_.size(); ++i )
+  {
+    if( &view_point_data_[i]==&_vpd )
+    {
+      index = i;
+      break;
+    }
+  }
+  
+  msg.associated_values.push_back(index);
+  
+  return msg;
 }
 
 void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_distance, double _view_resolution, std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_space, std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > >& _joint_trajectories )
@@ -1784,6 +1824,150 @@ bool YoubotPlanner::loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::V
   return true;
 }
 
+bool YoubotPlanner::planningSpaceInitService( dense_reconstruction::PlanningSpaceInitializationInfoMsg::Request& _req, dense_reconstruction::PlanningSpaceInitializationInfoMsg::Response& _res )
+{  
+  boost::shared_ptr<SpaceInfo> info(new SpaceInfo() );
+  
+  for( unsigned int i=0; i<_req.specific_vector_names.size(); ++i )
+  {
+    if( _req.specific_vector_names[i]=="approximate_relative_object_position" )
+    {
+      info->approximate_relative_object_position_ = Eigen::Vector3d( _req.specific_vector_values[i].x, _req.specific_vector_values[i].y, _req.specific_vector_values[i].z );
+      continue;
+    }
+  }
+  
+  for( unsigned int i=0; i<_req.specific_double_names.size(); ++i )
+  {
+    if( _req.specific_vector_names[i]=="base_min_radius" )
+    {
+      info->base_min_radius_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="base_max_radius" )
+    {
+      info->base_max_radius_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_1_min_angle" )
+    {
+      info->link_1_min_angle_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_1_max_angle" )
+    {
+      info->link_1_max_angle_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="scan_radius" )
+    {
+      info->scan_radius_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="arm_min_view_distance" )
+    {
+      info->arm_min_view_distance_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="arm_view_resolution" )
+    {
+      info->arm_view_resolution_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_5_min_angle" )
+    {
+      info->link_5_min_angle_ = _req.specific_double_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_5_max_angle" )
+    {
+      info->link_5_max_angle_ = _req.specific_double_values[i];
+      continue;
+    }
+  }
+  
+  for( unsigned int i=0; i<_req.specific_uint_names.size(); ++i )
+  {
+    if( _req.specific_vector_names[i]=="base_circle_traj_nr" )
+    {
+      info->base_circle_traj_nr_ = _req.specific_uint_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="base_pts_per_circle" )
+    {
+      info->base_pts_per_circle_ = _req.specific_uint_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_1_nr_of_pos" )
+    {
+      info->link_1_nr_of_pos_ = _req.specific_uint_values[i];
+      continue;
+    }
+    if( _req.specific_vector_names[i]=="link_5_nr_of_pos" )
+    {
+      info->link_5_nr_of_pos_ = _req.specific_uint_values[i];
+      continue;
+    }
+  }
+  
+  PlanningSpaceInitializationInfo general_info;
+  general_info.setSpecifics(info);
+  
+  _res.accepted = initializePlanningSpace(general_info);
+  
+  return true;
+}
+
+bool YoubotPlanner::feasibleViewSpaceRequestService( dense_reconstruction::FeasibleViewSpaceRequest::Request& _req, dense_reconstruction::FeasibleViewSpaceRequest::Response& _res )
+{
+  for( unsigned int i=0; i<view_point_data_.size(); ++i )
+  {
+    _res.view_space.views.push_back( viewMsgFromViewPointData(view_point_data_[i]) );
+  }
+  return true;
+}
+
+bool YoubotPlanner::currentViewService( dense_reconstruction::ViewRequest::Request& _req, dense_reconstruction::ViewRequest::Response& _res )
+{
+  if( current_view_!=nullptr )
+  {
+    _res.view = viewMsgFromViewPointData(*current_view_);
+  }
+  else
+  {
+    _res.view.pose = movements::toROS( getCurrentGlobalLinkPose("cam_pos") );
+    _res.view.source_frame = view_planning_frame_;
+    _res.view.is_reachable = true;
+    _res.view.is_bad = false;
+    _res.view.visited = 0;
+    _res.view.associated_names.push_back("idx");
+    _res.view.associated_values.push_back(-1);
+  }
+  return true;
+}
+
+bool YoubotPlanner::retrieveDataService( dense_reconstruction::RetrieveData::Request& _req, dense_reconstruction::RetrieveData::Response& _res )
+{
+  _res.receive_info = data_retreiver_->retrieveData();
+  return true;
+}
+
+bool YoubotPlanner::movementCostService( dense_reconstruction::MovementCostCalculation::Request& _req, dense_reconstruction::MovementCostCalculation::Response& _res )
+{
+  View start = viewFromViewMsg(_req.start_view );
+  View target = viewFromViewMsg(_req.target_view);
+  MovementCost cost = movementCost( start, target );
+  _res.movement_cost = cost.toMsg();
+  return true;
+}
+
+bool YoubotPlanner::moveToService( dense_reconstruction::MoveToOrder::Request& _req, dense_reconstruction::MoveToOrder::Response& _res )
+{
+  View target = viewFromViewMsg( _req.target_view );
+  _res.success = moveTo(target);
+  return true;
+}
+
 void YoubotPlanner::initializeTF()
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
@@ -2037,6 +2221,18 @@ YoubotPlanner::ViewInfo::ViewInfo( ViewPointData& _reference )
   view_point_ = &_reference;
 }
 
+YoubotPlanner::ViewInfo::ViewInfo( ViewMsg& _msg )
+{
+  for( unsigned int i=0; i<_msg.associated_names.size();++i )
+  {
+    if( _msg.associated_names[i] == "idx" )
+    {
+      idx_ = _msg.associated_values[i];
+    }
+  }
+  
+}
+
 std::string YoubotPlanner::ViewInfo::type()
 {
   return "YoubotViewPointInfo";
@@ -2045,6 +2241,11 @@ std::string YoubotPlanner::ViewInfo::type()
 YoubotPlanner::ViewPointData* YoubotPlanner::ViewInfo::getViewPointData()
 {
   return view_point_;
+}
+
+unsigned int YoubotPlanner::ViewInfo::idx()
+{
+  return idx_;
 }
 
 }

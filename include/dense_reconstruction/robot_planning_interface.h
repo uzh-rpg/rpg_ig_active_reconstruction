@@ -19,11 +19,21 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/view_space.h"
 #include "dense_reconstruction/view.h"
 
+#include "dense_reconstruction/PlanningSpaceInitializationInfoMsg.h"
+#include "dense_reconstruction/ViewMsg.h"
+#include "dense_reconstruction/FeasibleViewSpaceRequest.h"
+#include "dense_reconstruction/ViewRequest.h"
+#include "dense_reconstruction/RetrieveData.h"
+#include "dense_reconstruction/MovementCostCalculation.h"
+#include "dense_reconstruction/MovementCostMsg.h"
+#include "dense_reconstruction/MoveToOrder.h"
+
 
 namespace dense_reconstruction
 {
 
-/** abstract interface class that serves as an interface between the low level, robot specific planner and the view planner
+/** abstract interface class that serves as an interface between the low level, robot specific planner and the view planner:
+ * For each interface function apart from "initializePlanningFrame" there must exist an equivalent service call.
  */
 class RobotPlanningInterface
 {
@@ -34,7 +44,7 @@ public:
   
   RobotPlanningInterface();
   
-  /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
+  /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc. (TODO load from parameter)
    */
   virtual std::string initializePlanningFrame()=0;
   
@@ -98,6 +108,10 @@ public:
   /// possible exceptions:: INFINITE_COST: do not move to target view, INVALID_STATE: robot is in state which somehow prevents it from calculating a cost, but the movement might be possible
   enum Exception{ COST_UNKNOWN, INFINITE_COST, INVALID_STATE, INVALID_TARGET_STATE, INVALID_START_STATE };
   Exception exception;
+  
+  /** converts the cost to a message
+   */
+  MovementCostMsg toMsg();
 };
 
 class RobotPlanningInterface::PlanningSpaceInitializationInfo

@@ -162,10 +162,19 @@ public:
    */
   movements::Pose calculateCameraPoseFromConfiguration( ViewPointData& _config );
   
-  /*
+  /**
    * constructs a view with a reference to the _vpd
    */
   View viewFromViewPointData( ViewPointData& _vpd );
+  
+  /**
+   * constructs a (youbot-) view given a ViewMsg
+   */
+  View viewFromViewMsg( ViewMsg& _msg );
+  
+  /** constructs a ViewMsg from ViewPointData including its index
+   */
+  ViewMsg viewMsgFromViewPointData( ViewPointData& _vpd );
   
   /**
    * initializes the vectors with joint values for the arm and corresponding trajectories
@@ -336,11 +345,41 @@ public:
   
   /** attempts to load the initialization trajectory from file init_trajectory in data folder */
   bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );
+  
+  /** service to initialize the planning space
+   */
+  bool planningSpaceInitService( dense_reconstruction::PlanningSpaceInitializationInfoMsg::Request& _req, dense_reconstruction::PlanningSpaceInitializationInfoMsg::Response& _res );
+  
+  /** service to return the feasible view space
+   */
+  bool feasibleViewSpaceRequestService( dense_reconstruction::FeasibleViewSpaceRequest::Request& _req, dense_reconstruction::FeasibleViewSpaceRequest::Response& _res );
+  
+  /** service to obtain the current view
+   */
+  bool currentViewService( dense_reconstruction::ViewRequest::Request& _req, dense_reconstruction::ViewRequest::Response& _res );
+  
+  /** service that tells the youbot to retrieve data
+   */
+  bool retrieveDataService( dense_reconstruction::RetrieveData::Request& _req, dense_reconstruction::RetrieveData::Response& _res );
+  
+  /** service for movement costs (see equivalent function for further explanations )
+   */
+  bool movementCostService( dense_reconstruction::MovementCostCalculation::Request& _req, dense_reconstruction::MovementCostCalculation::Response& _res );
+  
+  /** service to tell the youbot which view pose to assume
+   */
+  bool moveToService( dense_reconstruction::MoveToOrder::Request& _req, dense_reconstruction::MoveToOrder::Response& _res );
 private:
   
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
   ros::ServiceClient hand_client_;
+  ros::ServiceServer planning_space_initialization_server_;
+  ros::ServiceServer feasible_view_space_request_server_;
+  ros::ServiceServer current_view_server_;
+  ros::ServiceServer retrieve_data_server_;
+  ros::ServiceServer movement_cost_server_;
+  ros::ServiceServer move_to_server_;
   ros::Subscriber remode_topic_subsriber_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
@@ -448,12 +487,18 @@ public:
   ViewInfo();
   ViewInfo( ViewPointData& _reference );
   
+  /** loads additional data from msg */
+  ViewInfo( ViewMsg& _msg );
+  
   virtual std::string type();
   
   ViewPointData* getViewPointData();
   
+  unsigned int idx();
+  
 private:
   ViewPointData* view_point_;
+  unsigned int idx_;
 };
 
 struct YoubotPlanner::BaseConfig

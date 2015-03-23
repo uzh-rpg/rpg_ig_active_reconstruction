@@ -18,6 +18,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/view.h"
 #include <Eigen/StdVector>
+#include "dense_reconstruction/ViewSpaceMsg.h"
 
 namespace dense_reconstruction
 {
@@ -29,6 +30,9 @@ class ViewSpace
 {
 public:
   ViewSpace();
+  
+  /** set view space from message, overwrites all previous data */
+  void fromMsg( const ViewSpaceMsgConstPtr& _msg );
   
   /** returns all view points in the view space as a vector 
    */
