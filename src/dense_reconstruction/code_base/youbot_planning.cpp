@@ -137,52 +137,52 @@ void YoubotPlanner::attemptToInitializePlanningSpaceFromParameter( std::string _
   RobotPlanningInterface::PlanningSpaceInitializationInfo setup;
   boost::shared_ptr<YoubotPlanner::SpaceInfo> specifics( new YoubotPlanner::SpaceInfo() );
   
-  bool parameter_exists = false;
-  
   double x=0;
   double y=0;
   double z=0;
   int temp;
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/x",x);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/y",y);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/z",z);
+  int successfully_found_count = 0;
+  successfully_found_count += ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/x",x);
+  successfully_found_count += ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/y",y);
+  successfully_found_count += ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/z",z);
   specifics->approximate_relative_object_position_ << x,y,z;
   
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/base/min_radius",specifics->base_min_radius_);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/base/max_radius",specifics->base_max_radius_);
+  successfully_found_count += ros_node_->getParam(_interface_name+"/planning_space/base/min_radius",specifics->base_min_radius_);
+  successfully_found_count += ros_node_->getParam(_interface_name+"/planning_space/base/max_radius",specifics->base_max_radius_);
   
   if( ros_node_->getParam(_interface_name+"/planning_space/base/circle_traj_nr",temp) )
   {
     specifics->base_circle_traj_nr_ = temp;
-    parameter_exists = true;
+    successfully_found_count +=  true;
   }
   if( ros_node_->getParam(_interface_name+"/planning_space/base/pts_per_circle",temp) )
   {
     specifics->base_pts_per_circle_ = temp;
-    parameter_exists = true;
+    successfully_found_count +=  true;
   }
   
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_1/min_angle",specifics->link_1_min_angle_);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_1/max_angle",specifics->link_1_max_angle_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/link_1/min_angle",specifics->link_1_min_angle_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/link_1/max_angle",specifics->link_1_max_angle_);
   if( ros_node_->getParam(_interface_name+"/planning_space/link_1/nr_of_pos",temp) )
   {
     specifics->link_1_nr_of_pos_ = temp;
-    parameter_exists = true;
+    successfully_found_count +=  true;
   }
   
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/arm/min_view_distance",specifics->arm_min_view_distance_);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/arm/view_resolution",specifics->arm_view_resolution_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/arm/min_view_distance",specifics->arm_min_view_distance_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/arm/view_resolution",specifics->arm_view_resolution_);
   
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_5/min_angle",specifics->link_5_min_angle_);
-  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_5/max_angle",specifics->link_5_max_angle_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/link_5/min_angle",specifics->link_5_min_angle_);
+  successfully_found_count +=  ros_node_->getParam(_interface_name+"/planning_space/link_5/max_angle",specifics->link_5_max_angle_);
   if( ros_node_->getParam(_interface_name+"/planning_space/link_5/nr_of_pos",temp) )
   {
     specifics->link_5_nr_of_pos_ = temp;
-    parameter_exists = true;
+    successfully_found_count +=  true;
   }
   
-  if( parameter_exists )
+  if( successfully_found_count>0 )
   {
+    ROS_INFO("Loading planning space discretization parameters from server.");
     setup.setSpecifics(specifics);
     initializePlanningSpace(setup);
   }
@@ -325,6 +325,7 @@ RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_v
   }
   catch( std::runtime_error& e )
   {
+    ROS_WARN_STREAM("YoubotPlanner::movementCost::Couldn't get corrsponding data for start view, error occured: "<<e.what()<<".");
     RobotPlanningInterface::MovementCost cost;
     cost.exception = RobotPlanningInterface::MovementCost::INVALID_START_STATE;
     return cost;
@@ -337,6 +338,7 @@ RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_v
   }
   catch( std::runtime_error& e )
   {
+    ROS_WARN_STREAM("YoubotPlanner::movementCost::Couldn't get corrsponding data for target view, error occured: "<<e.what()<<".");
     RobotPlanningInterface::MovementCost cost;
     cost.exception = RobotPlanningInterface::MovementCost::INVALID_TARGET_STATE;
     return cost;
@@ -1309,7 +1311,7 @@ void YoubotPlanner::calculateArmGrid( double _y_res, double _z_res, std::vector<
   ROS_INFO_STREAM("Succeeded calculations: "<<success_count);
 }
 
-bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts )
+bool YoubotPlanner::calculateScanTrajectory( Eigen::Vector3d& _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts )
 {
   // constructing moveit robot state
   planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
@@ -1556,7 +1558,7 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
   return movements::Pose( out_position, out_rotation );
 }
 
-bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed )
+bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
   movements::Pose base_pose_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
   movements::Pose base_pose;
@@ -1994,6 +1996,7 @@ bool YoubotPlanner::planningSpaceInitService( dense_reconstruction::PlanningSpac
 
 bool YoubotPlanner::feasibleViewSpaceRequestService( dense_reconstruction::FeasibleViewSpaceRequest::Request& _req, dense_reconstruction::FeasibleViewSpaceRequest::Response& _res )
 {
+  ROS_INFO("View space service called.");
   for( unsigned int i=0; i<view_point_data_.size(); ++i )
   {
     _res.view_space.views.push_back( viewMsgFromViewPointData(view_point_data_[i]) );
@@ -2003,6 +2006,7 @@ bool YoubotPlanner::feasibleViewSpaceRequestService( dense_reconstruction::Feasi
 
 bool YoubotPlanner::currentViewService( dense_reconstruction::ViewRequest::Request& _req, dense_reconstruction::ViewRequest::Response& _res )
 {
+  ROS_INFO("Current view service called");
   if( current_view_!=nullptr )
   {
     _res.view = viewMsgFromViewPointData(*current_view_);
@@ -2022,12 +2026,14 @@ bool YoubotPlanner::currentViewService( dense_reconstruction::ViewRequest::Reque
 
 bool YoubotPlanner::retrieveDataService( dense_reconstruction::RetrieveData::Request& _req, dense_reconstruction::RetrieveData::Response& _res )
 {
+  ROS_INFO("Data retrieval service called.");
   _res.receive_info = data_retreiver_->retrieveData();
   return true;
 }
 
 bool YoubotPlanner::movementCostService( dense_reconstruction::MovementCostCalculation::Request& _req, dense_reconstruction::MovementCostCalculation::Response& _res )
 {
+  ROS_INFO("Movement cost service called.");
   View start = viewFromViewMsg(_req.start_view );
   View target = viewFromViewMsg(_req.target_view);
   
@@ -2038,6 +2044,7 @@ bool YoubotPlanner::movementCostService( dense_reconstruction::MovementCostCalcu
 
 bool YoubotPlanner::moveToService( dense_reconstruction::MoveToOrder::Request& _req, dense_reconstruction::MoveToOrder::Response& _res )
 {
+  ROS_INFO("MoveTo service called.");
   View target = viewFromViewMsg( _req.target_view );
   _res.success = moveTo(target);
   return true;

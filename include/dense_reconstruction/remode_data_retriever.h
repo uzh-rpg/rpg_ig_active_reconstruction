@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "dense_reconstruction/youbot_planning.h"
+#include "octomap_msgs/Octomap.h"
 
 namespace dense_reconstruction
 {
@@ -38,6 +39,7 @@ public:
   
   /**
    * attempts to retrieve data and reports on success, call is blocking
+   * success is reported when octomap has processed the data and published itself.
    */
   virtual RobotPlanningInterface::ReceiveInfo retrieveData();
   
@@ -55,12 +57,12 @@ public:
    */
   virtual bool getRetrievalMovement( robot_state::RobotState& _state, movements::KinematicMovementDescription* _retrieval_movement, movements::KinematicMovementDescription::PathInfo* _additional_info );
   
-  void remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );
+  void octomapCallback( const octomap_msgs::OctomapConstPtr& _msg );
 private:
   YoubotPlanner* robot_interface_;
   double scanning_radius_; /// max radius of the scanning spirals default = 0.05
   
-  ros::Subscriber remode_topic_subsriber_; /// to check whether remode has published
+  ros::Subscriber octomap_topic_subsriber_; /// to check whether remode has published
   ros::Publisher remode_commander_; /// interface to send commands to Remode
   
   bool remode_has_published_; /// set by callback function if remode data was published

@@ -34,16 +34,16 @@ RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::
     ROS_WARN_STREAM("RemodeDataRetriever:: No scan radius was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/scan_radius"<<"'), the default (0.05m) will be used.");
     scanning_radius_=0.05;
   }
-  std::string remode_control_topic, remode_pointcloud_topic;
+  std::string remode_control_topic, octomap_topic;
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/control_topic",remode_control_topic) )
   {
     ROS_WARN_STREAM("RemodeDataRetriever:: No control topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/control_topic"<<"'), the default ('/remode/command') will be used.");
     remode_control_topic="/remode/command";
   }
-  if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/pointcloud_topic",remode_pointcloud_topic) )
+  if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/octomap_topic",octomap_topic) )
   {
-    ROS_WARN_STREAM("RemodeDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/pointcloud_topic"<<"'), the default ('/remode/pointcloud') will be used.");
-    remode_pointcloud_topic="/remode/pointcloud";
+    ROS_WARN_STREAM("RemodeDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/octomap_topic"<<"'), the default ('/remode/pointcloud') will be used.");
+    octomap_topic="/remode/pointcloud";
   }
   double max_wait_time;
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/max_wait_time",max_wait_time) )
@@ -58,7 +58,7 @@ RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::
   
   remode_has_published_=false;
   remode_commander_ = robot_interface_->ros_node_->advertise<std_msgs::String>( remode_control_topic, 1 );
-  remode_topic_subsriber_ = robot_interface_->ros_node_->subscribe( remode_pointcloud_topic,1, &dense_reconstruction::RemodeDataRetriever::remodeCallback, this );
+  octomap_topic_subsriber_ = robot_interface_->ros_node_->subscribe( octomap_topic,1, &dense_reconstruction::RemodeDataRetriever::octomapCallback, this );
 }
 
 std::string RemodeDataRetriever::movementConfigurationDescription()
@@ -135,7 +135,7 @@ bool RemodeDataRetriever::getRetrievalMovement( robot_state::RobotState& _state,
   return true;
 }
 
-void RemodeDataRetriever::remodeCallback( const sensor_msgs::PointCloud2ConstPtr& _msg )
+void RemodeDataRetriever::octomapCallback( const octomap_msgs::OctomapConstPtr& _msg )
 {
   remode_has_published_ = true;
 }

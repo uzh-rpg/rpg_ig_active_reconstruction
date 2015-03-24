@@ -245,7 +245,7 @@ public:
    * @param _joint_trajectory vector with the joint values that make up the trajectory (joint 2, joint 3, joint 4)
    * @param _planning_attempts max number of planning attempts before fail is returned
    */
-  bool calculateScanTrajectory( Eigen::Vector3d _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts=10 );
+  bool calculateScanTrajectory( Eigen::Vector3d& _joint_values, double _radius, std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& _joint_trajectory, int _planning_attempts=10 );
   
   /**
    * returns the pose of a link _link_name in robot state _state, in the planning frame
@@ -295,7 +295,7 @@ public:
   /** moves the base to the target position on a circular (but with varying radius) trajectory around the given _center
    * @return true if successful, false if not
    */
-  bool moveBaseCircularlyTo( movements::Pose _target_position, movements::Pose _center, double _radial_speed );
+  bool moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed );
   
   /** commands the base to move to a specific position, doesn't check for success though!
    */
@@ -381,6 +381,8 @@ public:
    * that is e.g. the transformation from cam_pos to the robot and to dr_origin
    */
   bool setupTFService( std_srvs::Empty::Request& _req, std_srvs::Empty::Response& _res );
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   
   ros::NodeHandle* ros_node_;
@@ -547,6 +549,8 @@ public:
   Link1Config link1_config_;
   ArmConfig arm_config_;
   Link5Config link5_config_;
+  
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
   //boost::shared_ptr<moveit::planning_interface::MoveGroup::Plan> scan_trajectory_; // scan trajectory for this viewpoint; - unused: saved in arm_config_ wit less memory usage
 };

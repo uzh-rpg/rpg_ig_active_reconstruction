@@ -37,13 +37,11 @@ void printCommands()
   cout<<endl<<endl;
 }
 
-void sendPlannerCommand( std::string _command, ros::NodeHandle& _n )
+void sendPlannerCommand( std::string _command, ros::Publisher& _publisher )
 {
-  ros::Publisher planner_commands = _n.advertise<std_msgs::String>("/dense_reconstruction/view_planner/command",1);
-  
   std_msgs::String command;
   command.data = _command;
-  planner_commands.publish(command);
+  _publisher.publish(command);
 }
 
 void reinitializeTFCommand()
@@ -57,8 +55,10 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "dense_reconstruction_control");
   ros::NodeHandle n;
   
-  ROS_INFO("Starting dense_reconstruction_control");
+  ros::Publisher planner_commands = n.advertise<std_msgs::String>("/dense_reconstruction/view_planner/command",1);
   
+  
+  ROS_INFO("Starting dense_reconstruction_control");
   
   char userInput;
   
@@ -70,19 +70,19 @@ int main(int argc, char **argv)
     switch(userInput)
     {
       case 'g':
-	sendPlannerCommand( "START", n );
+	sendPlannerCommand( "START", planner_commands );
 	break;
       case 'b':
-	sendPlannerCommand( "PAUSE", n );
+	sendPlannerCommand( "PAUSE", planner_commands );
 	break;
       case 's':
-	sendPlannerCommand( "STOP_AND_PRINT", n );
+	sendPlannerCommand( "STOP_AND_PRINT", planner_commands );
 	break;
       case 'a':
-	sendPlannerCommand( "ABORT_LOOP", n );
+	sendPlannerCommand( "ABORT_LOOP", planner_commands );
 	break;
       case 'p':
-	sendPlannerCommand( "PRINT_DATA", n );
+	sendPlannerCommand( "PRINT_DATA", planner_commands );
 	break;
       case 'i':
 	reinitializeTFCommand();

@@ -31,7 +31,7 @@ int main(int argc, char **argv)
   
   // octomap information service test
   
-  dense_reconstruction::YoubotPlanner youbot(&n);
+  /*dense_reconstruction::YoubotPlanner youbot(&n);
   youbot.initializePlanningFrame();
   
   dense_reconstruction::RobotPlanningInterface::PlanningSpaceInitializationInfo simple_setup;
@@ -94,9 +94,9 @@ int main(int argc, char **argv)
     }
   }
   
-  return 0;
+  return 0;*/
   
-  /*
+  
   // YoubotPlanner tests
   dense_reconstruction::YoubotPlanner youbot(&n);
   youbot.initializePlanningFrame();
@@ -125,12 +125,12 @@ int main(int argc, char **argv)
   
   dense_reconstruction::View closest = view_space.getAClosestNeighbour(current_view);
   
-  /*
+  
   boost::shared_ptr<dense_reconstruction::View::ViewInfo> info_reference = closest.associatedData();
   boost::shared_ptr<YoubotPlanner::ViewInfo> info = boost::dynamic_pointer_cast<YoubotPlanner::ViewInfo>(info_reference);
   YoubotPlanner::ViewPointData* data = info->getViewPointData();
-  ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);*/
-  /*
+  ROS_ERROR_STREAM("data in main link1 angle is: "<<data->link1_config_.angle_);
+  
   ROS_INFO("Initial scannning");
   youbot.retrieveData();
   ROS_INFO("To view 1");
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
   ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[1]).cost );
   youbot.moveTo(view_space_copy[1]);  
   youbot.retrieveData();
-  ROS_INFO("To view 3");
+  /*ROS_INFO("To view 3");
   ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[2]).cost );
   youbot.moveTo(view_space_copy[2]);  
   youbot.retrieveData();
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
   ROS_INFO("To view 6");
   ROS_INFO_STREAM("Cost is: "<<youbot.movementCost(view_space_copy[5]).cost );
   youbot.moveTo(view_space_copy[5]);  
-  youbot.retrieveData();
+  youbot.retrieveData();*/
   
   
   ROS_INFO("If the program terminates now it has reached the correct exit point");
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
   
   
   
-  
+  /*
   
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > grid;

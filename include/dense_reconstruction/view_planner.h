@@ -168,6 +168,7 @@ private:
   bool abort_loop_;
   
   double cost_weight_;
+  double information_weight_;
   std::vector<double> information_weights_;
   
   std::vector< std::vector<double> > planning_data_; /// container for data gathered during planning: visited views, informations and costs

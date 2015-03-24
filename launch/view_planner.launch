@@ -6,6 +6,7 @@
     
     <!-- the cost weight should be positive since it is internally counted negative -->
     <param name="cost_weight" value="1.0" />
+    <param name="information_weight" value="1.0" />
     
     <param name="information_metric/NrOfUnknownVoxels/weight" value="1.0" />
     <param name="information_metric/AverageUncertainty/weight" value="1.0" />

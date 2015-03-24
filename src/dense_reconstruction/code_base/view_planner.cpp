@@ -42,6 +42,11 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
     ROS_WARN("No cost weight was found on parameter server. default '1.0' will be used...");
     cost_weight_ = 1.0;
   }
+  if( !nh_.getParam("/view_planner/information_weight", information_weight_) )
+  {
+    ROS_WARN("No cost weight was found on parameter server. default '1.0' will be used...");
+    information_weight_ = 1.0;
+  }
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
   current_view_retriever_ = nh_.serviceClient<dense_reconstruction::ViewRequest>("/dense_reconstruction/robot_interface/current_view");
@@ -71,6 +76,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
     information_weights_.push_back(weight);
   }
   
+  planning_data_names_.push_back("time");
   planning_data_names_.push_back("pos_x");
   planning_data_names_.push_back("pos_y");
   planning_data_names_.push_back("pos_z");
@@ -98,10 +104,13 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
 
 void ViewPlanner::run()
 {
+  ROS_INFO("Waiting for start signal.");
   while( !start_ ) // wait for start signal
   {
     waitAndSpin();
   }
+  ROS_INFO("Starting...");
+  
   // get view space from robot_interface
   while( !getViewSpace() )
   {
@@ -116,10 +125,13 @@ void ViewPlanner::run()
     waitAndSpin(2);
   }
   
+  ROS_INFO("Successfully received view space and current view.");
+  
+  ROS_INFO("Instructing robot to collect scene data.");
   // gather initial data
   retrieveDataAndWait();
   
-  
+  ROS_INFO("Succeeded... Start planning");
   // enter loop
   do
   {
@@ -128,10 +140,12 @@ void ViewPlanner::run()
     // possibly build subspace of complete space
     std::vector<unsigned int> views_to_consider;
     determineAvailableViewSpace( views_to_consider );
+    ROS_INFO_STREAM("View that are part of the choice: "<<views_to_consider.size() );
     
     // get movement costs
     ROS_INFO("Retrieve movement costs...");
     std::vector<double> cost(views_to_consider.size());
+    int achievable_poses_count = 0;
     for( unsigned int i=0; i<cost.size(); i++ )
     {
       RobotPlanningInterface::MovementCost cost_description;
@@ -140,15 +154,27 @@ void ViewPlanner::run()
       
       if( cost_description.exception!=RobotPlanningInterface::MovementCost::NONE )
       {
+	ROS_WARN_STREAM("Exception occured for movement cost calculation. The flag returned was '"<<cost_description.exception<<"'.");
 	view_space_.setBad( views_to_consider[i] ); // don't consider that view
 	cost[i] = -1; // no negative costs exist, that's to mark invalids
       }
       else
       {
 	cost[i] = cost_description.cost;
+	++achievable_poses_count;
       }
     }
     pauseIfRequested();
+    
+    if( achievable_poses_count==0 )
+    {
+      ROS_INFO("None of the poses in the set were achievable or the whole view space has been visited. Stopping iteration and saving data gathered so far.");
+      //pause_=true;
+      //pauseIfRequested();
+      
+      // reconstruction is done, end iteration
+      break;
+    }
     
     // get expected informations for each
     ROS_INFO("Retrieve information gain...");
@@ -164,13 +190,18 @@ void ViewPlanner::run()
       target_positions.push_back( target_view.pose() );
       
       getViewInformation( information[i], target_positions );
+      
+      BOOST_FOREACH( auto info, information[i] )
+      {
+	ROS_INFO_STREAM("One returned gain is: "<<info);
+      }
     }
     
     pauseIfRequested();
     
     ROS_INFO("Calculating next best view...");
     // calculate return for each
-    std::vector<double> view_returns(views_to_consider.size());
+    std::vector<double> view_returns(views_to_consider.size(),0);
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
       if( cost[i]==-1 )
@@ -178,6 +209,7 @@ void ViewPlanner::run()
       
       view_returns[i] = calculateReturn( cost[i], information[i] );
     }
+    ROS_INFO("got return...");
     
     // calculate NBV
     unsigned int nbv_index;
@@ -266,7 +298,7 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
   
   for( unsigned int i=0; i<_informations.size(); ++i )
   {
-    view_return += information_weights_[i]*_informations[i];
+    view_return += information_weight_*information_weights_[i]*_informations[i];
   }
   
   return view_return;
@@ -283,6 +315,9 @@ void ViewPlanner::saveNBVData( unsigned int _nbv_index, ReturnValueInformation& 
   std::vector<double> nbv_data;
   View nbv = view_space_.getView(_nbv_index);
   
+  ros::Time now = ros::Time::now();
+  
+  nbv_data.push_back( now.toNSec() );
   nbv_data.push_back( nbv.pose().position.x() );
   nbv_data.push_back( nbv.pose().position.y() );
   nbv_data.push_back( nbv.pose().position.z() );
@@ -321,6 +356,9 @@ void ViewPlanner::saveNBVData( unsigned int _nbv_index, ReturnValueInformation& 
 
 void ViewPlanner::saveDataToFile()
 {
+  if( planning_data_.size()==0 )
+    return;
+  
   std::stringstream filename;
   ros::Time now = ros::Time::now();
   filename << data_folder_<<"planning_data"<<ros::Time::now()<<".data";
@@ -476,7 +514,7 @@ bool ViewPlanner::moveTo( bool& _output, View& _target_view )
   MoveToOrder request;
   request.request.target_view = _target_view.toMsg();
   
-  bool response = data_retriever_.call(request);
+  bool response = robot_mover_.call(request);
   
   if( response )
   {
@@ -507,7 +545,7 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   request.request.call.max_ray_depth = 1.5;
   request.request.call.occupied_passthrough_threshold = 0;
   
-  bool response = current_view_retriever_.call(request);
+  bool response = view_information_retriever_.call(request);
   
   if( response )
   {
@@ -521,32 +559,38 @@ void ViewPlanner::commandCallback( const std_msgs::StringConstPtr& _msg )
 {
   if( _msg->data=="START" )
   {
+    ROS_INFO("Received 'START' signal.");
     start_ = true;
     pause_ = false;
     stop_and_print_ = false;
   }
   else if( _msg->data=="PAUSE" )
   {
+    ROS_INFO("Received 'PAUSE' signal.");
     start_ = false;
     pause_ = true;
     stop_and_print_ = false;
   }
   else if( _msg->data=="STOP_AND_PRINT" )
   {
+    ROS_INFO("Received 'STOP_AND_PRINT' signal.");
     start_ = false;
     pause_ = false;
     stop_and_print_ = true;
   }
   else if( _msg->data=="REINIT" )
   {
+    ROS_INFO("Received 'REINIT' signal.");
     reinit_ = true;
   }
   else if( _msg->data=="ABORT_LOOP" )
   {
+    ROS_INFO("Received 'ABORT_LOOP' signal.");
     abort_loop_ = true;
   }
   else if( _msg->data=="PRINT_DATA" )
   {
+    ROS_INFO("Received 'PRINT_DATA' signal.");
     saveDataToFile();
   }
 }
