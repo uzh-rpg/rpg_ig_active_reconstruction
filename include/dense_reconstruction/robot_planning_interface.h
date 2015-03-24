@@ -87,9 +87,10 @@ public:
   /** returns the cost to move from start view to target view
    * @param _start_view the start view
    * @param _target_view the target view
+   * @param _fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
    * @return cost for the movement
    */
-  virtual MovementCost movementCost( View& _start_view, View& _target_view )=0;
+  virtual MovementCost movementCost( View& _start_view, View& _target_view, bool _fill_additional_information  )=0;
   
   /** tells the robot to get the camera to a new view
    * @param _target_view where to move to
@@ -117,6 +118,9 @@ public:
    * loads from msg
    */
   void fromMsg( MovementCostMsg& _msg );
+  
+  std::vector<std::string> additional_field_names; /// names for additional information fields (optional)
+  std::vector<double> additional_fields_values; /// values corresponding to the description in additional_fiel
 };
 
 class RobotPlanningInterface::PlanningSpaceInitializationInfo

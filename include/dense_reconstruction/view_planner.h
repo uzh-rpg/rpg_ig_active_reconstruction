@@ -47,9 +47,74 @@ public:
   void waitAndSpin( double _sec=0.5 );
   
   /**
+   * will pause if requested
+   */
+  void pauseIfRequested();
+  
+  /**
    * to calculate a subset, e.g. to limit the range in which the next view is sought, so far it only filters out already visited or bad positions
    */
   void determineAvailableViewSpace( std::vector<unsigned int>& _output );
+  
+  /**
+   * return function calculates the return associated with a view, given the cost and a set of information gains
+   */
+  double calculateReturn( double _cost, std::vector<double>& _informations );
+  
+  /**
+   * returns true if the values of the next best view fulfill the termination criteria, which
+   * means that the computation will be stopped and the result accepted
+   * TODO: not yet implemented
+   */
+  bool terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain );
+  
+  struct ReturnValueInformation
+  {
+    double return_value;
+    double winning_margin;
+    double return_value_mean;
+    double return_value_stddev;
+  };
+  
+  /**
+   * stores nbv data in the planning_data_ structures which are printed to file when the
+   * program finishes.
+   * @param _nbv_index index of the nbv - needed to get the pose associated to it
+   * @param _return_value_information information struct regarding the return value of the NBV
+   * @param _cost movement cost to reach the view
+   * @param _information_gain information gains calculated for the NBV
+   * @param _additional_field_names (optional) pointer to vector with the names of the additional fields
+   * @param _additional_field_values (optional) values for the additional fields, if its size doesn't match the size of _additional_field_names, then the information is dropped
+   */
+  void saveNBVData( unsigned int _nbv_index, ReturnValueInformation& _return_value_information, double _cost, std::vector<double>& _information_gain, std::vector<std::string>* _additional_field_names=nullptr, std::vector<double>* _additional_field_values=nullptr );
+  
+  /**
+   * saves the data stored in planning_data_ to a file in the data_folder_ folder.
+   * File format is:
+   * name1 name2 ... nameX
+   * data1_t1 data2_t1 ... dataX_t1
+   * data1_t2 data2_t2 ... dataX_t2
+   * ...
+   */
+  void saveDataToFile();
+  
+  /**
+   * calls the data retrieval service and waits until it succeeded
+   * Can be aborted and paused through commands
+   */
+  void retrieveDataAndWait( double _sec=0.5 );
+  
+  /**
+   * calls the robots movement service
+   * Can be aborted and paused through commands (stop will while called in this loop only stop the loop, not the whole program)
+   */
+  void moveToAndWait( View& _target_view, double _sec=0.5 );
+  
+  /**
+   * returns the index of the field with name _name in the planning_data_ structure, creates a
+   * new one if none exists yet
+   */
+  unsigned int getIndexForAdditionalField( std::string _name );
   
   /** attempts to load the view space from service
    * returns true if successful
@@ -100,8 +165,14 @@ private:
   bool pause_;
   bool stop_and_print_;
   bool reinit_;
+  bool abort_loop_;
+  
+  double cost_weight_;
+  std::vector<double> information_weights_;
   
   std::vector< std::vector<double> > planning_data_; /// container for data gathered during planning: visited views, informations and costs
+  std::vector< std::string > planning_data_names_; /// names of the data stored in planning_data_
+  std::string data_folder_;
   
   ros::NodeHandle nh_;
   ros::Subscriber command_;

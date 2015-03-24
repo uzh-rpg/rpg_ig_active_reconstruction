@@ -81,13 +81,14 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
   src/dense_reconstruction/code_base/view.cpp
   src/dense_reconstruction/code_base/view_planner.cpp
   src/dense_reconstruction/code_base/view_space.cpp
-  src/dense_reconstruction/code_base/remode_data_retriever.cpp
+  src/utils/math.cpp
 )
 
 
 add_executable(youbot_interface
-  src/dense_reconstruction/ros_nodes/develop.cpp
+  src/dense_reconstruction/ros_nodes/youbot_planner_node.cpp
   src/dense_reconstruction/code_base/youbot_planning.cpp
+  src/dense_reconstruction/code_base/remode_data_retriever.cpp
   src/utils/ros_eigen.cpp
   ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
@@ -100,6 +101,61 @@ target_link_libraries(youbot_interface
 )
 
 add_dependencies(youbot_interface
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(dense_reconstruction_control
+  src/dense_reconstruction/ros_nodes/dense_reconstruction_control.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+)
+
+target_link_libraries(dense_reconstruction_control
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(dense_reconstruction_control
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(develop
+  src/dense_reconstruction/ros_nodes/develop.cpp
+  src/dense_reconstruction/code_base/youbot_planning.cpp
+  src/dense_reconstruction/code_base/remode_data_retriever.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+)
+
+target_link_libraries(develop
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(develop
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(view_planner
+  src/dense_reconstruction/ros_nodes/view_planner_node.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+)
+
+target_link_libraries(view_planner
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(view_planner
  ${catkin_EXPORTED_TARGETS}
 )
 

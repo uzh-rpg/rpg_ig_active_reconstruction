@@ -29,6 +29,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/String.h>
+#include <std_srvs/Empty.h>
 
 #include <movements/core>
 #include <movements/ros_movements.h>
@@ -74,6 +75,11 @@ public:
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
    */
   virtual std::string initializePlanningFrame();
+  
+  /** if at least one of the planning space parameters is set on the parameter server,
+   * this function initializes the planning frame
+   */
+  void attemptToInitializePlanningSpaceFromParameter( std::string _interface_name );
     
   /** initializes the robot's planning space
    * @param _info information the robot needs to setup its planning space
@@ -111,9 +117,10 @@ public:
   /** returns the cost to move from start view to target view
    * @param _start_view the start view
    * @param _target_view the target view
+   * @param _fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
    * @return cost for the movement
    */
-  virtual MovementCost movementCost( View& _start_view, View& _target_view );
+  virtual MovementCost movementCost( View& _start_view, View& _target_view, bool _fill_additional_information=false );
   
   /** calculates a distance cost for the base
    */
@@ -369,6 +376,11 @@ public:
   /** service to tell the youbot which view pose to assume
    */
   bool moveToService( dense_reconstruction::MoveToOrder::Request& _req, dense_reconstruction::MoveToOrder::Response& _res );
+  
+  /** service that when called finalizes the initialization - it sets up the tf frames,
+   * that is e.g. the transformation from cam_pos to the robot and to dr_origin
+   */
+  bool setupTFService( std_srvs::Empty::Request& _req, std_srvs::Empty::Response& _res );
 private:
   
   ros::NodeHandle* ros_node_;
@@ -380,6 +392,7 @@ private:
   ros::ServiceServer retrieve_data_server_;
   ros::ServiceServer movement_cost_server_;
   ros::ServiceServer move_to_server_;
+  ros::ServiceServer setup_tf_server_;
   ActionClient base_trajectory_sender_;
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
@@ -465,7 +478,7 @@ public:
   unsigned int link_1_nr_of_pos_; /// total number of positions, including min and max, if 1, min angle is used, default:1
   
   // arm setup:
-  double scan_radius_; /// [m] radius to scan, default:0.05 //REMODE-SPECIFIC: MOVED OUT OF HERE!
+  double scan_radius_; /// [m] radius to scan, default:0.05 //REMODE-SPECIFIC: MOVED OUT OF HERE!, not used anymore
   double arm_min_view_distance_; /// [m] closest distance two viewpoints in arm space may have, default: 0.2
   double arm_view_resolution_; /// [pts/m] number of points generated for the arm space grid: The points of this grid are then filtered to fulfill scan_radius_ & arm_min_view_distance_, default:10
   

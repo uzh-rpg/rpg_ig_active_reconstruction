@@ -35,6 +35,8 @@ MovementCostMsg RobotPlanningInterface::MovementCost::toMsg()
   MovementCostMsg msg;
   msg.cost = cost;
   msg.exception = exception;
+  msg.additional_fields_names = additional_field_names;
+  msg.additional_fields_values = additional_fields_values;
   return msg;
 }
 
@@ -42,6 +44,8 @@ void RobotPlanningInterface::MovementCost::fromMsg( MovementCostMsg& _msg )
 {
   cost = _msg.cost;
   exception = RobotPlanningInterface::MovementCost::Exception(_msg.exception);
+  additional_field_names = _msg.additional_fields_names;
+  additional_fields_values = _msg.additional_fields_values;
 }
 
 }

@@ -6,5 +6,6 @@
   <rosparam file="$(find dense_reconstruction)/config/base_joint_link_config.yaml" command="load" ns=""/>
     
   <node name="base_position_controller" pkg="youbot_controllers" type="base_position_controller" respawn="false" output="screen"/>
+  <node name="base_trajectory_action_server" pkg="youbot_controllers" type="base_trajectory_action_server" respawn="false" output="screen"/>
   
 </launch>

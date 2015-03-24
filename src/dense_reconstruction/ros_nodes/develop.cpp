@@ -26,7 +26,7 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "youbot_reconstruction_controller");
+  ros::init(argc, argv, "develop");
   ros::NodeHandle n;
   
   // octomap information service test

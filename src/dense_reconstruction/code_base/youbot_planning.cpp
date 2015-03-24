@@ -103,7 +103,14 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   retrieve_data_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/retrieve_data", &YoubotPlanner::retrieveDataService, this );
   movement_cost_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/movement_cost", &YoubotPlanner::movementCostService, this );
   move_to_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/move_to", &YoubotPlanner::moveToService, this );
+  setup_tf_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/setup_tf", &YoubotPlanner::setupTFService, this );
+    
+  // try contacting action server
+  ROS_INFO_STREAM("YoubotPlanner::YoubotPlanner::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
+  base_trajectory_sender_.waitForServer();
+  ROS_INFO_STREAM("YoubotPlanner::YoubotPlanner::Successfully contacted.");
   
+  attemptToInitializePlanningSpaceFromParameter(interface_namespace);
   
   // move arm into initial pose
   assumeAndSetInitialPose(); ////////////////////////////////////////////////////////// move out of here - needs to happen after SVO initialization
@@ -117,16 +124,68 @@ YoubotPlanner::~YoubotPlanner()
 
 std::string YoubotPlanner::initializePlanningFrame()
 {
-  // try contacting action server
-  ROS_INFO_STREAM("YoubotPlanner::YoubotPlanner::trying to contact trajectory server on "<<"base_controller/follow_joint_trajectory"<<" topic...");
-  base_trajectory_sender_.waitForServer();
-  ROS_INFO_STREAM("YoubotPlanner::YoubotPlanner::Successfully contacted.");
   
   ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
   initializeTF();
   ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
   
   return view_planning_frame_;
+}
+
+void YoubotPlanner::attemptToInitializePlanningSpaceFromParameter( std::string _interface_name )
+{
+  RobotPlanningInterface::PlanningSpaceInitializationInfo setup;
+  boost::shared_ptr<YoubotPlanner::SpaceInfo> specifics( new YoubotPlanner::SpaceInfo() );
+  
+  bool parameter_exists = false;
+  
+  double x=0;
+  double y=0;
+  double z=0;
+  int temp;
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/x",x);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/y",y);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/relative_object_position/z",z);
+  specifics->approximate_relative_object_position_ << x,y,z;
+  
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/base/min_radius",specifics->base_min_radius_);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/base/max_radius",specifics->base_max_radius_);
+  
+  if( ros_node_->getParam(_interface_name+"/planning_space/base/circle_traj_nr",temp) )
+  {
+    specifics->base_circle_traj_nr_ = temp;
+    parameter_exists = true;
+  }
+  if( ros_node_->getParam(_interface_name+"/planning_space/base/pts_per_circle",temp) )
+  {
+    specifics->base_pts_per_circle_ = temp;
+    parameter_exists = true;
+  }
+  
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_1/min_angle",specifics->link_1_min_angle_);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_1/max_angle",specifics->link_1_max_angle_);
+  if( ros_node_->getParam(_interface_name+"/planning_space/link_1/nr_of_pos",temp) )
+  {
+    specifics->link_1_nr_of_pos_ = temp;
+    parameter_exists = true;
+  }
+  
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/arm/min_view_distance",specifics->arm_min_view_distance_);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/arm/view_resolution",specifics->arm_view_resolution_);
+  
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_5/min_angle",specifics->link_5_min_angle_);
+  parameter_exists = parameter_exists || ros_node_->getParam(_interface_name+"/planning_space/link_5/max_angle",specifics->link_5_max_angle_);
+  if( ros_node_->getParam(_interface_name+"/planning_space/link_5/nr_of_pos",temp) )
+  {
+    specifics->link_5_nr_of_pos_ = temp;
+    parameter_exists = true;
+  }
+  
+  if( parameter_exists )
+  {
+    setup.setSpecifics(specifics);
+    initializePlanningSpace(setup);
+  }
 }
 
 bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _info )
@@ -257,7 +316,7 @@ RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _target_
   return cost;
 }
 
-RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_view, View& _target_view )
+RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_view, View& _target_view, bool _fill_additional_information )
 {
   ViewPointData* start_view;
   try
@@ -285,7 +344,22 @@ RobotPlanningInterface::MovementCost YoubotPlanner::movementCost( View& _start_v
   
   
   RobotPlanningInterface::MovementCost cost;
-  cost.cost =  cost_delta_*( baseDistanceCost(current_view_,target_view) + cost_alpha_*armDistanceCost(current_view_,target_view) ) + cost_epsilon_*energyCost(current_view_,target_view);
+  
+  double base_dist_cost = baseDistanceCost(current_view_,target_view);
+  double arm_dist_cost = armDistanceCost(current_view_,target_view);
+  double energy_cost = energyCost(current_view_,target_view);
+  
+  cost.cost =  cost_delta_*( base_dist_cost + cost_alpha_*arm_dist_cost ) + cost_epsilon_*energy_cost;
+  
+  if( _fill_additional_information )
+  {
+    cost.additional_field_names.push_back("base_distance_cost");
+    cost.additional_fields_values.push_back(base_dist_cost);
+    cost.additional_field_names.push_back("arm_distance_cost");
+    cost.additional_fields_values.push_back(arm_dist_cost);
+    cost.additional_field_names.push_back("energy_cost");
+    cost.additional_fields_values.push_back(energy_cost);
+  }
   
   return cost;
 }
@@ -1956,7 +2030,8 @@ bool YoubotPlanner::movementCostService( dense_reconstruction::MovementCostCalcu
 {
   View start = viewFromViewMsg(_req.start_view );
   View target = viewFromViewMsg(_req.target_view);
-  MovementCost cost = movementCost( start, target );
+  
+  MovementCost cost = movementCost( start, target, _req.additional_information );
   _res.movement_cost = cost.toMsg();
   return true;
 }
@@ -1966,6 +2041,11 @@ bool YoubotPlanner::moveToService( dense_reconstruction::MoveToOrder::Request& _
   View target = viewFromViewMsg( _req.target_view );
   _res.success = moveTo(target);
   return true;
+}
+
+bool YoubotPlanner::setupTFService( std_srvs::Empty::Request& _req, std_srvs::Empty::Response& _res )
+{
+  initializePlanningFrame();
 }
 
 void YoubotPlanner::initializeTF()

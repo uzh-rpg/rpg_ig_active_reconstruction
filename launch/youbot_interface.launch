@@ -3,12 +3,34 @@
   <!--ns="dense_reconstruction"-->
   <node pkg="dense_reconstruction" type="youbot_interface" name="youbot_interface"  clear_params="true" output="screen">
     <param name="data_folder" value="$(find dense_reconstruction)/data/" />
+    
+    <!-- delta: distance cost weight (for arm and base combined) -->
+    <param name="cost_function/delta" value="1.0" />
+    <!-- epsilon: energy cost weight -->
+    <param name="cost_function/epsilon" value="0.0" />
+    <!-- alpha: arm distance cost weight (only arm, the end weight of the arm distance is delta*alpha) -->
+    <param name="cost_function/alpha" value="0.25" />
+    
+    <!-- initial arm pose -->
     <!--
     <param name="init/joint_1" value="1.35" />
-    <param name="init/joint_2" value="0.7" />
-    <param name="init/joint_3" value="-1.0" />
-    <param name="init/joint_4" value="2.2" />
+    <param name="init/joint_2" value="0.500612" />
+    <param name="init/joint_3" value="-1.09678" />
+    <param name="init/joint_4" value="2.60026" />
     <param name="init/joint_5" value="2.9" />-->
+    
+    <!-- planning space -->
+    <rosparam command="load" file="$(find dense_reconstruction)/config/planning_space.yaml" />
+    
+    <!-- data retrieval -->
+    <param name="data_retreiver_type" value="remode" />
+    <!-- stereo_cam is not implemented yet -->
+    
+    <!-- remode specific -->
+    <param name="initialization/remode/scan_radius" value="0.05" />
+    <param name="initialization/remode/control_topic" value="/remode/command" />
+    <param name="initialization/remode/pointcloud_topic" value="/remode/pointcloud" />
+    <param name="initialization/remode/max_wait_time" value="3.0" />
   </node>
 
   
