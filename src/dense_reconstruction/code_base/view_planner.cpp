@@ -168,15 +168,16 @@ void ViewPlanner::run()
   
   ROS_INFO("Successfully received view space and current view.");
   
-  ROS_INFO("Instructing robot to collect scene data.");
-  // gather initial data
-  retrieveDataAndWait();
-  
-  ROS_INFO("Succeeded... Start planning");
+    
+  ROS_INFO("Start planning");
   // enter loop
   do
   {
     pauseIfRequested();
+    
+    
+    // retrieve new information
+    retrieveDataAndWait();
     
     // possibly build subspace of complete space
     std::vector<unsigned int> views_to_consider;
@@ -294,8 +295,6 @@ void ViewPlanner::run()
       // set view as visited!
       view_space_.setVisited(views_to_consider[nbv_index]);
       
-      // retrieve new information
-      retrieveDataAndWait();
     }
     else
     {
@@ -443,6 +442,7 @@ void ViewPlanner::saveDataToFile()
 
 void ViewPlanner::retrieveDataAndWait( double _sec )
 {
+  ROS_INFO("Attempting to retrieve data.");
   RobotPlanningInterface::ReceiveInfo receive_info;
   bool receive_service_succeeded = false;
   do

@@ -18,11 +18,11 @@
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     
-    <param name="information/ray_resolution_x" value="0.1" />
-    <param name="information/ray_resolution_y" value="0.1" />
+    <param name="information/ray_resolution_x" value="0.2" />
+    <param name="information/ray_resolution_y" value="0.2" />
     <param name="information/ray_step_size" value="1" />
-    <param name="information/subwindow_width_percentage" value="0.7" />
-    <param name="information/subwindow_height_percentage" value="0.7" />
+    <param name="information/subwindow_width_percentage" value="1" />
+    <param name="information/subwindow_height_percentage" value="1" />
     <param name="information/min_ray_depth" value="0.05" />
     <param name="information/max_ray_depth" value="1.3" />
     <param name="information/occupied_passthrough_threshold" value="0" />
