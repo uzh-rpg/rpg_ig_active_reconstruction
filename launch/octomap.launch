@@ -8,7 +8,7 @@
   www.ros.org/wiki/octomap_server for details  
 -->
 <launch>
-	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" >
+	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
 		<param name="resolution" value="0.005" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -31,16 +31,17 @@
 		<param name="occupancy_max_z" value="0" />-->
 		
 		<param name="filter_speckles" value="true" />
+		<param name="latch" value="false" />
 		
 		<!-- color setting: -->
 		<param name="publish_colors" value="false" />
 		
 		<!-- bounding box:  -->
-		<param name="update_volume/min/x" value="0.5" />
-		<param name="update_volume/min/y" value="-0.25" />
+		<param name="update_volume/min/x" value="0.25" />
+		<param name="update_volume/min/y" value="-0.75" />
 		<param name="update_volume/min/z" value="0.0" />
-		<param name="update_volume/max/x" value="1.25" />
-		<param name="update_volume/max/y" value="0.25" />
+		<param name="update_volume/max/x" value="1.75" />
+		<param name="update_volume/max/y" value="0.75" />
 		<param name="update_volume/max/z" value="0.5" />
 		
 		<param name="occupancy_threshold" value="0.5"/> <!--default: 0.5 -->

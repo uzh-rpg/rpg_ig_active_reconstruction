@@ -15,10 +15,17 @@
     <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="1.0" />
     <param name="information_metric/ClassicFrontier/weight" value="1.0" />
     <param name="information_metric/EndNodeOccupancySum/weight" value="1.0" />
-    <param name="information_metric/TotalOccupancyCertainty/weight" value="1.0" />
-    <param name="information_metric/TotalNrOfOccupieds/weight" value="1.0" />
+    <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
+    <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     
-    
+    <param name="information/ray_resolution_x" value="1" />
+    <param name="information/ray_resolution_y" value="1" />
+    <param name="information/ray_step_size" value="4" />
+    <param name="information/subwindow_width_percentage" value="0.2" />
+    <param name="information/subwindow_height_percentage" value="0.2" />
+    <param name="information/min_ray_depth" value="0.05" />
+    <param name="information/max_ray_depth" value="1.5" />
+    <param name="information/occupied_passthrough_threshold" value="0" />
   </node>
 
   

@@ -171,6 +171,15 @@ private:
   double information_weight_;
   std::vector<double> information_weights_;
   
+  double ray_resolution_x_;
+  double ray_resolution_y_;
+  double ray_step_size_;
+  double subwindow_width_percentage_;
+  double subwindow_height_percentage_;
+  double min_ray_depth_;
+  double max_ray_depth_;
+  double occupied_passthrough_threshold_;
+  
   std::vector< std::vector<double> > planning_data_; /// container for data gathered during planning: visited views, informations and costs
   std::vector< std::string > planning_data_names_; /// names of the data stored in planning_data_
   std::string data_folder_;

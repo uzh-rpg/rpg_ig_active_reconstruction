@@ -48,6 +48,47 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
     information_weight_ = 1.0;
   }
   
+  if( !nh_.getParam("/view_planner/information/ray_resolution_x", ray_resolution_x_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/ray_resolution_x'. Default '0.1' will be used...");
+    ray_resolution_x_ = 0.1;
+  }
+  if( !nh_.getParam("/view_planner/information/ray_resolution_y", ray_resolution_y_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/ray_resolution_y'. Default '0.1' will be used...");
+    ray_resolution_y_ = 0.1;
+  }
+  if( !nh_.getParam("/view_planner/information/ray_step_size", ray_step_size_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/ray_step_size'. Default '2' will be used...");
+    ray_step_size_ = 2;
+  }
+  if( !nh_.getParam("/view_planner/information/subwindow_width_percentage", subwindow_width_percentage_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/subwindow_width_percentage'. Default '0.5' will be used...");
+    subwindow_width_percentage_ = 0.5;
+  }
+  if( !nh_.getParam("/view_planner/information/subwindow_height_percentage", subwindow_height_percentage_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/subwindow_height_percentage'. Default '0.5' will be used...");
+    subwindow_height_percentage_ = 0.5;
+  }
+  if( !nh_.getParam("/view_planner/information/min_ray_depth", min_ray_depth_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/min_ray_depth'. Default '0.05' will be used...");
+    min_ray_depth_ = 0.05;
+  }
+  if( !nh_.getParam("/view_planner/information/max_ray_depth", max_ray_depth_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/max_ray_depth'. Default '1.5' will be used...");
+    max_ray_depth_ = 1.5;
+  }
+  if( !nh_.getParam("/view_planner/information/occupied_passthrough_threshold", occupied_passthrough_threshold_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/information/occupied_passthrough_threshold'. Default '0' will be used...");
+    occupied_passthrough_threshold_ = 0;
+  }
+  
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
   current_view_retriever_ = nh_.serviceClient<dense_reconstruction::ViewRequest>("/dense_reconstruction/robot_interface/current_view");
   data_retriever_ = nh_.serviceClient<dense_reconstruction::RetrieveData>("/dense_reconstruction/robot_interface/retrieve_data");
@@ -140,7 +181,7 @@ void ViewPlanner::run()
     // possibly build subspace of complete space
     std::vector<unsigned int> views_to_consider;
     determineAvailableViewSpace( views_to_consider );
-    ROS_INFO_STREAM("View that are part of the choice: "<<views_to_consider.size() );
+    ROS_INFO_STREAM("Nr of  views that are part of the choice: "<<views_to_consider.size() );
     
     // get movement costs
     ROS_INFO("Retrieve movement costs...");
@@ -177,10 +218,12 @@ void ViewPlanner::run()
     }
     
     // get expected informations for each
-    ROS_INFO("Retrieve information gain...");
+    ROS_INFO("Retrieve information score...");
     std::vector< std::vector<double> > information(views_to_consider.size());
     for( unsigned int i=0; i<information.size(); i++ )
     {
+      ROS_INFO_STREAM("Retrieving information score for view candidate "<<i<<"/"<<information.size()<<".");
+      
       if( cost[i]==-1 )
 	continue;
       
@@ -191,9 +234,10 @@ void ViewPlanner::run()
       
       getViewInformation( information[i], target_positions );
       
-      BOOST_FOREACH( auto info, information[i] )
+      std::cout<<std::endl;
+      for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
       {
-	ROS_INFO_STREAM("One returned gain is: "<<info);
+	ROS_INFO_STREAM(metrics_to_use_[i]<<" score:"<<information[i][j]);
       }
     }
     
@@ -209,12 +253,12 @@ void ViewPlanner::run()
       
       view_returns[i] = calculateReturn( cost[i], information[i] );
     }
-    ROS_INFO("got return...");
     
     // calculate NBV
-    unsigned int nbv_index;
-    double highest_return = 0;
-    double second_highest = 0;
+    unsigned int nbv_index = 0; // ATTENTION this is the index in the vector here, not the view index in the view space!
+    double highest_return = view_returns[0];
+    double second_highest = view_returns[0];
+
     for( unsigned int i=0; i<views_to_consider.size(); ++i )
     {
       if( cost[i]==-1 )
@@ -242,8 +286,11 @@ void ViewPlanner::run()
     if( !terminationCriteriaFulfilled(highest_return, cost[nbv_index], information[nbv_index]) )
     {
       // move to this view
-      View nbv = view_space_.getView(nbv_index);
+      View nbv = view_space_.getView(views_to_consider[nbv_index]);
       moveToAndWait(nbv);
+      
+      // set view as visited!
+      view_space_.setVisited(views_to_consider[nbv_index]);
       
       // retrieve new information
       retrieveDataAndWait();
@@ -366,8 +413,15 @@ void ViewPlanner::saveDataToFile()
   
   std::ofstream out(file_name, std::ofstream::trunc);
   
-  // first line with names
-  out<<planning_data_names_[0];
+  // print weights
+  out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
+  for( unsigned int i=0; i<metrics_to_use_.size(); ++i )
+  {
+    out<<"\n"<<metrics_to_use_[i]<<" weight: "<<information_weights_[i];
+  }
+  
+  // then line with names
+  out<<"\n"<<planning_data_names_[0];
   for( unsigned int i=1; i<planning_data_names_.size(); ++i )
   {
     out<<" "<<planning_data_names_[i];
@@ -527,23 +581,26 @@ bool ViewPlanner::moveTo( bool& _output, View& _target_view )
 bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses )
 {
   ViewInformationReturn request;
-  request.request.call.poses = movements::toROS(_poses);
+  request.request.call.poses.resize(1);
+  request.request.call.poses[0] = movements::toROS( _poses[0] );//movements::toROS(_poses);
   request.request.call.metric_names = metrics_to_use_;
   
-  request.request.call.ray_resolution_x = 0.5;
-  request.request.call.ray_resolution_y = 0.5;
-  request.request.call.ray_step_size = 2;
+  request.request.call.ray_resolution_x = ray_resolution_x_;
+  request.request.call.ray_resolution_y = ray_resolution_y_;
+  request.request.call.ray_step_size = ray_step_size_;
   
-  double subwindow_width = 188; // [px]
-  double subwindow_height = 120; // [px]
+  double image_width = 752;
+  double image_height = 480;
+  double subwindow_width = subwindow_width_percentage_*image_width; // [px]
+  double subwindow_height = subwindow_height_percentage_*image_height; // [px]
   request.request.call.max_x = 376 + subwindow_width/2;
   request.request.call.min_x = 376 - subwindow_width/2;
   request.request.call.max_y = 240 + subwindow_height/2;
   request.request.call.min_y = 240 - subwindow_height/2;
   
-  request.request.call.min_ray_depth = 0.05;
-  request.request.call.max_ray_depth = 1.5;
-  request.request.call.occupied_passthrough_threshold = 0;
+  request.request.call.min_ray_depth = min_ray_depth_;
+  request.request.call.max_ray_depth = max_ray_depth_;
+  request.request.call.occupied_passthrough_threshold = occupied_passthrough_threshold_;
   
   bool response = view_information_retriever_.call(request);
   
