@@ -5,9 +5,9 @@ planning_space:
     z: 0.0
   base:
     min_radius: 1 # [m] smallest radius around object on which the base may stop (isn't checked if valid, also not by moveit - make sure no collisions occur), default:1m
-    max_radius: 1 # [m] largest radius around object on which the base may stop, deactivated if lower than min, default:2m
+    max_radius: 0.9 # [m] largest radius around object on which the base may stop, deactivated if lower than min, default:2m
     circle_traj_nr: 1 # number of circles on which the base may move, if zero, 1 is assumed, if 1 the min_radius is used, default:1
-    pts_per_circle: 8 # nr of positions on each circle the base may stop, if zero, 8 is assumed, default:8
+    pts_per_circle: 4 # nr of positions on each circle the base may stop, if zero, 8 is assumed, default:8
   link_1:
     min_angle: 1.35 # [rad] as given by youbot, min angle joint_1 may assume, default: 1.35 (to the left)
     max_angle: 1.45 # [rad] as given by youbot, max angle joint_1 may assume, deactivated if smaller than min, default: 1.45

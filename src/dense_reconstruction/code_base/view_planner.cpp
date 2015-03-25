@@ -140,7 +140,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   planning_data_names_.push_back("TotalOccupancyCertainty");
   planning_data_names_.push_back("TotalNrOfOccupieds");
   
-  command_ = nh_.subscribe( "/dense_reconstruction/view_planner/command", 1, &ViewPlanner::commandCallback, this );
+  command_ = nh_.subscribe( "/dense_reconstruction/view_planner/command", 100, &ViewPlanner::commandCallback, this );
 }
 
 void ViewPlanner::run()
@@ -216,7 +216,7 @@ void ViewPlanner::run()
       // reconstruction is done, end iteration
       break;
     }
-    
+    ros::spinOnce();
     // get expected informations for each
     ROS_INFO("Retrieve information score...");
     std::vector< std::vector<double> > information(views_to_consider.size());
@@ -240,7 +240,7 @@ void ViewPlanner::run()
 	ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
       }
     }
-    
+    ros::spinOnce();
     pauseIfRequested();
     
     ROS_INFO("Calculating next best view...");
@@ -253,7 +253,7 @@ void ViewPlanner::run()
       
       view_returns[i] = calculateReturn( cost[i], information[i] );
     }
-    
+    ros::spinOnce();
     // calculate NBV
     unsigned int nbv_index = 0; // ATTENTION this is the index in the vector here, not the view index in the view space!
     double highest_return = view_returns[0];
@@ -271,7 +271,7 @@ void ViewPlanner::run()
 	highest_return = view_returns[i];
       }
     }
-    
+    ros::spinOnce();
     // data storage...
     ReturnValueInformation return_info;
     return_info.return_value = highest_return;
