@@ -81,9 +81,9 @@
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
     <state world_name='default'>
-      <sim_time>1412 218000000</sim_time>
-      <real_time>248 865475581</real_time>
-      <wall_time>1426028355 770730293</wall_time>
+      <sim_time>1441 172000000</sim_time>
+      <real_time>29 41640213</real_time>
+      <wall_time>1427257869 863033391</wall_time>
       <model name='box_1'>
         <pose>-0.05517 0.023396 0.09068 0 -0 0</pose>
         <link name='body'>
@@ -213,7 +213,7 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>-6.5659 -4.00603 7.06673 3.99016e-18 0.617798 0.458809</pose>
+        <pose>-3.85018 -4.04963 8.94599 1.32961e-17 0.965798 0.762809</pose>
         <view_controller>orbit</view_controller>
       </camera>
     </gui>
@@ -568,5 +568,18 @@
       </link>
       <pose>-4.45265 0.500817 0 0 -0 0</pose>
     </model>
+    <light name='user_point_light_0' type='point'>
+      <pose>1 0 1 0 -0 0</pose>
+      <diffuse>0.5 0.5 0.5 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation>
+        <range>20</range>
+        <constant>0.5</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <cast_shadows>0</cast_shadows>
+      <direction>0 0 -1</direction>
+    </light>
   </world>
 </sdf>

@@ -9,7 +9,7 @@
 -->
 <launch>
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
-		<param name="resolution" value="0.01" />
+		<param name="resolution" value="0.025" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
 		<param name="frame_id" type="string" value="dr_origin" />

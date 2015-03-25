@@ -130,7 +130,7 @@ bool RemodeDataRetriever::getRetrievalMovement( robot_state::RobotState& _state,
   (*_retrieval_movement) = movements::InOutSpiral::create( link_4_pose.orientation, scanning_radius_, 4*6.283185307, 0.025, movements::InOutSpiral::ZXPlane );
   
   _additional_info->start_time = 0.5;
-  _additional_info->end_time = 3.5;
+  _additional_info->end_time = 2; //before: 3.5
   
   return true;
 }

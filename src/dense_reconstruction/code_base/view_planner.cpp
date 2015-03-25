@@ -282,6 +282,8 @@ void ViewPlanner::run()
     
     saveNBVData(nbv_index, return_info, cost[nbv_index], information[nbv_index] );
     
+    ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
+    
     // check if termination criteria is fulfilled
     if( !terminationCriteriaFulfilled(highest_return, cost[nbv_index], information[nbv_index]) )
     {
