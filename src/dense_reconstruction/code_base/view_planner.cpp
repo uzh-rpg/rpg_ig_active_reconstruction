@@ -237,7 +237,7 @@ void ViewPlanner::run()
       std::cout<<std::endl;
       for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
       {
-	ROS_INFO_STREAM(metrics_to_use_[i]<<" score:"<<information[i][j]);
+	ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
       }
     }
     

@@ -8,7 +8,7 @@
     <param name="cost_weight" value="1.0" />
     <param name="information_weight" value="1.0" />
     
-    <param name="information_metric/NrOfUnknownVoxels/weight" value="1.0" />
+    <param name="information_metric/NrOfUnknownVoxels/weight" value="0.0" />
     <param name="information_metric/AverageUncertainty/weight" value="1.0" />
     <param name="information_metric/AverageEndPointUncertainty/weight" value="1.0" />
     <param name="information_metric/UnknownObjectSideFrontier/weight" value="1.0" />
@@ -18,8 +18,8 @@
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     
-    <param name="information/ray_resolution_x" value="1" />
-    <param name="information/ray_resolution_y" value="1" />
+    <param name="information/ray_resolution_x" value="0.5" />
+    <param name="information/ray_resolution_y" value="0.5" />
     <param name="information/ray_step_size" value="4" />
     <param name="information/subwindow_width_percentage" value="0.2" />
     <param name="information/subwindow_height_percentage" value="0.2" />
