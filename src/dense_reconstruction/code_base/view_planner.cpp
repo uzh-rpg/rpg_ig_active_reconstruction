@@ -364,7 +364,7 @@ void ViewPlanner::saveNBVData( unsigned int _nbv_index, ReturnValueInformation& 
   
   ros::Time now = ros::Time::now();
   
-  nbv_data.push_back( now.toNSec() );
+  nbv_data.push_back( now.toSec() );
   nbv_data.push_back( nbv.pose().position.x() );
   nbv_data.push_back( nbv.pose().position.y() );
   nbv_data.push_back( nbv.pose().position.z() );
