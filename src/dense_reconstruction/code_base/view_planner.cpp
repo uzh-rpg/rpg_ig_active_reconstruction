@@ -280,7 +280,7 @@ void ViewPlanner::run()
     return_info.return_value_mean = return_val_errors.mean;
     return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
     
-    saveNBVData(nbv_index, return_info, cost[nbv_index], information[nbv_index] );
+    saveNBVData(views_to_consider[nbv_index], return_info, cost[nbv_index], information[nbv_index] );
     
     ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
     
