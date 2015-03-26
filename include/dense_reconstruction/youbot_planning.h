@@ -42,6 +42,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/robot_planning_interface.h"
 
+#include <svo_srv/SetScale.h>
+
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ActionClient;
 
 namespace dense_reconstruction
@@ -142,14 +144,29 @@ public:
   virtual bool moveTo( View& _target_view );
   
   /**
+   * initializes all extrinsic data that needs knowledge from the robot, e.g. the TF tree and SVO's scale
+   */
+  void initializeExtrinsics();
+  
+  /**
    * moves the arm into initial pose and sets this position as the current view
    */
   bool assumeAndSetInitialPose();
   
   /**
+   * calculates an estimate for the scale difference to SVO
+   */
+  double getSVOScale();
+  
+  /**
    * moves the arm into the positions given by the joints (no collision checking, no boundary checking!)
    */
   bool assumeArmPosition( const std::vector<double>& _joint_values );
+  
+  /**
+   * retrieves the current position of the arm and loads it into the argument
+   */
+  void getCurrentArmPosition( std::vector<double>& _joint_values );
   
   /** attempts to find the pointer to a ViewPointData corresponding to the view _view
    * @param _view the view for which the corresponding ViewPointData is sought
@@ -279,12 +296,12 @@ public:
   /** loads pose of link _link relative to the robot (moveit) planning frame (using tf, not moveit)
    * That is transform to transforms entities in _link frame to the planning frame
    */
-  movements::Pose getCurrentLinkPose( std::string _link );
+  movements::Pose getCurrentLinkPose( std::string _link, ros::Duration _wait_time = ros::Duration(3.0)  );
   
   /**
    * returns the pose of link _link relative to global view planning frame (e.g. dr_origin)
    */
-  movements::Pose getCurrentGlobalLinkPose( std::string _link );
+  movements::Pose getCurrentGlobalLinkPose( std::string _link, ros::Duration _wait_time = ros::Duration(3.0) );
   
   /**
    * transforms a pose in moveit planning frame (e.g. odom) to view planning frame (e.g. dr_origin) using the current transform from /tf
@@ -399,6 +416,8 @@ private:
   boost::shared_ptr<moveit_msgs::RobotTrajectory> spin_trajectory_;
   
   boost::shared_ptr<DataRetrievalModule> data_retreiver_;
+  
+  unsigned int nr_of_measurements_for_svo_scale_estimate_;
   
   bool data_folder_set_;
   std::string data_folder_;

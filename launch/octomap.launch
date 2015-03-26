@@ -9,7 +9,7 @@
 -->
 <launch>
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
-		<param name="resolution" value="0.05" />
+		<param name="resolution" value="0.005" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
 		<param name="frame_id" type="string" value="dr_origin" />
@@ -56,7 +56,7 @@
 		<param name="sensor_model/miss" value="0.3"/><!-- probability for being occupied on a miss -->
 		
 		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/remode/pointcloud" />
+		<remap from="cloud_in" to="/remode/pointcloud_single" />
 	
 	</node>
 </launch>

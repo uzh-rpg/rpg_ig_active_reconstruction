@@ -36,6 +36,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,tf_listener_(*_n)
   ,base_trajectory_sender_("/base_controller/follow_joint_trajectory", true)
   ,plan_base_in_global_frame_(true)
+  ,nr_of_measurements_for_svo_scale_estimate_(3)
 {
   std::string interface_namespace="/youbot_interface";
   data_folder_set_ = ros_node_->getParam(interface_namespace+"/data_folder",data_folder_);
@@ -112,8 +113,6 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   
   attemptToInitializePlanningSpaceFromParameter(interface_namespace);
   
-  // move arm into initial pose
-  assumeAndSetInitialPose(); ////////////////////////////////////////////////////////// move out of here - needs to happen after SVO initialization
 }
 
 YoubotPlanner::~YoubotPlanner()
@@ -496,7 +495,28 @@ bool YoubotPlanner::moveTo( View& _target_view )
     current_view_ = referenced_view_point;
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
+  ros::Duration(3.0); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
+  
   return successfully_moved;
+}
+
+void YoubotPlanner::initializeExtrinsics()
+{
+  // setup tf
+  initializePlanningFrame();
+  
+  // set svo scaling
+  /*svo_srv::SetScale command;
+  double svo_scale = getSVOScale();
+  command.request.scale = svo_scale;
+  ros::service::call("/svo/set_scale",command);
+  ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
+  
+  ros::Duration(3.0).sleep();
+  initializePlanningFrame();*/
+  
+  // move arm into initial pose
+  assumeAndSetInitialPose();
 }
 
 bool YoubotPlanner::assumeAndSetInitialPose()
@@ -562,6 +582,69 @@ bool YoubotPlanner::assumeAndSetInitialPose()
   return pose_assumed;
 }
 
+double YoubotPlanner::getSVOScale()
+{
+ 
+  double svo_distance_sum;
+  double robot_distance_sum;
+  unsigned int nr_of_measurements = 0;
+  double j2_angle_1 = 1.8;
+  double j2_angle_2 = 0.1;
+  
+  // initialize arm joint angles position vector with current robot state
+  std::vector<double> arm_position;
+  getCurrentArmPosition( arm_position );
+  
+  for( unsigned int i=0; i<nr_of_measurements_for_svo_scale_estimate_; ++i )
+  {
+    // assume first link pose
+    arm_position[1] = j2_angle_1;
+    assumeArmPosition(arm_position);
+    
+    // get state 1
+    movements::Pose cam_1_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
+    movements::Pose cam_1_SVO = getCurrentGlobalLinkPose("cam_pos", ros::Duration(10.0));
+    
+    if( cam_1_R==movements::Pose() || cam_1_SVO==movements::Pose() )
+    {
+      continue;
+    }
+    
+    // assume second link pose
+    arm_position[1] = j2_angle_2;
+    assumeArmPosition(arm_position);
+    
+    // get state 2
+    movements::Pose cam_2_R = getCurrentLinkPose("cam_pos");
+    movements::Pose cam_2_SVO = getCurrentGlobalLinkPose("cam_pos");
+    
+    if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
+    {
+      continue;
+    }
+    
+    // update differences
+    Eigen::Vector3d robot_diff = cam_1_R.position - cam_2_R.position;
+    robot_distance_sum += robot_diff.norm();
+    Eigen::Vector3d svo_diff = cam_1_SVO.position - cam_2_SVO.position;
+    svo_distance_sum += svo_diff.norm();
+    
+    ++nr_of_measurements;
+  }
+  
+  // calculate average scale difference
+  if( nr_of_measurements==0 )
+  {
+    ROS_WARN( "Couldn't get SVO scale, scale factor 1.0 is returned." );
+    return 1.0;
+  }
+  
+  double average_robot_distance = robot_distance_sum/nr_of_measurements;
+  double average_svo_distance = svo_distance_sum/nr_of_measurements;
+  
+  return average_robot_distance/average_svo_distance;
+}
+
 bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values )
 {
   if( _joint_values.size()!=5 )
@@ -580,6 +663,19 @@ bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values 
   spinner.stop();
   
   return successfully_moved;
+}
+
+void YoubotPlanner::getCurrentArmPosition( std::vector<double>& _joint_values )
+{
+  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+  robot_state::RobotState robot_state = current_scene->getCurrentState();
+  _joint_values.resize(5);
+  _joint_values[0] = robot_state.getVariablePosition("arm_joint_1");
+  _joint_values[1] = robot_state.getVariablePosition("arm_joint_2");
+  _joint_values[2] = robot_state.getVariablePosition("arm_joint_3");
+  _joint_values[3] = robot_state.getVariablePosition("arm_joint_4");
+  _joint_values[4] = robot_state.getVariablePosition("arm_joint_5");
+  return;
 }
 
 YoubotPlanner::ViewPointData* YoubotPlanner::getCorrespondingData( View& _view )
@@ -1475,9 +1571,9 @@ movements::Pose YoubotPlanner::getEndEffectorPoseFromTF( ros::Duration _max_wait
   return movements::Pose( translation, rotation );
 }
 
-movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link )
+movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link, ros::Duration _wait_time )
 {
-  bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), ros::Duration(3.0) );
+  bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), _wait_time );
   
   if( !new_tf_available )
     return movements::Pose();
@@ -1493,7 +1589,7 @@ movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link )
     return movements::Pose();
   }
   
-  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros );
+  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros  );
   
   Eigen::Quaterniond rotation = st_is::geometryToEigen( end_effector_pose_ros.transform.rotation );
   Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
@@ -1501,9 +1597,9 @@ movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link )
   return movements::Pose( translation, rotation );
 }
 
-movements::Pose YoubotPlanner::getCurrentGlobalLinkPose( std::string _link )
+movements::Pose YoubotPlanner::getCurrentGlobalLinkPose( std::string _link, ros::Duration _wait_time )
 {
-  bool new_tf_available = tf_listener_.waitForTransform( view_planning_frame_,_link, ros::Time::now(), ros::Duration(3.0) );
+  bool new_tf_available = tf_listener_.waitForTransform( view_planning_frame_,_link, ros::Time::now(), _wait_time );
   
   if( !new_tf_available )
     return movements::Pose();
@@ -2052,7 +2148,7 @@ bool YoubotPlanner::moveToService( dense_reconstruction::MoveToOrder::Request& _
 
 bool YoubotPlanner::setupTFService( std_srvs::Empty::Request& _req, std_srvs::Empty::Response& _res )
 {
-  initializePlanningFrame();
+  initializeExtrinsics();
 }
 
 void YoubotPlanner::initializeTF()

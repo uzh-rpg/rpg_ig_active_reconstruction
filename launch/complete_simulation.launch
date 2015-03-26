@@ -32,13 +32,18 @@
 	      -model youbot">
 	</node>
 	
+	<!-- control configurations for the youbot inside the Gazebo environment -->
 	<include file="$(find youbot_description)/launch/control/youbot_base_control.launch" />
 	<include file="$(find youbot_description)/launch/control/youbot_arm_control.launch" />
 	<include file="$(find youbot_description)/launch/control/youbot_gripper_control.launch" />
 	
-	
+	<!-- launches nodes for velocity based [twist messages] base controls -->
 	<include file="$(find dense_reconstruction)/launch/base_position_controller.launch" />
-	<!--<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />-->
+	
+	<!-- launch MoveIt! -->
 	<include file="$(find youbot_moveit)/launch/cam_move_group.launch" />
+	
+	<!-- launch the tf linker which broadcasts static link transforms for completing the tf tree -->
+	<!--<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />-->
 
 </launch>

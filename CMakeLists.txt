@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   octomap_server
   octomap_msgs
+  svo_srv
 )
 
 ## System dependencies are found with CMake's conventions
@@ -64,7 +65,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv
   DEPENDS opencv opencv2 Eigen
 )
 
