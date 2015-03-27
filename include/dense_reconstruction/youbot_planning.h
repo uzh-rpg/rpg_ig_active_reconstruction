@@ -449,6 +449,10 @@ private:
   double cost_epsilon_;
   double cost_alpha_;
   
+  /** attempts to load hand eye transformation from parameter server, blocks until it is available
+   */
+  void loadHEC();
+  
   /**
    * loads all possible state for the base space given space initialization info
    */

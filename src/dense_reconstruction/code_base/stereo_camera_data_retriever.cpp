@@ -41,7 +41,7 @@ StereoCameraDataRetriever::StereoCameraDataRetriever( YoubotPlanner* _robot_inte
     pcl_out_topic="/remode/pointcloud_single";
   }
   double max_wait_time;
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_wait_time",max_wait_time) )
+  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_pcl_wait_time",max_wait_time) )
   {
     ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_wait_time was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_wait_time"<<"'), the default (3s) will be used.");
     max_pointcloud_wait_time_=ros::Duration(3.0); // 3 seconds
@@ -49,6 +49,16 @@ StereoCameraDataRetriever::StereoCameraDataRetriever( YoubotPlanner* _robot_inte
   else
   {
     max_pointcloud_wait_time_=ros::Duration(max_wait_time); // [s]
+  }
+  double max_octomap_wait_time;
+  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time",max_octomap_wait_time) )
+  {
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_octomap_wait_time was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time"<<"'), the default (10s) will be used.");
+    max_octomap_wait_time_=ros::Duration(10.0); // 3 seconds
+  }
+  else
+  {
+    max_octomap_wait_time_=ros::Duration(max_octomap_wait_time); // [s]
   }
   
   octomap_has_published_=false;
@@ -95,10 +105,13 @@ RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData()
     }
   }
   
-  max = ros::Time::now() + max_pointcloud_wait_time_;
+  max = ros::Time::now() + max_octomap_wait_time_;
   
   while( !octomap_has_published_ )
   {
+    ros::Duration(0.005).sleep();
+    ros::spinOnce();
+    
     if( ros::Time::now()>max )
     {
       ROS_WARN("StereoCameraDataRetriever::retrieveData:: Octomap didn't publish data in time.");

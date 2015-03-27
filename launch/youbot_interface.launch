@@ -14,6 +14,9 @@
     <!-- alpha: arm distance cost weight (only arm, the end weight of the arm distance is delta*alpha) -->
     <param name="cost_function/alpha" value="0.25" />
     
+    <param name="base_planning_frame" value="dr_origin" />
+    <param name="view_planning_frame" value="dr_origin" />
+    
     <!-- initial arm pose -->
     <!--
     <param name="init/joint_1" value="1.35" />
@@ -36,7 +39,8 @@
     <param name="initialization/remode/max_wait_time" value="60.0" />
     
     <param name="initialization/stereo_camera/octomap_topic" value="/octomap_full" />
-    <param name="initialization/stereo_camera/max_wait_time" value="3.0" />
+    <param name="initialization/stereo_camera/max_pcl_wait_time" value="3.0" />
+    <param name="initialization/stereo_camera/max_octomap_wait_time" value="20.0" />
     <param name="initialization/stereo_camera/pcl_in_topic" value="/camera/points2" />
     <param name="initialization/stereo_camera/pcl_out_topic" value="/remode/pointcloud_single" />
     

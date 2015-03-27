@@ -32,6 +32,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/PoseSetter.h"
 #include "dense_reconstruction/IsOk.h"
 
+#include <gazebo_msgs/ModelStates.h>
+
 namespace
 dense_reconstruction{
 
@@ -50,16 +52,21 @@ public:
   
   /** attempts to load hand eye transformation data from parameter server */
   bool loadHEC();
+  
+  void modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg );
 private:
   ros::NodeHandle nh_;
   // servers
   ros::ServiceServer tree_connector_;
   ros::ServiceServer status_answers_;
   
+  ros::Subscriber gazebo_state_;
+  
   // tf broadcaster & listener
   tf::TransformListener tf_listener_;
   tf::TransformBroadcaster tf_broadcaster_;
   
+  bool use_gazebo_ground_truth_;
   bool dr_origin_is_odom_; // if odometry is to be used as base
   bool is_setup_; //only starts publishing when it receveived at least on world pose
   boost::mutex pose_protector_;
@@ -78,6 +85,7 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   , tf_up_to_date_(false)
   , tf_listener_(nh_)
   , is_setup_(false)
+  , use_gazebo_ground_truth_(false)
 {
   // initialize transforms
   dr_origin2world_.setIdentity();
@@ -87,10 +95,13 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
     ROS_FATAL("TFLinker::TFLinker::Hand-eye transformationn under '/hec/arm2image' was not properly configured. Shutting down node.");
     ros::shutdown();
   }
+  ros::param::get("/use_gazebo_ground_truth", use_gazebo_ground_truth_);
   
   // setup servers
   tree_connector_ = nh_.advertiseService("/dense_reconstruction/set_world_pose", &TFLinker::setWorldPoseRequest, this );
   status_answers_ = nh_.advertiseService("/dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
+  
+  gazebo_state_ = nh_.subscribe("/gazebo/model_states",1,&dense_reconstruction::TFLinker::modelStateCallback, this );
 }
 
 void TFLinker::publish()
@@ -101,6 +112,14 @@ void TFLinker::publish()
     {
       return;
     }
+    else
+    {
+      dr_origin_is_odom_ = !dr_origin_is_odom_;
+    }
+  }
+  else
+  {
+    dr_origin_is_odom_ = false;
   }
   
   tf::Transform dr_origin2world;
@@ -109,7 +128,11 @@ void TFLinker::publish()
     dr_origin2world = dr_origin2world_;
   }
   ros::Time now = ros::Time::now();
-  if( dr_origin_is_odom_ )
+  if( use_gazebo_ground_truth_ )
+  {
+    
+  }
+  else if( dr_origin_is_odom_ )
     tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "odom", "dr_origin")); // dr origin to world is the identity if not set otherwise
   else
     tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "world", "dr_origin"));
@@ -194,6 +217,42 @@ bool TFLinker::loadHEC()
   return true;
 }
 
+// ok, this is a little specific, but hey... it's got to run now!
+void TFLinker::modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg )
+{
+  // if something is published here, then the model is in simulation...
+  
+  
+  unsigned int robot_idx;
+  for( unsigned int i=0; i<_msg->name.size(); ++i)
+  {
+    if( _msg->name[i]=="youbot" )
+    {
+      robot_idx = i;
+    }
+    if( i==_msg->name.size()-1 && robot_idx!=i ) // couldn't find robot name in array
+    {
+      return;
+    }
+  }
+  
+  geometry_msgs::Pose robot_pose_ground_truth = _msg->pose[robot_idx];
+  geometry_msgs::Transform rp_gt;
+  rp_gt.translation.x = robot_pose_ground_truth.position.x;
+  rp_gt.translation.y = robot_pose_ground_truth.position.y;
+  rp_gt.translation.z = robot_pose_ground_truth.position.z;
+  rp_gt.rotation.x = robot_pose_ground_truth.orientation.x;
+  rp_gt.rotation.y = robot_pose_ground_truth.orientation.y;
+  rp_gt.rotation.z = robot_pose_ground_truth.orientation.z;
+  rp_gt.rotation.w = robot_pose_ground_truth.orientation.w;
+  
+  tf::Transform t_GR;
+  tf::transformMsgToTF( rp_gt, t_GR );
+  
+  tf_broadcaster_.sendTransform(tf::StampedTransform(t_GR, ros::Time::now(), "dr_origin", "base_footprint"));
+  
+}
+
 }
 
 int main(int argc, char **argv)
@@ -206,7 +265,7 @@ int main(int argc, char **argv)
   
   
   ROS_INFO("Starting TF Linker.");
-  ros::Rate rate(10);
+  ros::Rate rate(50);
   
   while ( n.ok() )
   {

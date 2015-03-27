@@ -72,6 +72,8 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   plan_base_in_global_frame_ = false;
   base_planning_frame_="odom";
   view_planning_frame_="dr_origin";
+  ros::param::get("base_planning_frame", base_planning_frame_);
+  ros::param::get("view_planning_frame", view_planning_frame_);
   
   scene_ = boost::shared_ptr<planning_scene_monitor::PlanningSceneMonitor>( new planning_scene_monitor::PlanningSceneMonitor("robot_description") );
   scene_->startStateMonitor();
@@ -123,6 +125,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   base_trajectory_sender_.waitForServer();
   ROS_INFO_STREAM("YoubotPlanner::YoubotPlanner::Successfully contacted.");
   
+  loadHEC();
   attemptToInitializePlanningSpaceFromParameter(interface_namespace);
   
 }
@@ -211,11 +214,11 @@ bool YoubotPlanner::initializePlanningSpace( PlanningSpaceInitializationInfo& _i
   ROS_INFO("Initializing ViewSpace for the given parameters...");
   
   boost::shared_ptr<SpaceInfo> info = boost::dynamic_pointer_cast<SpaceInfo>( _info.getSpecifics() );
-  if( info->approximate_relative_object_position_ == Eigen::Vector3d(0,0,0) )
+  /*if( info->approximate_relative_object_position_ == Eigen::Vector3d(0,0,0) )
   {
     ROS_ERROR("YoubotPlanner::initializePlanningSpace::The provided base_movement_center_ (0,0,0) says that the object resides exactly at the position of the robot which is not possible.");
     return false;
-  }
+  }*/
   base_movement_center_ = movements::Pose( info->approximate_relative_object_position_, Eigen::Quaterniond(1,0,0,0) );
   scan_radius_ = info->scan_radius_;
   
@@ -509,8 +512,9 @@ bool YoubotPlanner::moveTo( View& _target_view )
     current_view_ = referenced_view_point;
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
-  ros::Duration(3.0); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
+  ros::Duration(10.0); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
   
+  ROS_INFO("Movement successfully executed.");
   return successfully_moved;
 }
 
@@ -531,6 +535,7 @@ void YoubotPlanner::initializeExtrinsics()
   
   // move arm into initial pose
   assumeAndSetInitialPose();
+  ROS_INFO("Initialized.");
 }
 
 bool YoubotPlanner::assumeAndSetInitialPose()
@@ -1685,7 +1690,7 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
 
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
-  movements::Pose base_pose_rpf = getCurrentLinkPose("base_footprint"); // robot (moveit) planning frame
+  movements::Pose base_pose_rpf = getCurrentGlobalLinkPose("base_footprint"); // robot (moveit) planning frame /* need to  think about that - changed it to global now!!*/ //////////////////////////////
   movements::Pose base_pose;
   try
   {
@@ -2193,26 +2198,9 @@ void YoubotPlanner::initializeTF()
   tf::StampedTransform t_WI;
   tf_listener_.lookupTransform("world","cam_pos",now,t_WI);
   
-  geometry_msgs::Transform arm2image;
-  bool hand_eye_available;
-  do{
-    hand_eye_available = ros_node_->getParam("/hec/arm2image/translation/x", arm2image.translation.x )
-              && ros_node_->getParam("/hec/arm2image/translation/y", arm2image.translation.y )
-              && ros_node_->getParam("/hec/arm2image/translation/z", arm2image.translation.z )
-              && ros_node_->getParam("/hec/arm2image/rotation/x", arm2image.rotation.x )
-              && ros_node_->getParam("/hec/arm2image/rotation/y", arm2image.rotation.y )
-              && ros_node_->getParam("/hec/arm2image/rotation/z", arm2image.rotation.z )
-              && ros_node_->getParam("/hec/arm2image/rotation/w", arm2image.rotation.w );
-    if(!hand_eye_available)
-    {
-      ROS_INFO("Waiting for '/hec/arm2image' params to be available on parameter server...");
-      ros::Duration(1).sleep();
-      ros::spinOnce();
-    }
-  }while(!hand_eye_available&&ros_node_->ok());
-  arm2image_ = arm2image;
+  
   tf::Transform t_IA;
-  tf::transformMsgToTF(arm2image,t_IA);
+  tf::transformMsgToTF(arm2image_,t_IA);
   
   // t_OA - A:last arm link
   now = ros::Time::now();
@@ -2240,6 +2228,28 @@ void YoubotPlanner::initializeTF()
     ros::spinOnce();
   }
   return;
+}
+
+void YoubotPlanner::loadHEC()
+{
+  geometry_msgs::Transform arm2image;
+  bool hand_eye_available;
+  do{
+    hand_eye_available = ros_node_->getParam("/hec/arm2image/translation/x", arm2image.translation.x )
+              && ros_node_->getParam("/hec/arm2image/translation/y", arm2image.translation.y )
+              && ros_node_->getParam("/hec/arm2image/translation/z", arm2image.translation.z )
+              && ros_node_->getParam("/hec/arm2image/rotation/x", arm2image.rotation.x )
+              && ros_node_->getParam("/hec/arm2image/rotation/y", arm2image.rotation.y )
+              && ros_node_->getParam("/hec/arm2image/rotation/z", arm2image.rotation.z )
+              && ros_node_->getParam("/hec/arm2image/rotation/w", arm2image.rotation.w );
+    if(!hand_eye_available)
+    {
+      ROS_INFO("Waiting for '/hec/arm2image' params to be available on parameter server...");
+      ros::Duration(1).sleep();
+      ros::spinOnce();
+    }
+  }while(!hand_eye_available&&ros_node_->ok());
+  arm2image_ = arm2image;
 }
 
 void YoubotPlanner::getBaseSpace( boost::shared_ptr<SpaceInfo> _info, std::vector< BaseConfig,Eigen::aligned_allocator<BaseConfig> >& _config )

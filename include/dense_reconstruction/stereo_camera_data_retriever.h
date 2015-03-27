@@ -72,6 +72,7 @@ private:
   ros::Subscriber pcl_subscriber_;
   ros::Publisher pcl_publisher_;
   ros::Duration max_pointcloud_wait_time_; /// [s]max time to wait for pcl to come in and again to see if octomap has published
+  ros::Duration max_octomap_wait_time_; /// [s]max time to wait for octomap to publish
   
 };
 

@@ -1,6 +1,6 @@
 # configuration for youbot base joint interface
 youbot_base:
-  position_frame: odom
+  position_frame: dr_origin
   base_frame: base_footprint
   velocity_topic: cmd_vel
   
