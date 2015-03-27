@@ -60,6 +60,7 @@ private:
   tf::TransformListener tf_listener_;
   tf::TransformBroadcaster tf_broadcaster_;
   
+  bool dr_origin_is_odom_; // if odometry is to be used as base
   bool is_setup_; //only starts publishing when it receveived at least on world pose
   boost::mutex pose_protector_;
   tf::Transform dr_origin2world_; // as data is transformed
@@ -95,7 +96,12 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
 void TFLinker::publish()
 {
   if(!is_setup_)
-    return;
+  {
+    if(!ros::param::get("/youbot_interface/setup_tf_for_svo", dr_origin_is_odom_ ) )
+    {
+      return;
+    }
+  }
   
   tf::Transform dr_origin2world;
   { // allows for multithreaded spinning
@@ -103,7 +109,10 @@ void TFLinker::publish()
     dr_origin2world = dr_origin2world_;
   }
   ros::Time now = ros::Time::now();
-  tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "world", "dr_origin"));
+  if( dr_origin_is_odom_ )
+    tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "odom", "dr_origin")); // dr origin to world is the identity if not set otherwise
+  else
+    tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "world", "dr_origin"));
   tf_broadcaster_.sendTransform(tf::StampedTransform(image2arm_, now, "arm_link_5", "cam_pos"));
   /*
   // get newest robot transform

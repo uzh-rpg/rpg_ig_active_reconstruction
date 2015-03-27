@@ -425,6 +425,7 @@ private:
   ViewPointData* current_view_; // =nullptr if invalid
   std::vector<ViewPointData, Eigen::aligned_allocator<ViewPointData> > view_point_data_;
   
+  bool setup_tf_for_svo_;
   geometry_msgs::Transform arm2image_; // from hand-eye calibration
   bool plan_base_in_global_frame_; // true: global view planning frame is used for planning base paths. false: the moveit planning frame is used (e.g. odom)
   double base_move_angle_; // angle step size [rad] the base is moved between reconstruction steps

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <!-- stereo image processing node (edited version such that it takes the frame name into account) -->
+  <param name ="stereo_image_proc/camera_frame" value="cam_pos" />
+  <node pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" respawn="false" output="screen" clear_params="true" ns="camera">
+    <rosparam name="speckle_size" value="490"/>
+  </node>
+    
+</launch>

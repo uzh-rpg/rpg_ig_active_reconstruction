@@ -27,6 +27,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/circular_ground_path.h>
 #include "dense_reconstruction/PoseSetter.h"
 #include "dense_reconstruction/remode_data_retriever.h"
+#include "dense_reconstruction/stereo_camera_data_retriever.h"
 
 namespace dense_reconstruction
 {
@@ -37,6 +38,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,base_trajectory_sender_("/base_controller/follow_joint_trajectory", true)
   ,plan_base_in_global_frame_(true)
   ,nr_of_measurements_for_svo_scale_estimate_(3)
+  ,setup_tf_for_svo_(true)
 {
   std::string interface_namespace="/youbot_interface";
   data_folder_set_ = ros_node_->getParam(interface_namespace+"/data_folder",data_folder_);
@@ -52,6 +54,10 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   if( data_module_type=="remode" )
   {
     data_retreiver_ = boost::shared_ptr<DataRetrievalModule>( new RemodeDataRetriever(this) );
+  }
+  else if( data_module_type=="stereo_camera" )
+  {
+    data_retreiver_ = boost::shared_ptr<DataRetrievalModule>( new StereoCameraDataRetriever(this) );
   }
   else
     ROS_ERROR_STREAM("Data retrieval type '"<<data_module_type<<"' is unknown. Data retrieval won't be possible.");
@@ -80,6 +86,12 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   base_move_angle_ = 0.1*6.283185307; // [rad] one tenth of a circle
   base_radial_speed_ = 0.1*6.283185307; // [rad/s]
   base_movement_center_ = movements::Pose( Eigen::Vector3d(1,0,0), Eigen::Quaterniond() );
+  
+  if( !ros_node_->getParam(interface_namespace+"/setup_tf_for_svo",setup_tf_for_svo_) )
+  {
+    cost_delta_ = 1.0;
+    ROS_WARN_STREAM("YoubotPlanner::No setup_tf_for_svo value set on '"<<interface_namespace<<"/setup_tf_for_svo"<<"', using default (true).");
+  }
   
   // cost function value setup
   if( !ros_node_->getParam(interface_namespace+"/cost_function/delta",cost_delta_) )
@@ -123,10 +135,12 @@ YoubotPlanner::~YoubotPlanner()
 
 std::string YoubotPlanner::initializePlanningFrame()
 {
-  
-  ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
-  initializeTF();
-  ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
+  if( setup_tf_for_svo_ )
+  {
+    ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
+    initializeTF();
+    ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
+  }
   
   return view_planning_frame_;
 }
@@ -880,72 +894,84 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
     }
     else
     {
+      ROS_INFO("For the set data receiver no movement is needed.");
       possible_joint_values = joint_value_grid;
       possible_coordinates = coordinate_grid;      
     }
   }
+  
+  
   // make sure trajectories are collision-free!
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > collision_free_joint_values;
   std::vector< Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > collision_free_coordinates;
   std::vector<boost::shared_ptr<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > > collision_free_trajectories;
-  unsigned int collisions = 0;
   
-  ROS_INFO_STREAM(""<<possible_joint_values.size()<<" feasible arm grid points were found. Testing for (self-)collisions...");
-  
-  planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
-  robot_state::RobotState state_to_check = current_scene->getCurrentState();
-  
-  for( unsigned int i=0; i<possible_joint_values.size(); i++ )
-  {    
-    if( i%10==0 )
-      ROS_INFO_STREAM("Checking configuration for arm grid point nr. "<<i<<"/"<<possible_joint_values.size()<<".");
+  if( data_retreiver_->movementNeeded() )
+  {
+    unsigned int collisions = 0;
     
-    // first: test grid point configuration
-    state_to_check.setVariablePosition("arm_joint_2",possible_joint_values[i](0) );
-    state_to_check.setVariablePosition("arm_joint_3",possible_joint_values[i](1) );
-    state_to_check.setVariablePosition("arm_joint_4",possible_joint_values[i](2) );
+    ROS_INFO_STREAM(""<<possible_joint_values.size()<<" feasible arm grid points were found. Testing for (self-)collisions...");
     
-    if( !isCollisionFree( current_scene, state_to_check ) )
-    {
-      collisions++;
-      continue;
-    }
+    planning_scene_monitor::LockedPlanningSceneRO current_scene( scene_ );
+    robot_state::RobotState state_to_check = current_scene->getCurrentState();
     
-    // second: check all trajectory points (if any)
-    if( trajectories[i]!=nullptr )
-    {
-      bool is_collision_free = true;
+    for( unsigned int i=0; i<possible_joint_values.size(); i++ )
+    {    
+      if( i%10==0 )
+	ROS_INFO_STREAM("Checking configuration for arm grid point nr. "<<i<<"/"<<possible_joint_values.size()<<".");
       
-      for( unsigned int j=0; j<(*trajectories[i]).size(); j++ )
-      {
-	state_to_check.setVariablePosition("arm_joint_2",(*trajectories[i])[j](0) );
-	state_to_check.setVariablePosition("arm_joint_3",(*trajectories[i])[j](1) );
-	state_to_check.setVariablePosition("arm_joint_4",(*trajectories[i])[j](2) );
-	
-	if( !isCollisionFree( current_scene, state_to_check ) )
-	{
-	  is_collision_free = false;
-	  continue;
-	}
-      }
+      // first: test grid point configuration
+      state_to_check.setVariablePosition("arm_joint_2",possible_joint_values[i](0) );
+      state_to_check.setVariablePosition("arm_joint_3",possible_joint_values[i](1) );
+      state_to_check.setVariablePosition("arm_joint_4",possible_joint_values[i](2) );
       
-      if( !is_collision_free ) // drop trajectory even if only one point is in collision
+      if( !isCollisionFree( current_scene, state_to_check ) )
       {
 	collisions++;
 	continue;
       }
+      
+      // second: check all trajectory points (if any)
+      if( trajectories[i]!=nullptr )
+      {
+	bool is_collision_free = true;
+	
+	for( unsigned int j=0; j<(*trajectories[i]).size(); j++ )
+	{
+	  state_to_check.setVariablePosition("arm_joint_2",(*trajectories[i])[j](0) );
+	  state_to_check.setVariablePosition("arm_joint_3",(*trajectories[i])[j](1) );
+	  state_to_check.setVariablePosition("arm_joint_4",(*trajectories[i])[j](2) );
+	  
+	  if( !isCollisionFree( current_scene, state_to_check ) )
+	  {
+	    is_collision_free = false;
+	    continue;
+	  }
+	}
+	
+	if( !is_collision_free ) // drop trajectory even if only one point is in collision
+	{
+	  collisions++;
+	  continue;
+	}
+      }
+      
+      // made it here: should be collision free...
+      collision_free_joint_values.push_back(possible_joint_values[i]);
+      collision_free_coordinates.push_back(possible_coordinates[i]);
+      collision_free_trajectories.push_back(trajectories[i]);
     }
     
-    // made it here: should be collision free...
-    collision_free_joint_values.push_back(possible_joint_values[i]);
-    collision_free_coordinates.push_back(possible_coordinates[i]);
-    collision_free_trajectories.push_back(trajectories[i]);
+    if( collisions==0 )
+      ROS_INFO("No collisions were found in configurations.");
+    else
+      ROS_INFO_STREAM("In "<<collisions<<" configurations a collision was found. These configurations were dropped.");
   }
-  
-  if( collisions==0 )
-    ROS_INFO("No collisions were found in configurations.");
   else
-    ROS_INFO_STREAM("In "<<collisions<<" configurations a collision was found. These configurations were dropped.");
+  { // no trajectory - no collisions inn trajectory...
+    collision_free_joint_values = possible_joint_values;
+    collision_free_coordinates = possible_coordinates;
+  }
   
   // filter data by distance
   std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > valid_joint_values;
@@ -968,9 +994,12 @@ void YoubotPlanner::getArmSpaceDescriptions( double _radius, double _min_view_di
     {
       valid_joint_values.push_back(collision_free_joint_values[i]);
       valid_coordinates.push_back(collision_free_coordinates[i]);
-      final_trajectories.push_back(collision_free_trajectories[i]);
+      
+      if( data_retreiver_->movementNeeded() )
+	final_trajectories.push_back(collision_free_trajectories[i]);
     }
   }
+  
   
   _joint_space = valid_joint_values;
   _joint_trajectories = final_trajectories;
@@ -2334,7 +2363,10 @@ void YoubotPlanner::getArmSpace( boost::shared_ptr<SpaceInfo> _info, std::vector
     new_config.j2_angle_ = joint_space[i](0);
     new_config.j3_angle_ = joint_space[i](1);
     new_config.j4_angle_ = joint_space[i](2);
-    new_config.scan_trajectory_ = scan_trajectories[i];
+    if( !scan_trajectories.empty() )
+    {
+      new_config.scan_trajectory_ = scan_trajectories[i];
+    }
     _config.push_back(new_config);
   }
   

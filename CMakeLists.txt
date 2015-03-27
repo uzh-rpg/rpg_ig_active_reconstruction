@@ -86,14 +86,19 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
   src/utils/math.cpp
 )
 
+set(DENSE_RECONSTRUCTION_YOUBOT_SRC
+  src/dense_reconstruction/code_base/youbot_planning.cpp
+  src/dense_reconstruction/code_base/remode_data_retriever.cpp
+  src/dense_reconstruction/code_base/stereo_camera_data_retriever.cpp
+)
+
 
 add_executable(youbot_interface
   src/dense_reconstruction/ros_nodes/youbot_planner_node.cpp
-  src/dense_reconstruction/code_base/youbot_planning.cpp
-  src/dense_reconstruction/code_base/remode_data_retriever.cpp
   src/utils/ros_eigen.cpp
   ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
+  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
 )
 
 target_link_libraries(youbot_interface
@@ -126,11 +131,10 @@ add_dependencies(dense_reconstruction_control
 
 add_executable(develop
   src/dense_reconstruction/ros_nodes/develop.cpp
-  src/dense_reconstruction/code_base/youbot_planning.cpp
-  src/dense_reconstruction/code_base/remode_data_retriever.cpp
   src/utils/ros_eigen.cpp
   ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
+  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
 )
 
 target_link_libraries(develop
