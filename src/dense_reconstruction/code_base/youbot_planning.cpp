@@ -512,7 +512,8 @@ bool YoubotPlanner::moveTo( View& _target_view )
     current_view_ = referenced_view_point;
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
-  ros::Duration(10.0); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
+  ROS_INFO("Movement execution finished so far, now waiting for 10 seconds.");
+  ros::Duration(2.0).sleep(); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
   
   ROS_INFO("Movement successfully executed.");
   return successfully_moved;
@@ -1690,7 +1691,7 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
 
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
-  movements::Pose base_pose_rpf = getCurrentGlobalLinkPose("base_footprint"); // robot (moveit) planning frame /* need to  think about that - changed it to global now!!*/ //////////////////////////////
+  movements::Pose base_pose_rpf = getCurrentGlobalLinkPose("base_footprint"); // robot (moveit) planning frame /* need to  think about that - changed it to global now!! ->just use the base planning frame variable!*/ //////////////////////////////
   movements::Pose base_pose;
   try
   {
@@ -1735,6 +1736,25 @@ bool YoubotPlanner::executeMovementsTrajectoryOnBase( movements::PoseVector& _pa
   traj.trajectory.joint_names.push_back("youbot_base/x");
   traj.trajectory.joint_names.push_back("youbot_base/y");
   traj.trajectory.joint_names.push_back("youbot_base/theta");
+  
+  double position_tolerance = 0.01; // 1 cm
+  double orientation_tolerance = 0.08; // ~5°
+  
+  control_msgs::JointTolerance x_pos_tolerance;
+  x_pos_tolerance.name = "youbot_base/x";
+  x_pos_tolerance.position = position_tolerance;
+  
+  control_msgs::JointTolerance y_pos_tolerance;
+  y_pos_tolerance.name = "youbot_base/y";
+  y_pos_tolerance.position = position_tolerance;
+  
+  control_msgs::JointTolerance theta_pos_tolerance;
+  theta_pos_tolerance.name = "youbot_base/theta";
+  theta_pos_tolerance.position = orientation_tolerance;
+  
+  traj.goal_tolerance.push_back(x_pos_tolerance);
+  traj.goal_tolerance.push_back(y_pos_tolerance);
+  traj.goal_tolerance.push_back(theta_pos_tolerance);
   
   double associated_time = 0;
   BOOST_FOREACH( auto pose, _path )
@@ -2398,7 +2418,7 @@ void YoubotPlanner::getLink5Space( boost::shared_ptr<SpaceInfo> _info, std::vect
   }
   else
   {
-    double step_size = (link_5_nr_of_pos-link_5_min_angle)/(link_5_nr_of_pos-5);
+    double step_size = (link_5_max_angle-link_5_min_angle)/(link_5_nr_of_pos-1);
     for( double angle = link_5_min_angle; angle<=link_5_max_angle; angle+=step_size )
     {
       angle_set.push_back(angle);

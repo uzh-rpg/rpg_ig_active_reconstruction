@@ -187,6 +187,7 @@ void ViewPlanner::run()
     // get movement costs
     ROS_INFO("Retrieve movement costs...");
     std::vector<double> cost(views_to_consider.size());
+    std::vector<RobotPlanningInterface::MovementCost> full_cost(views_to_consider.size());
     int achievable_poses_count = 0;
     for( unsigned int i=0; i<cost.size(); i++ )
     {
@@ -203,6 +204,7 @@ void ViewPlanner::run()
       else
       {
 	cost[i] = cost_description.cost;
+	full_cost[i] = cost_description;
 	++achievable_poses_count;
       }
     }
@@ -281,7 +283,7 @@ void ViewPlanner::run()
     return_info.return_value_mean = return_val_errors.mean;
     return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
     
-    saveNBVData(views_to_consider[nbv_index], return_info, cost[nbv_index], information[nbv_index] );
+    saveNBVData(views_to_consider[nbv_index], return_info, cost[nbv_index], information[nbv_index], &full_cost[nbv_index].additional_field_names, &full_cost[nbv_index].additional_fields_values );
     
     ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
     
