@@ -11,7 +11,7 @@
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
 	  
 		<!-- Whether or not ray display messages are published for rviz to visualize the casted rays -->
-		<param name="display_rays" value="false" />
+		<param name="display_rays" value="true" />
 	    
 		<param name="resolution" value="0.005" />
 		
@@ -48,7 +48,7 @@
 		<param name="update_volume/min/z" value="0.0" />
 		<!--<param name="update_volume/max/x" value="1.75" />
 		<param name="update_volume/max/y" value="0.75" />-->
-		<param name="update_volume/max/z" value="0.5" />
+		<param name="update_volume/max/z" value="0.6" />
 		
 		<param name="occupancy_threshold" value="0.5"/> <!--default: 0.5 -->
 

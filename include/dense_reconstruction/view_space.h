@@ -34,6 +34,10 @@ public:
   /** set view space from message, overwrites all previous data */
   void fromMsg( const ViewSpaceMsg& _msg );
   
+  /** creates a view space msg with the content of the view space
+   */
+  ViewSpaceMsg toMsg();
+  
   /** returns all view points in the view space as a vector 
    */
   std::vector<View, Eigen::aligned_allocator<View> > getViewSpace();
@@ -76,6 +80,16 @@ public:
    * @param _sub_space vector to fill with the results
    */
   void getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space );
+  
+  /**
+   * saves the poses in the view space to file
+   */
+  void saveToFile( std::string _filename );
+  
+  /**
+   * loads poses from file
+   */
+  void loadFromFile( std::string _filename );
   
 private:
   std::vector<View, Eigen::aligned_allocator<View> > view_space_;

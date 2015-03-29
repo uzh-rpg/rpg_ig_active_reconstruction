@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_server
   octomap_msgs
   svo_srv
+  gazebo_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,6 +56,7 @@ add_service_files(
   RetrieveData.srv
   MovementCostCalculation.srv
   MoveToOrder.srv
+  SaveViewSpace.srv
 )
 
 generate_messages(
@@ -108,6 +110,26 @@ target_link_libraries(youbot_interface
 )
 
 add_dependencies(youbot_interface
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(flying_stereo_camera_interface
+  src/dense_reconstruction/ros_nodes/flying_stereo_camera_interface_node.cpp
+  src/dense_reconstruction/code_base/flying_stereo_camera_interface.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
+)
+
+target_link_libraries(flying_stereo_camera_interface
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(flying_stereo_camera_interface
  ${catkin_EXPORTED_TARGETS}
 )
 

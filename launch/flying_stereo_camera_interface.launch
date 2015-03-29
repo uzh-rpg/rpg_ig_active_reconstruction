@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <!--ns="dense_reconstruction"-->
+  <node pkg="dense_reconstruction" type="flying_stereo_camera_interface" name="flying_stereo_camera_interface"  clear_params="true" output="screen" >
+    
+    <param name="data_folder" value="$(find dense_reconstruction)/data/view_space" />
+    <param name="view_space_name" value="1.viewspace" />
+    
+    <param name="view_planning_frame" value="dr_origin" />
+    
+    
+    
+    <param name="initialization/stereo_camera/octomap_topic" value="/octomap_full" />
+    <param name="initialization/stereo_camera/max_pcl_wait_time" value="3.0" />
+    <param name="initialization/stereo_camera/max_octomap_wait_time" value="20.0" />
+    <param name="initialization/stereo_camera/pcl_in_topic" value="/camera/points2" />
+    <param name="initialization/stereo_camera/pcl_out_topic" value="/remode/pointcloud_single" />
+    
+  </node>
+
+  
+</launch>

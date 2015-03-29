@@ -13,6 +13,9 @@ bool is_bad
 # how many times this view has been visited
 uint32 visited
 
+# index
+uint32 index
+
 # additional fields names
 string[] associated_names
 # additional fields values

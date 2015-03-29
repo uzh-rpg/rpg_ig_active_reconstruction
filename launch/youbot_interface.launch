@@ -29,7 +29,7 @@
     <rosparam command="load" file="$(find dense_reconstruction)/config/planning_space.yaml" />
     
     <!-- data retrieval -->
-    <param name="data_retreiver_type" value="stereo_camera" /> <!-- "stereo_camera" or "remode" -->
+    <param name="data_retriever_type" value="stereo_camera" /> <!-- "stereo_camera" or "remode" -->
     <!-- stereo_cam is not implemented yet -->
     
     <!-- remode retrieval specific / currently octomap_topic is used for stereo_cam version as well -->

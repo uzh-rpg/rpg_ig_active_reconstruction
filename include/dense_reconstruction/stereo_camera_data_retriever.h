@@ -29,7 +29,7 @@ public:
    * constructor expects a YoubotPlannerInstance pointer
    * @param _youbot_interface_namespace interface under which parameters will be sought
    */
-  StereoCameraDataRetriever( YoubotPlanner* _robot_interface, std::string _youbot_interface_namespace="youbot_interface" );
+  StereoCameraDataRetriever( YoubotPlanner* _robot_interface = nullptr , std::string _youbot_interface_namespace="youbot_interface" );
     
   /**
    * returns a string that describes the movement executed, if any, e.g. 'InOutSpiral_0.05' or 'Static' (for no movement at all)

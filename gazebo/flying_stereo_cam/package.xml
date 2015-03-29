@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+  <name>flying_stereo_cam</name>
+  <description>A simple model for a static flying stereo camera in gazebo</description>
+  
+  <version>0.0.0</version>
+  
+  <maintainer email="stewess@todo.todo">Stefan Isler</maintainer>
+  <author>Stefan Isler</author>
+  <license>LGPL, BSD</license>
+  
+  
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend >urdf</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend >urdf</run_depend>
+
+</package>
+
+

@@ -1,0 +1,15 @@
+cost_weight: 0
+information_weight: 1
+NrOfUnknownVoxels weight: 0
+AverageUncertainty weight: 1
+AverageEndPointUncertainty weight: 500
+UnknownObjectSideFrontier weight: 5
+UnknownObjectVolumeFrontier weight: 5
+ClassicFrontier weight: 1
+EndNodeOccupancySum weight: 1
+TotalOccupancyCertainty weight: 0
+TotalNrOfOccupieds weight: 0
+
+Retrieved for step: 38 (0=first step)
+time pos_x pos_y pos_z rot_x rot_y rot_z rot_w return_value winning_margin return_value_mean return_value_stddev cost NrOfUnknownVoxels AverageUncertainty AverageEndPointUncertainty UnknownObjectSideFrontier UnknownObjectVolumeFrontier ClassicFrontier EndNodeOccupancySum TotalOccupancyCertainty TotalNrOfOccupieds base_distance_cost arm_distance_cost energy_cost
+8361.01 0.484717 -0.71483 0.403763 -0.245451 0.654533 0.714971 0.0124809 710.283 0 0 0 1.853 163 0.250499 0.558546 2 25 19 276.759 47897.7 74914 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.853 0 4

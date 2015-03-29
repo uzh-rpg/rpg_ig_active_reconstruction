@@ -24,6 +24,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/robot_planning_interface.h"
 #include "dense_reconstruction/ViewInformationReturn.h"
 #include "std_msgs/String.h"
+#include "dense_reconstruction/SaveViewSpace.h"
 
 
 namespace dense_reconstruction
@@ -99,6 +100,16 @@ public:
   void saveDataToFile();
   
   /**
+   * stores all the data that was retrieved to choose the next best view
+   * @param _views_to_consider view space index associated with each array position
+   * @param _view_returns information struct regarding the return value of the NBV
+   * @param _costs movement cost to reach the view (summed as given by robot)
+   * @param _information_gain information gains calculated for the NBV
+   * @param _detailed_costs cost fields (parts of which the robot movement cost consisted of)
+   */
+  void saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs=nullptr );
+  
+  /**
    * calls the data retrieval service and waits until it succeeded
    * Can be aborted and paused through commands
    */
@@ -108,7 +119,7 @@ public:
    * calls the robots movement service
    * Can be aborted and paused through commands (stop will while called in this loop only stop the loop, not the whole program)
    */
-  void moveToAndWait( View& _target_view, double _sec=0.5 );
+  bool moveToAndWait( View& _target_view, double _sec=0.5 );
   
   /**
    * returns the index of the field with name _name in the planning_data_ structure, creates a
@@ -153,9 +164,13 @@ public:
   bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses );
   
   void commandCallback( const std_msgs::StringConstPtr& _msg );
+  
+  bool saveViewSpaceToFileService( SaveViewSpace::Request& _req, SaveViewSpace::Response& _res );
 private:
   std::string planning_frame_;
   std::vector<std::string> metrics_to_use_;
+  
+  ros::ServiceServer save_view_space_server_;
   
   ViewSpace view_space_;
   
@@ -171,6 +186,8 @@ private:
   double information_weight_;
   std::vector<double> information_weights_;
   
+  bool mark_visited_; /// views marked as already visited won't be taken into account for the next best view calculations
+  
   double ray_resolution_x_;
   double ray_resolution_y_;
   double ray_step_size_;
@@ -179,6 +196,8 @@ private:
   double min_ray_depth_;
   double max_ray_depth_;
   double occupied_passthrough_threshold_;
+  
+  unsigned int max_movement_attempts_; /// max nr of times a movement is attempted for a given view until it is rejected and flagged as "bad"
   
   std::vector< std::vector<double> > planning_data_; /// container for data gathered during planning: visited views, informations and costs
   std::vector< std::string > planning_data_names_; /// names of the data stored in planning_data_

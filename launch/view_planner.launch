@@ -4,6 +4,9 @@
   <node pkg="dense_reconstruction" type="view_planner" name="view_planner"  clear_params="true" output="screen">
     <param name="data_folder" value="$(find dense_reconstruction)/data/view_planning/" />
     
+    <!-- whether already visited views shall be considered again or not -->
+    <param name="discard_visited" value="true" />
+    
     <!-- the cost weight should be positive since it is internally counted negative -->
     <param name="cost_weight" value="0.0" />
     <param name="information_weight" value="1.0" />

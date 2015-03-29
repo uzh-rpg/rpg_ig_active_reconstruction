@@ -46,7 +46,7 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
     ROS_WARN("No data folder was set on parameter server. Precomputed arm configurations will not be loaded or stored.");
   
   std::string data_module_type;
-  if( !ros_node_->getParam(interface_namespace+"/data_retreiver_type",data_module_type) )
+  if( !ros_node_->getParam(interface_namespace+"/data_retriever_type",data_module_type) )
   {
     ROS_WARN_STREAM("YoubotPlanner::No data retreiver type set on '"<<interface_namespace<<"/data_retreiver_type"<<"', using default 'remode'.");
     data_module_type = "remode";
@@ -399,10 +399,20 @@ double YoubotPlanner::baseDistanceCost( ViewPointData* _start_state, ViewPointDa
   else
     target_theta = 2*acos( -target.orientation.w() );
   
-  double x_dist = origin.position(0) - target.position(0);
-  double y_dist = origin.position(1) - target.position(1);
+  double start_radius = (origin.position - base_movement_center_.position).norm();
+  double end_radius = (target.position - base_movement_center_.position).norm();
+  double average_radius = fabs((start_radius-end_radius)/2);
   
-  double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
+  movements::KinMove circle_seg = movements::CircularGroundPath::create( origin.position, target.position, base_radial_speed_, movements::CircularGroundPath::SHORTEST );
+  boost::shared_ptr<movements::CircularGroundPath> circles = boost::dynamic_pointer_cast< movements::CircularGroundPath >( circle_seg.operator->() );
+  double angle_to_move = circles->totalAngle( base_movement_center_ );
+  
+  double pos_dist = angle_to_move*average_radius;
+  
+  //double x_dist = origin.position(0) - target.position(0);
+  //double y_dist = origin.position(1) - target.position(1);
+  //double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
+  
   double ang_dist = fabs(origin_theta - target_theta);
   
   double youbot_base_mid_to_wheel = 0.27934; // [m]
@@ -513,7 +523,7 @@ bool YoubotPlanner::moveTo( View& _target_view )
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
   ROS_INFO("Movement execution finished so far, now waiting for 10 seconds.");
-  ros::Duration(2.0).sleep(); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
+  ros::Duration(2.0).sleep(); //////////////////////////////////////// just short hack for now since trajectory executions seems to report success too early ////////////////////////
   
   ROS_INFO("Movement successfully executed.");
   return successfully_moved;
@@ -1737,7 +1747,7 @@ bool YoubotPlanner::executeMovementsTrajectoryOnBase( movements::PoseVector& _pa
   traj.trajectory.joint_names.push_back("youbot_base/y");
   traj.trajectory.joint_names.push_back("youbot_base/theta");
   
-  double position_tolerance = 0.01; // 1 cm
+  double position_tolerance = 0.05; // 5 cm
   double orientation_tolerance = 0.08; // ~5°
   
   control_msgs::JointTolerance x_pos_tolerance;

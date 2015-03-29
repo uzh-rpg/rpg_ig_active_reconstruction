@@ -16,6 +16,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/view_space.h"
 #include "boost/foreach.hpp"
+#include <fstream>
 
 namespace dense_reconstruction
 {
@@ -31,6 +32,16 @@ void ViewSpace::fromMsg( const ViewSpaceMsg& _msg )
   {
     view_space_.push_back( View(view_msg) );
   }
+}
+
+ViewSpaceMsg ViewSpace::toMsg()
+{
+  ViewSpaceMsg msg;
+  BOOST_FOREACH( auto view, view_space_ )
+  {
+    msg.views.push_back( view.toMsg() );
+  }
+  return msg;
 }
 
 std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
@@ -102,6 +113,7 @@ void ViewSpace::setReachable( unsigned int _index )
 
 void ViewSpace::push_back( View _new_vp )
 {
+  _new_vp.index = view_space_.size();
   view_space_.push_back(_new_vp);
 }
 
@@ -143,6 +155,32 @@ void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::v
       _sub_space.push_back(view);
     }
   }
+}
+
+void ViewSpace::saveToFile( std::string _filename )
+{
+  std::ofstream out( _filename, std::ofstream::trunc );
+  
+  for( unsigned int i=0; i<view_space_.size(); ++i )
+  {
+    if( i!=0 )
+      out<<"\n";
+    movements::Pose pose = view_space_[i].pose();
+    out << " " << pose.position.x();
+    out << " " << pose.position.y();
+    out << " " << pose.position.z();
+    out << " " << pose.orientation.x();
+    out << " " << pose.orientation.y();
+    out << " " << pose.orientation.z();
+    out << " " << pose.orientation.w();
+  }
+    
+  out.close();
+}
+
+void ViewSpace::loadFromFile( std::string _filename )
+{
+  
 }
 
 }
