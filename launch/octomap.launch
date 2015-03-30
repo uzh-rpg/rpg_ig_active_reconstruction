@@ -11,7 +11,7 @@
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
 	  
 		<!-- Whether or not ray display messages are published for rviz to visualize the casted rays -->
-		<param name="display_rays" value="true" />
+		<param name="display_rays" value="false" />
 	    
 		<param name="resolution" value="0.005" />
 		

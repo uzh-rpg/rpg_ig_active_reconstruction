@@ -21,6 +21,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <list>
 #include <ctime>
+#include <random>
 
 
 namespace dense_reconstruction
@@ -97,6 +98,11 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   {
     ROS_WARN("Undefined parameter '/view_planner/information/occupied_passthrough_threshold'. Default '0' will be used...");
     occupied_passthrough_threshold_ = 0;
+  }
+  if( !nh_.getParam("/view_planner/random_nbv", random_nbv_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/random_nbv'. Default 'false' will be used.");
+    random_nbv_ = false;
   }
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
@@ -274,38 +280,43 @@ void ViewPlanner::run()
     
     
     // calculate NBV
-    unsigned int nbv_index = 0; // ATTENTION this is the index in the vector here, not the view index in the view space!
-    double highest_return = view_returns[0];
-    double second_highest = view_returns[0];
     
     std::list<unsigned int> nbv_idx_queue;
     nbv_idx_queue.push_front(0);
     
-
-    for( unsigned int i=0; i<views_to_consider.size(); ++i )
+    if(!random_nbv_)
     {
-      if( cost[i]==-1 )
-	continue;
-      
-      /*if( view_returns[i]>highest_return )
+      for( unsigned int i=0; i<views_to_consider.size(); ++i )
       {
-	nbv_index = i;
-	second_highest = highest_return;
-	highest_return = view_returns[i];
-      }*/
+	if( cost[i]==-1 )
+	  continue;
+	
+	for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
+	{
+	  if( view_returns[i] > view_returns[*it] )
+	  {
+	    nbv_idx_queue.insert(it, i );
+	    break;
+	  }
+	  else if( it==(--nbv_idx_queue.end()) )
+	  {
+	    nbv_idx_queue.insert(nbv_idx_queue.end(), i );
+	    break;
+	  }
+	}
+      }
+    }
+    else
+    {
+      std::random_device rd;
+      std::mt19937 gen(rd()); //mersenne-twister random number generator with random seed
+      std::uniform_int_distribution<unsigned int> distr( 0,views_to_consider.size() );
       
-      for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
+      nbv_idx_queue.push_back( distr(gen) );
+      nbv_idx_queue.push_back( distr(gen) );
+      while( *(nbv_idx_queue.begin()) == *(++nbv_idx_queue.begin()) )
       {
-	if( view_returns[i] > view_returns[*it] )
-	{
-	  nbv_idx_queue.insert(it, i );
-	  break;
-	}
-	else if( it==(--nbv_idx_queue.end()) )
-	{
-	  nbv_idx_queue.insert(nbv_idx_queue.end(), i );
-	  break;
-	}
+	*(++nbv_idx_queue.begin()) = distr(gen);
       }
     }
     
@@ -327,7 +338,7 @@ void ViewPlanner::run()
     ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
     
     // check if termination criteria is fulfilled
-    if( !terminationCriteriaFulfilled(highest_return, cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()]) )
+    if( !terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()]) )
     {
       // move to this view
       std::list<unsigned int>::iterator nbv_it = nbv_idx_queue.begin();

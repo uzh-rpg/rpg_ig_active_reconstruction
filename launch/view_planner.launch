@@ -7,17 +7,20 @@
     <!-- whether already visited views shall be considered again or not -->
     <param name="discard_visited" value="true" />
     
+    <!-- whether the next best view shall be chosen randomly -->
+    <param name="random_nbv" value="false" />
+    
     <!-- the cost weight should be positive since it is internally counted negative -->
     <param name="cost_weight" value="0.0" />
     <param name="information_weight" value="1.0" />
     
     <param name="information_metric/NrOfUnknownVoxels/weight" value="0.0" />
     <param name="information_metric/AverageUncertainty/weight" value="1.0" />
-    <param name="information_metric/AverageEndPointUncertainty/weight" value="500.0" />
-    <param name="information_metric/UnknownObjectSideFrontier/weight" value="5.0" />
-    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="5.0" />
-    <param name="information_metric/ClassicFrontier/weight" value="1.0" />
-    <param name="information_metric/EndNodeOccupancySum/weight" value="1.0" />
+    <param name="information_metric/AverageEndPointUncertainty/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectSideFrontier/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="0.0" />
+    <param name="information_metric/ClassicFrontier/weight" value="0.0" />
+    <param name="information_metric/EndNodeOccupancySum/weight" value="0.0" />
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     

@@ -66,6 +66,7 @@ private:
   tf::TransformListener tf_listener_;
   tf::TransformBroadcaster tf_broadcaster_;
   
+  double svo_scale_;
   bool use_gazebo_ground_truth_;
   bool dr_origin_is_odom_; // if odometry is to be used as base
   bool is_setup_; //only starts publishing when it receveived at least on world pose
@@ -86,6 +87,7 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   , tf_listener_(nh_)
   , is_setup_(false)
   , use_gazebo_ground_truth_(false)
+  , svo_scale_(1.0)
 {
   // initialize transforms
   dr_origin2world_.setIdentity();
@@ -134,8 +136,24 @@ void TFLinker::publish()
   }
   else if( dr_origin_is_odom_ )
     tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "odom", "dr_origin")); // dr origin to world is the identity if not set otherwise
-  else
-    tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "world", "dr_origin"));
+  else // tf with svo
+  {
+    tf::Transform t_WG = dr_origin2world;
+    bool in_time = tf_listener_.waitForTransform( "cam_pos", "world", now, max_tf_wait_time_ );
+    if( !in_time )
+    {
+      ROS_WARN("TFLinker:: Couldn't get current tf transform from 'world' to 'cam_pos' in time.");
+      return;
+    }
+    tf::StampedTransform t_CW;
+    tf_listener_.lookupTransform("cam_pos", "world", now, t_CW);
+    tf::Vector3 trans_CW = svo_scale_*t_CW.getOrigin();
+    t_CW.setOrigin(trans_CW);
+    
+    tf::Transform t_CG = t_CW*t_WG;
+    tf_broadcaster_.sendTransform(tf::StampedTransform(t_CG, now, "cam_pos", "dr_origin"));
+  }
+  
   tf_broadcaster_.sendTransform(tf::StampedTransform(image2arm_, now, "arm_link_5", "cam_pos"));
   /*
   // get newest robot transform
