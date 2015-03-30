@@ -75,8 +75,9 @@ public:
   ~YoubotPlanner();
   
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
+   * @param _svo_scale if the transform from the svo image position ('cam_pos') to its origin ('world') is to be scaled, this parameter can be used
    */
-  virtual std::string initializePlanningFrame();
+  virtual std::string initializePlanningFrame( double _svo_scale=1.0 );
   
   /** if at least one of the planning space parameters is set on the parameter server,
    * this function initializes the planning frame
@@ -364,8 +365,10 @@ public:
    */
   void setEndEffectorPlanningFrame( std::string _name );
   
-  /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf */
-  void initializeTF();
+  /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf
+   *@param _svo_scale if the transform from svo image pose ('cam_pos') to origin ('world') is to be scaled, this parameter  can be used
+   */
+  void initializeTF( double _svo_scale=1.0 );
   
   /** attempts to load the initialization trajectory from file init_trajectory in data folder */
   bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );

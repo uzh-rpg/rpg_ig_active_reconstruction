@@ -44,10 +44,6 @@ public:
   
   RobotPlanningInterface();
   
-  /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc. (TODO load from parameter)
-   */
-  virtual std::string initializePlanningFrame()=0;
-  
   /** initializes the robot's planning space
    * @param _info information the robot needs to setup its planning space
    */

@@ -184,6 +184,9 @@ private:
   
   bool random_nbv_;
   
+  bool observe_timing_;
+  std::vector< std::vector<double> > timing_;
+  
   double cost_weight_;
   double information_weight_;
   std::vector<double> information_weights_;

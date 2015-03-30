@@ -36,6 +36,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   ,abort_loop_(false)
   ,max_movement_attempts_(3)
   ,mark_visited_(true)
+  ,observe_timing_(false)
 {
   
   if( !nh_.getParam("/view_planner/data_folder", data_folder_) )
@@ -104,6 +105,10 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
     ROS_WARN("Undefined parameter '/view_planner/random_nbv'. Default 'false' will be used.");
     random_nbv_ = false;
   }
+  if( !nh_.getParam("/view_planner/observe_timing", observe_timing_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/observe_timing'. Default 'false' will be used.");
+  }
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
   current_view_retriever_ = nh_.serviceClient<dense_reconstruction::ViewRequest>("/dense_reconstruction/robot_interface/current_view");
@@ -122,6 +127,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   metrics_to_use_.push_back("EndNodeOccupancySum");
   metrics_to_use_.push_back("TotalOccupancyCertainty");
   metrics_to_use_.push_back("TotalNrOfOccupieds");
+  metrics_to_use_.push_back("TotalNrOfNodes");
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
   {
@@ -146,15 +152,10 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   planning_data_names_.push_back("return_value_mean");
   planning_data_names_.push_back("return_value_stddev");
   planning_data_names_.push_back("cost");
-  planning_data_names_.push_back("NrOfUnknownVoxels");
-  planning_data_names_.push_back("AverageUncertainty");
-  planning_data_names_.push_back("AverageEndPointUncertainty");
-  planning_data_names_.push_back("UnknownObjectSideFrontier");
-  planning_data_names_.push_back("UnknownObjectVolumeFrontier");
-  planning_data_names_.push_back("ClassicFrontier");
-  planning_data_names_.push_back("EndNodeOccupancySum");
-  planning_data_names_.push_back("TotalOccupancyCertainty");
-  planning_data_names_.push_back("TotalNrOfOccupieds");
+  BOOST_FOREACH( auto metric_name, metrics_to_use_ )
+  {
+    planning_data_names_.push_back(metric_name);
+  }
   
   command_ = nh_.subscribe( "/dense_reconstruction/view_planner/command", 100, &ViewPlanner::commandCallback, this );
   
@@ -193,6 +194,9 @@ void ViewPlanner::run()
   // enter loop
   do
   {
+    std::vector<double> timing_profiler;
+    ros::Time temp;
+    
     pauseIfRequested();
     
     // retrieve new information
@@ -203,11 +207,18 @@ void ViewPlanner::run()
     determineAvailableViewSpace( views_to_consider );
     ROS_INFO_STREAM("Nr of  views that are part of the choice: "<<views_to_consider.size() );
     
+    
     // get movement costs
     ROS_INFO("Retrieve movement costs...");
     std::vector<double> cost(views_to_consider.size());
     std::vector<RobotPlanningInterface::MovementCost> full_cost(views_to_consider.size());
     int achievable_poses_count = 0;
+    
+    if( observe_timing_ )
+    {
+      temp = ros::Time::now();
+    }
+    
     for( unsigned int i=0; i<cost.size(); i++ )
     {
       RobotPlanningInterface::MovementCost cost_description;
@@ -227,6 +238,13 @@ void ViewPlanner::run()
 	++achievable_poses_count;
       }
     }
+    
+    if( observe_timing_ )
+    {
+      ros::Duration passed = ros::Time::now() - temp;
+      timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
+    }
+    
     pauseIfRequested();
     
     if( achievable_poses_count==0 )
@@ -242,6 +260,12 @@ void ViewPlanner::run()
     // get expected informations for each
     ROS_INFO("Retrieve information score...");
     std::vector< std::vector<double> > information(views_to_consider.size());
+    
+    if( observe_timing_ )
+    {
+      temp = ros::Time::now();
+    }
+    
     for( unsigned int i=0; i<information.size(); i++ )
     {
       ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
@@ -262,6 +286,13 @@ void ViewPlanner::run()
 	ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
       }
     }
+    
+    if( observe_timing_ )
+    {
+      ros::Duration passed = ros::Time::now() - temp;
+      timing_profiler.push_back( passed.toSec()/(double)information.size()  );
+    }
+    
     ros::spinOnce();
     pauseIfRequested();
     
@@ -332,6 +363,11 @@ void ViewPlanner::run()
     return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
     
     saveNBVData(views_to_consider[nbv_idx_queue.front()], return_info, cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], &full_cost[nbv_idx_queue.front()].additional_field_names, &full_cost[nbv_idx_queue.front()].additional_fields_values );
+    
+    if( observe_timing_ )
+    {
+      timing_.push_back(timing_profiler);
+    }
     
     saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, &full_cost );
     
@@ -479,10 +515,10 @@ void ViewPlanner::saveDataToFile()
   ros::Time now = ros::Time::now();
   time_t current_time;
   time(&current_time);
-  filename << data_folder_<<"planning_data"<<current_time<<".data";
+  filename << data_folder_<<"planning_data"<<current_time;
   std::string file_name = filename.str();
   
-  std::ofstream out(file_name, std::ofstream::trunc);
+  std::ofstream out(file_name+".data", std::ofstream::trunc);
   
   // print weights
   out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
@@ -508,6 +544,16 @@ void ViewPlanner::saveDataToFile()
     }
   }
   out.close();
+  
+  if( timing_.size()==0 )
+    return;
+  
+  std::ofstream out2(file_name+"_timing.data", std::ofstream::trunc);
+  out2<<"average_cost_retrieval_time_per_view average_information_retrieval_time_per_view";
+  for( unsigned int i=0; i<timing_.size(); ++i )
+  {
+    out2<<"\n"<<timing_[i][0]<<" "<<timing_[i][1];
+  }
 }
 
 void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs )

@@ -44,6 +44,7 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   //image_stream_ = nh_.subscribe( image_topic,1 ,&RemodeFeeder::imageStreamCallback, this ); // first try version
   feeder_ = nh_.advertise<svo_msgs::DenseInputWithFeatures>( remode_input_topic,10 );
   svo_subscriber_ = nh_.subscribe( svo_topic,1 , &RemodeFeeder::svoCallback, this );
+  set_svo_scale_server_ = nh_.advertiseService("/dense_reconstruction/remode_feeder/set_svo_scale", &RemodeFeeder::setSVOScaleService, this );
   
   // to get poses directly from gazebo
   /*got_gazebo_pose_ = false;
@@ -170,6 +171,13 @@ void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& 
   //  ROS_WARN("Couldn't find transformation from 'dr_origin' to 'world'.");
   //}
   
+}
+
+bool RemodeFeeder::setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res )
+{
+  ROS_INFO_STREAM("Remode feeder: set new SVO scale: "<<_req.scale<<".");
+  svo_scale_ = _req.scale;
+  return true;
 }
 
 movements::Pose RemodeFeeder::groundTruthStateFromGazebo()
