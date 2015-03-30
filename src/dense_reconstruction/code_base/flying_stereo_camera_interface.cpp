@@ -37,17 +37,17 @@ FlyingStereoCameraInterface::FlyingStereoCameraInterface( ros::NodeHandle* _n )
   ,current_view_(0)
   ,cam_to_image_(0.5,0.5,-0.5,0.5)
 {
-  std::string interface_namespace="/flying_stereo_camera_interface/";
+  std::string interface_namespace="flying_stereo_camera_interface";
   
-  data_retreiver_ = boost::shared_ptr<YoubotPlanner::DataRetrievalModule>( new StereoCameraDataRetriever() );
+  data_retreiver_ = boost::shared_ptr<YoubotPlanner::DataRetrievalModule>( new StereoCameraDataRetriever(nullptr,interface_namespace) );
   
   
   view_planning_frame_="dr_origin";
-  ros::param::get(interface_namespace+"view_planning_frame", view_planning_frame_);
+  ros::param::get("/"+interface_namespace+"/view_planning_frame", view_planning_frame_);
   
   std::string data_folder, view_space_name;
-  ros::param::get(interface_namespace+"data_folder", data_folder);
-  ros::param::get(interface_namespace+"view_space_name", view_space_name);
+  ros::param::get("/"+interface_namespace+"/data_folder", data_folder);
+  ros::param::get("/"+interface_namespace+"/view_space_name", view_space_name);
   
   view_space_.loadFromFile( data_folder+"/"+view_space_name);
   if( view_space_.size()==0 )

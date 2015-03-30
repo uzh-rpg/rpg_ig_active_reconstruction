@@ -136,12 +136,12 @@ YoubotPlanner::~YoubotPlanner()
     delete init_view_;
 }
 
-std::string YoubotPlanner::initializePlanningFrame( double _svo_scale )
+std::string YoubotPlanner::initializePlanningFrame()
 {
   if( setup_tf_for_svo_ )
   {
     ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
-    initializeTF(_svo_scale);
+    initializeTF();
     ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
   }
   
@@ -531,20 +531,19 @@ bool YoubotPlanner::moveTo( View& _target_view )
 
 void YoubotPlanner::initializeExtrinsics()
 {
+  // setup tf
+  initializePlanningFrame();
   
   // set svo scaling
-  dense_reconstruction::SetScale command;
+  /*svo_srv::SetScale command;
   double svo_scale = getSVOScale();
-  ros::Duration(3.0).sleep();
+  command.request.scale = svo_scale;
+  ros::service::call("/svo/set_scale",command);
   ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
   
-  // setup tf
-  initializePlanningFrame(svo_scale);
+  ros::Duration(3.0).sleep();
+  initializePlanningFrame();*/
   
-  command.request.scale = svo_scale;
-  ros::service::call("/dense_reconstruction/remode_feeder/set_svo_scale",command);
-  ros::service::call("/dense_reconstruction/tf_linker/set_svo_scale",command);
-    
   // move arm into initial pose
   assumeAndSetInitialPose();
   ROS_INFO("Initialized.");
@@ -2216,7 +2215,7 @@ bool YoubotPlanner::setupTFService( std_srvs::Empty::Request& _req, std_srvs::Em
   initializeExtrinsics();
 }
 
-void YoubotPlanner::initializeTF( double _svo_scale )
+void YoubotPlanner::initializeTF()
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
   ros::Time now = ros::Time::now();
@@ -2229,13 +2228,6 @@ void YoubotPlanner::initializeTF( double _svo_scale )
   tf::StampedTransform t_WI;
   tf_listener_.lookupTransform("world","cam_pos",now,t_WI);
   
-  // setting the scale...
-  tf::Vector3 W_trans_WI = t_WI.getOrigin();
-  double x_new = W_trans_WI.x()*_svo_scale;
-  double y_new = W_trans_WI.y()*_svo_scale;
-  double z_new = W_trans_WI.z()*_svo_scale;
-  
-  t_WI.setOrigin( tf::Vector3(x_new,y_new,z_new) );
   
   tf::Transform t_IA;
   tf::transformMsgToTF(arm2image_,t_IA);
