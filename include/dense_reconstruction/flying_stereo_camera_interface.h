@@ -33,6 +33,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/linear_movement.h>
 #include <movements/in_out_spiral.h>
 
+#include <tf/transform_broadcaster.h>
+
 #include "dense_reconstruction/youbot_planning.h"
 #include "dense_reconstruction/robot_planning_interface.h"
 
@@ -53,6 +55,9 @@ public:
   
   /// destructor
   ~FlyingStereoCameraInterface();
+  
+  /// needed for broadcasting the camera position
+  void run();
   
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
    */
@@ -136,6 +141,7 @@ public:
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
+  Eigen::Quaterniond cam_to_image_;
   
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
@@ -148,6 +154,7 @@ private:
   ros::ServiceServer move_to_server_;
   ros::ServiceServer setup_tf_server_;
   
+  tf::TransformBroadcaster tf_broadcaster_;
   
   boost::shared_ptr<YoubotPlanner::DataRetrievalModule> data_retreiver_;
   

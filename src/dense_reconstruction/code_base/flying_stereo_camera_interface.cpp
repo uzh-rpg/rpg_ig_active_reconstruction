@@ -34,6 +34,8 @@ namespace dense_reconstruction
 FlyingStereoCameraInterface::FlyingStereoCameraInterface( ros::NodeHandle* _n )
   :ros_node_(_n)
   ,tf_listener_(*_n)
+  ,current_view_(0)
+  ,cam_to_image_(0.5,0.5,-0.5,0.5)
 {
   std::string interface_namespace="/flying_stereo_camera_interface/";
   
@@ -44,14 +46,21 @@ FlyingStereoCameraInterface::FlyingStereoCameraInterface( ros::NodeHandle* _n )
   ros::param::get(interface_namespace+"view_planning_frame", view_planning_frame_);
   
   std::string data_folder, view_space_name;
-  ros::param::get(interface_namespace+"view_planning_frame", data_folder);
-  ros::param::get(interface_namespace+"view_planning_frame", view_space_name);
+  ros::param::get(interface_namespace+"data_folder", data_folder);
+  ros::param::get(interface_namespace+"view_space_name", view_space_name);
   
   view_space_.loadFromFile( data_folder+"/"+view_space_name);
   if( view_space_.size()==0 )
   {
     ROS_FATAL("The view space couldn't be loaded from file. Shutting down node...");
     ros::shutdown();
+  }
+  else
+  {
+    ROS_INFO_STREAM("Loaded view space with "<<view_space_.size()<<" views.");
+    View first = view_space_.getView(0);
+    ROS_INFO("Setting up first position.");
+    moveTo( first );
   }
   
   planning_space_initialization_server_ = ros_node_->advertiseService("/dense_reconstruction/robot_interface/planning_space_initialization", &FlyingStereoCameraInterface::planningSpaceInitService, this );
@@ -68,6 +77,33 @@ FlyingStereoCameraInterface::~FlyingStereoCameraInterface()
 {
 }
 
+void FlyingStereoCameraInterface::run()
+{
+  ros::AsyncSpinner spinner(2);
+  spinner.start();
+  while( ros_node_->ok() )
+  {
+    tf::Transform cam_2_origin;
+    
+    movements::Pose current_img_pose = view_space_.getView(current_view_).pose();
+    //current_img_pose.orientation =  current_img_pose.orientation*cam_to_image_;
+    geometry_msgs::Pose pose = movements::toROS( current_img_pose );
+    geometry_msgs::Transform pose_t;
+    pose_t.translation.x = pose.position.x;
+    pose_t.translation.y = pose.position.y;
+    pose_t.translation.z = pose.position.z;
+    pose_t.rotation.x = pose.orientation.x;
+    pose_t.rotation.y = pose.orientation.y;
+    pose_t.rotation.z = pose.orientation.z;
+    pose_t.rotation.w = pose.orientation.w;
+    
+    tf::transformMsgToTF( pose_t, cam_2_origin );
+    tf_broadcaster_.sendTransform(tf::StampedTransform(cam_2_origin, ros::Time::now(), "dr_origin", "cam_pos"));
+    ros::Duration(0.05).sleep();
+  }
+  spinner.stop();
+}
+
 std::string FlyingStereoCameraInterface::initializePlanningFrame()
 {
   return view_planning_frame_;
@@ -82,6 +118,7 @@ bool FlyingStereoCameraInterface::initializePlanningSpace( PlanningSpaceInitiali
 
 View FlyingStereoCameraInterface::getCurrentView()
 {  
+  ROS_INFO_STREAM("Current view is: "<<current_view_);
   return view_space_.getView(current_view_);
 }
 
@@ -101,6 +138,7 @@ RobotPlanningInterface::MovementCost FlyingStereoCameraInterface::movementCost( 
 {
   RobotPlanningInterface::MovementCost cost;
   cost.cost = 0;  
+  cost.exception = RobotPlanningInterface::MovementCost::NONE;
   return cost;
 }
 
@@ -115,7 +153,9 @@ bool FlyingStereoCameraInterface::moveTo( View& _target_view )
 {
   gazebo_msgs::SetModelState srv_call;
   srv_call.request.model_state.model_name = "flying_stereo_cam";
-  srv_call.request.model_state.pose = movements::toROS( _target_view.pose() );
+  movements::Pose current_img_pose = _target_view.pose();
+  current_img_pose.orientation =  current_img_pose.orientation*cam_to_image_;
+  srv_call.request.model_state.pose = movements::toROS( current_img_pose );
   
   ros::service::call( "/gazebo/set_model_state", srv_call );
   
@@ -138,6 +178,7 @@ bool FlyingStereoCameraInterface::planningSpaceInitService( dense_reconstruction
 bool FlyingStereoCameraInterface::feasibleViewSpaceRequestService( dense_reconstruction::FeasibleViewSpaceRequest::Request& _req, dense_reconstruction::FeasibleViewSpaceRequest::Response& _res )
 {
   ROS_INFO("View space service called.");
+
   _res.view_space = view_space_.toMsg();
   return true;
 }

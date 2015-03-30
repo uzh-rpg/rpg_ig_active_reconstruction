@@ -161,12 +161,13 @@ void ViewSpace::saveToFile( std::string _filename )
 {
   std::ofstream out( _filename, std::ofstream::trunc );
   
+  out<<view_space_.size();
+  
   for( unsigned int i=0; i<view_space_.size(); ++i )
   {
-    if( i!=0 )
-      out<<"\n";
+    out<<"\n";
     movements::Pose pose = view_space_[i].pose();
-    out << " " << pose.position.x();
+    out << pose.position.x();
     out << " " << pose.position.y();
     out << " " << pose.position.z();
     out << " " << pose.orientation.x();
@@ -180,7 +181,34 @@ void ViewSpace::saveToFile( std::string _filename )
 
 void ViewSpace::loadFromFile( std::string _filename )
 {
+  std::ifstream in(_filename, std::ifstream::in);
   
+  unsigned int nr_of_views;
+  bool success = (in >> nr_of_views);
+  
+  if(!success)
+    return;
+  
+  for( unsigned int i=0; i<nr_of_views; ++i )
+  {
+    View new_pose;
+    success = success && ( in>>new_pose.pose().position.x() );
+    success = success && ( in>>new_pose.pose().position.y() );
+    success = success && ( in>>new_pose.pose().position.z() );
+    success = success && ( in>>new_pose.pose().orientation.x() );
+    success = success && ( in>>new_pose.pose().orientation.y() );
+    success = success && ( in>>new_pose.pose().orientation.z() );
+    success = success && ( in>>new_pose.pose().orientation.w() );
+    
+    if(!success)
+      return;
+    
+    new_pose.index = i;
+    new_pose.bad() = false;
+    new_pose.reachable() = true;
+    new_pose.timesVisited() = 0;
+    view_space_.push_back(new_pose);
+  }
 }
 
 }

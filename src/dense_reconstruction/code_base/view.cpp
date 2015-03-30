@@ -56,6 +56,7 @@ ViewMsg View::toMsg()
   msg.source_frame = source_frame_;
   msg.is_bad = is_bad_;
   msg.visited = visited_;
+  msg.is_reachable = is_reachable_;
   msg.associated_names = additional_fields_names_;
   msg.associated_values = additional_fields_values_;
   msg.index = index;

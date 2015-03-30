@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   // YoubotPlanner tests
   dense_reconstruction::FlyingStereoCameraInterface camera(&n);
   
-  ros::spin();
+  camera.run();
   
   ros::shutdown();
   return 0;

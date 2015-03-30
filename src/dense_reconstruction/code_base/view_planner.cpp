@@ -171,6 +171,8 @@ void ViewPlanner::run()
     waitAndSpin(2);
   }
   
+  ROS_INFO_STREAM("The view space has "<<view_space_.size()<<" views.");
+  
   // get current view
   while( !getCurrentView(current_view_) )
   {

@@ -4,8 +4,6 @@
 	<!-- start trajectory republisher -->
 	<!--<node name="arm_trajectory_republisher" pkg="youbot_description" type="arm_trajectory_republisher" output="screen"/>-->
 
-	<!-- start base command republisher -->
-	<node name="base_command_republisher" pkg="youbot_description" type="base_command_republisher" output="screen"/>
 
 	<!-- start gazebo empty world-->
 	<param name="/use_sim_time" value="true" />
