@@ -15,8 +15,8 @@
     <param name="information_weight" value="1.0" />
     
     <param name="information_metric/NrOfUnknownVoxels/weight" value="0.0" />
-    <param name="information_metric/AverageUncertainty/weight" value="1.0" />
-    <param name="information_metric/AverageEndPointUncertainty/weight" value="0.0" />
+    <param name="information_metric/AverageUncertainty/weight" value="0.0" />
+    <param name="information_metric/AverageEndPointUncertainty/weight" value="1.0" />
     <param name="information_metric/UnknownObjectSideFrontier/weight" value="0.0" />
     <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="0.0" />
     <param name="information_metric/ClassicFrontier/weight" value="0.0" />

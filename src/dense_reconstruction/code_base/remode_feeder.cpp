@@ -27,7 +27,8 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   nh_(_n),
   tf_listener_(_n),
   publish_every_xth_frame_(_publish_every_xth_frame),
-  publish_count_(0)
+  publish_count_(0),
+  svo_scale_(1.0)
 {
   world_frame_ = "dr_origin";
   std::string remode_input_topic = "/dense_reconstruction/remode_feed";
@@ -128,41 +129,46 @@ void RemodeFeeder::gazeboCallback( const gazebo_msgs::LinkStatesConstPtr& _gazeb
 void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& _svo_output )
 {
   ros::Time now = _svo_output->header.stamp;
-  bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.03) );
+  //bool ground_tf_available = tf_listener_.waitForTransform( "dr_origin","world",now,ros::Duration(0.03) );
   
-  if(ground_tf_available) // transform here because it would be much more overhead to do it for every point in the point cloud remote publishes
-  {
+  //if(ground_tf_available) // transform here because it would be much more overhead to do it for every point in the point cloud remote publishes
+  //{
     tf::StampedTransform t_OW; // world to origin
     tf_listener_.lookupTransform("dr_origin","world",now,t_OW);
     
     svo_msgs::DenseInputWithFeatures msg = *_svo_output;
+    movements::Pose pose = movements::fromROS(msg.pose);
+    pose.position = svo_scale_*pose.position;
+    msg.pose  =  movements::toROS(pose);
+    msg.min_depth = svo_scale_*msg.min_depth;
+    msg.max_depth = svo_scale_*msg.max_depth;
     
     // set frame in header
-    msg.header.frame_id = world_frame_;
+    //msg.header.frame_id = world_frame_;
     
     // pose: P_OC = P_OW*P_WC
-    tf::Transform t_WC; //cam_pos to world
-    tf::poseMsgToTF( msg.pose,t_WC );
-    tf::Transform t_OC = t_OW*t_WC;
-    tf::poseTFToMsg( t_OC, msg.pose );
+    //tf::Transform t_WC; //cam_pos to world
+    //tf::poseMsgToTF( msg.pose,t_WC );
+    //tf::Transform t_OC = t_OW*t_WC;
+    //tf::poseTFToMsg( t_OC, msg.pose );
     // image unchanged
     // min_depth unchanged
     // max_depth unchanged
-    BOOST_FOREACH( auto feature, msg.features )
+    /*BOOST_FOREACH( auto feature, msg.features )
     {
       tf::Vector3 feat_W(feature.x,feature.y,feature.z);
       tf::Vector3 feat_O = t_OW*feat_W;
       feature.x = feat_O.x();
       feature.y = feat_O.y();
       feature.z = feat_O.z();
-    }
+    }*/
     //bgr_image unchanged
     feeder_.publish(msg);
-  }
-  else
-  {
-    ROS_WARN("Couldn't find transformation from 'dr_origin' to 'world'.");
-  }
+  //}
+  //else
+  //{
+  //  ROS_WARN("Couldn't find transformation from 'dr_origin' to 'world'.");
+  //}
   
 }
 

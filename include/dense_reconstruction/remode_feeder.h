@@ -65,6 +65,8 @@ private:
   std::string world_frame_;
   std::string camera_frame_;
   
+  double svo_scale_;
+  
   double min_depth_; // for remode
   double max_depth_; // for remode
   unsigned int publish_every_xth_frame_; // publish every xth frame
