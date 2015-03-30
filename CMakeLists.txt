@@ -57,6 +57,7 @@ add_service_files(
   MovementCostCalculation.srv
   MoveToOrder.srv
   SaveViewSpace.srv
+  SetScale.srv
 )
 
 generate_messages(

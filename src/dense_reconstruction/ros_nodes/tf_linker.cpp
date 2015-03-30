@@ -33,6 +33,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/IsOk.h"
 
 #include <gazebo_msgs/ModelStates.h>
+#include "dense_reconstruction/SetScale.h"
 
 namespace
 dense_reconstruction{
@@ -54,11 +55,13 @@ public:
   bool loadHEC();
   
   void modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg );
+  bool setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res );
 private:
   ros::NodeHandle nh_;
   // servers
   ros::ServiceServer tree_connector_;
   ros::ServiceServer status_answers_;
+  ros::ServiceServer set_svo_scale_server_;
   
   ros::Subscriber gazebo_state_;
   
@@ -102,6 +105,7 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   // setup servers
   tree_connector_ = nh_.advertiseService("/dense_reconstruction/set_world_pose", &TFLinker::setWorldPoseRequest, this );
   status_answers_ = nh_.advertiseService("/dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
+  set_svo_scale_server_ = nh_.advertiseService("dense_reconstruction/tf_linker/set_svo_scale", &TFLinker::setSVOScaleService, this );
   
   gazebo_state_ = nh_.subscribe("/gazebo/model_states",1,&dense_reconstruction::TFLinker::modelStateCallback, this );
 }
@@ -269,6 +273,12 @@ void TFLinker::modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg 
   
   tf_broadcaster_.sendTransform(tf::StampedTransform(t_GR, ros::Time::now(), "dr_origin", "base_footprint"));
   
+}
+
+bool TFLinker::setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res )
+{
+  svo_scale_ = _req.scale;
+  return true;
 }
 
 }
