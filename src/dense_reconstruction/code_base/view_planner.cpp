@@ -454,7 +454,7 @@ void ViewPlanner::determineAvailableViewSpace( std::vector<unsigned int>& _outpu
 
 double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informations )
 {
-  double view_return = -1*cost_weight_*_cost;
+  double view_return = 0;//-1*cost_weight_*_cost;
   
   if( _informations.size()>information_weights_.size() )
   {
@@ -467,7 +467,7 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
     view_return += information_weight_*information_weights_[i]*_informations[i];
   }
   
-  return view_return;
+  return view_return/(cost_weight_*_cost);
 }
 
 bool ViewPlanner::terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain )

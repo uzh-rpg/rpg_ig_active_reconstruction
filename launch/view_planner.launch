@@ -14,14 +14,14 @@
     <param name="random_nbv" value="false" />
     
     <!-- the cost weight should be positive since it is internally counted negative -->
-    <param name="cost_weight" value="1.0" />
-    <param name="information_weight" value="0.0" />
+    <param name="cost_weight" value="15000.0" />
+    <param name="information_weight" value="1.0" />
     
-    <param name="information_metric/NrOfUnknownVoxels/weight" value="0.0" />
+    <param name="information_metric/NrOfUnknownVoxels/weight" value="0.4" />
     <param name="information_metric/AverageUncertainty/weight" value="0.0" />
     <param name="information_metric/AverageEndPointUncertainty/weight" value="0.0" />
-    <param name="information_metric/UnknownObjectSideFrontier/weight" value="0.0" />
-    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectSideFrontier/weight" value="200.0" />
+    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="0.2" />
     <param name="information_metric/ClassicFrontier/weight" value="0.0" />
     <param name="information_metric/EndNodeOccupancySum/weight" value="0.0" />
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />

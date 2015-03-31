@@ -4,7 +4,7 @@
     <node pkg="svo_ros" type="vo" name="svo" clear_params="true" output="screen">
     
         <!-- Camera topic to subscribe to -->
-        <param name="cam_topic" value="/camera/left/image_rect" type="str" />
+        <param name="cam_topic" value="/camera/image_rect" type="str" />
 	<!--<param name="cam_topic" value="/camera/image_rect" type="str" />-->
         
         <!-- Camera calibration file -->

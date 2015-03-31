@@ -1,5 +1,5 @@
 % loads data into named structure
-function out = namedstructure(A)
+function out = namedstructure_old(A)
     out.time = normalizeTime( A.data(:,1) );
     out.pos_x = A.data(:,2);
     out.pos_y = A.data(:,3);
@@ -23,5 +23,4 @@ function out = namedstructure(A)
     out.endnodeoccupancysum=A.data(:,20);
     out.totaloccupancycertainty=A.data(:,21);
     out.totalnrofoccupieds=A.data(:,22);
-    out.totalnrofnodes=A.data(:,23);
 end

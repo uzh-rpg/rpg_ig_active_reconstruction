@@ -405,13 +405,13 @@ double YoubotPlanner::baseDistanceCost( ViewPointData* _start_state, ViewPointDa
   
   movements::KinMove circle_seg = movements::CircularGroundPath::create( origin.position, target.position, base_radial_speed_, movements::CircularGroundPath::SHORTEST );
   boost::shared_ptr<movements::CircularGroundPath> circles = boost::dynamic_pointer_cast< movements::CircularGroundPath >( circle_seg.operator->() );
-  double angle_to_move = circles->totalAngle( base_movement_center_ );
+  double angle_to_move = fabs(circles->totalAngle( base_movement_center_ ));
   
-  double pos_dist = angle_to_move*average_radius;
+  //double pos_dist = angle_to_move*average_radius;
   
-  //double x_dist = origin.position(0) - target.position(0);
-  //double y_dist = origin.position(1) - target.position(1);
-  //double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
+  double x_dist = origin.position(0) - target.position(0);
+  double y_dist = origin.position(1) - target.position(1);
+  double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
   
   double ang_dist = fabs(origin_theta - target_theta);
   
@@ -444,18 +444,18 @@ double YoubotPlanner::armDistanceCost( ViewPointData* _start_state, ViewPointDat
   movements::Pose link_1_from_l4 =  relativeLinkPoseInRobotState("arm_link_4","arm_link_1",robot_state);
   movements::Pose link_1_from_l5 =  relativeLinkPoseInRobotState("arm_link_5","arm_link_1",robot_state);
   
-  effective_movement_radius[0] = std::max( std::max(link_1_from_l2.position(0),link_1_from_l3.position(0)), std::max(link_1_from_l4.position(0),link_1_from_l5.position(0)) );
+  effective_movement_radius[0] = std::max( std::max(fabs(link_1_from_l2.position(0)),fabs(link_1_from_l3.position(0))), std::max(fabs(link_1_from_l4.position(0)),fabs(link_1_from_l5.position(0))) );
   
   // link2: arm moves in z/x plane, but projections on z-axis matter
   movements::Pose link_2_from_l3 = relativeLinkPoseInRobotState("arm_link_3","arm_link_2",robot_state);
   movements::Pose link_2_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_2",robot_state);
   movements::Pose link_2_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_2",robot_state);
-  effective_movement_radius[1] = std::max( std::max(link_2_from_l3.position(2),link_2_from_l4.position(2)),link_2_from_l5.position(2));
+  effective_movement_radius[1] = std::max( std::max(fabs(link_2_from_l3.position(2)),fabs(link_2_from_l4.position(2))),fabs(link_2_from_l5.position(2)));
   
   // link3: analog to link 2
   movements::Pose link_3_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_3",robot_state);
   movements::Pose link_3_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_3",robot_state);
-  effective_movement_radius[2] = std::max( link_3_from_l4.position(2),link_3_from_l5.position(2));
+  effective_movement_radius[2] = std::max( fabs(link_3_from_l4.position(2)),fabs(link_3_from_l5.position(2)));
   
   // link4: since only taking distances to link 5 into account, this length is constant
   effective_movement_radius[3] = 0.032; // [m] - from spec sheet
