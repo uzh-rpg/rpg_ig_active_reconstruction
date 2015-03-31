@@ -28,6 +28,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <movements/core>
 #include <gazebo_msgs/LinkStates.h>
 #include "dense_reconstruction/SetScale.h"
+#include "dense_reconstruction/Booleans.h"
 
 namespace dense_reconstruction
 {
@@ -59,11 +60,16 @@ public:
    * service to set the scale to apply to the svo output
    */
   bool setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res );
+  
+  /**
+   * turns remode feeding on and off
+   */
 private:
   ros::NodeHandle nh_;
   ros::Publisher feeder_;
   ros::Subscriber image_stream_;
   ros::Subscriber svo_subscriber_;
+  ros::ServiceServer start_feeding_server_;;
   ros::ServiceServer set_svo_scale_server_;
   
   tf::TransformListener tf_listener_;

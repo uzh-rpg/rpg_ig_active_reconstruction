@@ -5,7 +5,7 @@
     <param name="data_folder" value="$(find dense_reconstruction)/data/" />
     
     <!-- sets up tf for svo, i.e. transforming it to the frame in which the robot moves -->
-    <param name="setup_tf_for_svo" value="false" />
+    <param name="setup_tf_for_svo" value="true" />
     
     <!-- delta: distance cost weight (for arm and base combined) -->
     <param name="cost_function/delta" value="1.0" />
@@ -14,7 +14,7 @@
     <!-- alpha: arm distance cost weight (only arm, the end weight of the arm distance is delta*alpha) -->
     <param name="cost_function/alpha" value="0.25" />
     
-    <param name="base_planning_frame" value="dr_origin" />
+    <param name="base_planning_frame" value="odom" />
     <param name="view_planning_frame" value="dr_origin" />
     
     <!-- initial arm pose -->
@@ -29,7 +29,7 @@
     <rosparam command="load" file="$(find dense_reconstruction)/config/planning_space.yaml" />
     
     <!-- data retrieval -->
-    <param name="data_retriever_type" value="stereo_camera" /> <!-- "stereo_camera" or "remode" -->
+    <param name="data_retriever_type" value="remode" /> <!-- "stereo_camera" or "remode" -->
     <!-- stereo_cam is not implemented yet -->
     
     <!-- remode retrieval specific / currently octomap_topic is used for stereo_cam version as well -->

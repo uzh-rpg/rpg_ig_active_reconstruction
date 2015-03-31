@@ -1,6 +1,6 @@
 planning_space:
   relative_object_position:
-    x: 0.0 # expected approximate position of the object in the planning frame (for youbot: check base planning frame...)
+    x: 1.0 # expected approximate position of the object in the planning frame (for youbot: check base planning frame...)
     y: 0.0
     z: 0.0
   base:

@@ -58,6 +58,7 @@ add_service_files(
   MoveToOrder.srv
   SaveViewSpace.srv
   SetScale.srv
+  Booleans.srv
 )
 
 generate_messages(

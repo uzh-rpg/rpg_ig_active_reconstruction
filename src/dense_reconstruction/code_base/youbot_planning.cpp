@@ -136,12 +136,12 @@ YoubotPlanner::~YoubotPlanner()
     delete init_view_;
 }
 
-std::string YoubotPlanner::initializePlanningFrame()
+std::string YoubotPlanner::initializePlanningFrame( double _svo_scale )
 {
   if( setup_tf_for_svo_ )
   {
     ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
-    initializeTF();
+    initializeTF(_svo_scale);
     ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
   }
   
@@ -531,18 +531,19 @@ bool YoubotPlanner::moveTo( View& _target_view )
 
 void YoubotPlanner::initializeExtrinsics()
 {
-  // setup tf
-  initializePlanningFrame();
   
   // set svo scaling
-  /*svo_srv::SetScale command;
+  dense_reconstruction::SetScale command;
   double svo_scale = getSVOScale();
-  command.request.scale = svo_scale;
-  ros::service::call("/svo/set_scale",command);
-  ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
-  
   ros::Duration(3.0).sleep();
-  initializePlanningFrame();*/
+  ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
+
+  // setup tf
+  initializePlanningFrame(svo_scale);
+  
+  command.request.scale = svo_scale;
+  ros::service::call("/dense_reconstruction/remode_feeder/set_svo_scale",command);
+  ros::service::call("/dense_reconstruction/tf_linker/set_svo_scale",command);
   
   // move arm into initial pose
   assumeAndSetInitialPose();
@@ -614,9 +615,10 @@ bool YoubotPlanner::assumeAndSetInitialPose()
 
 double YoubotPlanner::getSVOScale()
 {
- 
-  double svo_distance_sum;
-  double robot_distance_sum;
+  ROS_INFO("Running routine to estimate the SVO scale.");
+  
+  double svo_distance_sum=0;
+  double robot_distance_sum=0;
   unsigned int nr_of_measurements = 0;
   double j2_angle_1 = 1.8;
   double j2_angle_2 = 0.1;
@@ -633,7 +635,7 @@ double YoubotPlanner::getSVOScale()
     
     // get state 1
     movements::Pose cam_1_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
-    movements::Pose cam_1_SVO = getCurrentGlobalLinkPose("cam_pos", ros::Duration(10.0));
+    movements::Pose cam_1_SVO = getPose("world","cam_pos", ros::Duration(10.0));
     
     if( cam_1_R==movements::Pose() || cam_1_SVO==movements::Pose() )
     {
@@ -646,7 +648,7 @@ double YoubotPlanner::getSVOScale()
     
     // get state 2
     movements::Pose cam_2_R = getCurrentLinkPose("cam_pos");
-    movements::Pose cam_2_SVO = getCurrentGlobalLinkPose("cam_pos");
+    movements::Pose cam_2_SVO = getPose("world","cam_pos", ros::Duration(10.0));
     
     if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
     {
@@ -657,6 +659,27 @@ double YoubotPlanner::getSVOScale()
     Eigen::Vector3d robot_diff = cam_1_R.position - cam_2_R.position;
     robot_distance_sum += robot_diff.norm();
     Eigen::Vector3d svo_diff = cam_1_SVO.position - cam_2_SVO.position;
+    svo_distance_sum += svo_diff.norm();
+    
+    ++nr_of_measurements;
+    
+    // assume first link pose
+    arm_position[1] = j2_angle_1;
+    assumeArmPosition(arm_position);
+    
+    // get state 2
+    cam_1_R = getCurrentLinkPose("cam_pos");
+    cam_1_SVO = getPose("world","cam_pos", ros::Duration(10.0));
+    
+    if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
+    {
+      continue;
+    }
+    
+    // update differences
+    robot_diff = cam_1_R.position - cam_2_R.position;
+    robot_distance_sum += robot_diff.norm();
+    svo_diff = cam_1_SVO.position - cam_2_SVO.position;
     svo_distance_sum += svo_diff.norm();
     
     ++nr_of_measurements;
@@ -1616,6 +1639,32 @@ movements::Pose YoubotPlanner::getEndEffectorPoseFromTF( ros::Duration _max_wait
   return movements::Pose( translation, rotation );
 }
 
+movements::Pose YoubotPlanner::getPose( std::string _target_frame, std::string _source_frame, ros::Duration _wait_time )
+{
+  bool new_tf_available = tf_listener_.waitForTransform( _target_frame,_source_frame, ros::Time::now(), _wait_time );
+  
+  if( !new_tf_available )
+    return movements::Pose();
+  
+  tf::StampedTransform end_effector_pose_tf;
+  geometry_msgs::TransformStamped end_effector_pose_ros;
+  
+  try{
+    tf_listener_.lookupTransform(_target_frame, _source_frame, ros::Time(0), end_effector_pose_tf);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return movements::Pose();
+  }
+  
+  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros  );
+  
+  Eigen::Quaterniond rotation = st_is::geometryToEigen( end_effector_pose_ros.transform.rotation );
+  Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
+  
+  return movements::Pose( translation, rotation );
+}
+
 movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link, ros::Duration _wait_time )
 {
   bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), _wait_time );
@@ -1701,7 +1750,7 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
 
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
-  movements::Pose base_pose_rpf = getCurrentGlobalLinkPose("base_footprint"); // robot (moveit) planning frame /* need to  think about that - changed it to global now!! ->just use the base planning frame variable!*/ //////////////////////////////
+  movements::Pose base_pose_rpf = getPose( base_planning_frame_,"base_footprint" ); // robot (moveit) planning frame /* need to  think about that - changed it to global now!! ->just use the base planning frame variable!*/ //////////////////////////////
   movements::Pose base_pose;
   try
   {
@@ -2215,7 +2264,7 @@ bool YoubotPlanner::setupTFService( std_srvs::Empty::Request& _req, std_srvs::Em
   initializeExtrinsics();
 }
 
-void YoubotPlanner::initializeTF()
+void YoubotPlanner::initializeTF( double _svo_scale )
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
   ros::Time now = ros::Time::now();
@@ -2228,6 +2277,13 @@ void YoubotPlanner::initializeTF()
   tf::StampedTransform t_WI;
   tf_listener_.lookupTransform("world","cam_pos",now,t_WI);
   
+  
+  // setting the scale...
+  tf::Vector3 W_trans_WI = t_WI.getOrigin();
+  double x_new = W_trans_WI.x()*_svo_scale;
+  double y_new = W_trans_WI.y()*_svo_scale;
+  double z_new = W_trans_WI.z()*_svo_scale;
+  t_WI.setOrigin( tf::Vector3(x_new,y_new,z_new) );
   
   tf::Transform t_IA;
   tf::transformMsgToTF(arm2image_,t_IA);

@@ -44,6 +44,6 @@
 	<include file="$(find youbot_moveit)/launch/cam_move_group.launch" />
 	
 	<!-- launch the tf linker which broadcasts static link transforms for completing the tf tree -->
-	<!--<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />-->
-
+	-<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />
+	<node pkg="dense_reconstruction" type="remode_feeder" name="remode_feeder" respawn="false" output="screen" />
 </launch>

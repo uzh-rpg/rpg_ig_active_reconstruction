@@ -25,7 +25,7 @@ namespace dense_reconstruction
 
 RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth_frame ):
   nh_(_n),
-  tf_listener_(_n),
+  tf_listener_(ros::Duration(60)),
   publish_every_xth_frame_(_publish_every_xth_frame),
   publish_count_(0),
   svo_scale_(1.0)
@@ -43,7 +43,7 @@ RemodeFeeder::RemodeFeeder( ros::NodeHandle& _n, unsigned int _publish_every_xth
   
   //image_stream_ = nh_.subscribe( image_topic,1 ,&RemodeFeeder::imageStreamCallback, this ); // first try version
   feeder_ = nh_.advertise<svo_msgs::DenseInputWithFeatures>( remode_input_topic,10 );
-  svo_subscriber_ = nh_.subscribe( svo_topic,1 , &RemodeFeeder::svoCallback, this );
+  svo_subscriber_ = nh_.subscribe( svo_topic,100 , &RemodeFeeder::svoCallback, this );
   set_svo_scale_server_ = nh_.advertiseService("/dense_reconstruction/remode_feeder/set_svo_scale", &RemodeFeeder::setSVOScaleService, this );
   
   // to get poses directly from gazebo
@@ -85,6 +85,10 @@ void RemodeFeeder::imageStreamCallback(  const sensor_msgs::ImageConstPtr& _newI
     msg.max_depth = max_depth_;
     
     feeder_.publish(msg);
+  }
+  else
+  {
+    ROS_ERROR("Exit");
   }
   // else do nothing
 }
@@ -134,8 +138,16 @@ void RemodeFeeder::svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& 
   
   //if(ground_tf_available) // transform here because it would be much more overhead to do it for every point in the point cloud remote publishes
   //{
-    tf::StampedTransform t_OW; // world to origin
-    tf_listener_.lookupTransform("dr_origin","world",now,t_OW);
+    /*tf::StampedTransform t_OW; // world to origin
+    
+    bool tf_available = tf_listener_.waitForTransform( "dr_origin","world", now, ros::Duration(0.03) );
+    
+    if(!tf_available)
+    {
+      return;
+    }
+    
+    tf_listener_.lookupTransform("dr_origin","world",now,t_OW);*/
     
     svo_msgs::DenseInputWithFeatures msg = *_svo_output;
     movements::Pose pose = movements::fromROS(msg.pose);

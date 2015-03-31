@@ -34,6 +34,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <gazebo_msgs/ModelStates.h>
 #include "dense_reconstruction/SetScale.h"
+#include <tf/tfMessage.h>
 
 namespace
 dense_reconstruction{
@@ -55,6 +56,7 @@ public:
   bool loadHEC();
   
   void modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg );
+  void tfCallback( const tf::tfMessageConstPtr& _msg );
   bool setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res );
 private:
   ros::NodeHandle nh_;
@@ -64,6 +66,7 @@ private:
   ros::ServiceServer set_svo_scale_server_;
   
   ros::Subscriber gazebo_state_;
+  ros::Subscriber tf_subscriber_;
   
   // tf broadcaster & listener
   tf::TransformListener tf_listener_;
@@ -87,7 +90,7 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   : nh_(_nh)
   , max_tf_wait_time_(_max_svo_wait_time)
   , tf_up_to_date_(false)
-  , tf_listener_(nh_)
+  , tf_listener_(ros::Duration(30.0))
   , is_setup_(false)
   , use_gazebo_ground_truth_(false)
   , svo_scale_(1.0)
@@ -107,7 +110,10 @@ TFLinker::TFLinker( ros::NodeHandle _nh, ros::Duration _max_svo_wait_time )
   status_answers_ = nh_.advertiseService("/dense_reconstruction/svo_pose_available", &TFLinker::tfUpToDate, this );
   set_svo_scale_server_ = nh_.advertiseService("dense_reconstruction/tf_linker/set_svo_scale", &TFLinker::setSVOScaleService, this );
   
-  gazebo_state_ = nh_.subscribe("/gazebo/model_states",1,&dense_reconstruction::TFLinker::modelStateCallback, this );
+  if( use_gazebo_ground_truth_ )
+    gazebo_state_ = nh_.subscribe("/gazebo/model_states",1,&dense_reconstruction::TFLinker::modelStateCallback, this );
+  else
+    tf_subscriber_ = nh_.subscribe("/tf",100,&TFLinker::tfCallback, this );
 }
 
 void TFLinker::publish()
@@ -122,6 +128,9 @@ void TFLinker::publish()
     {
       dr_origin_is_odom_ = !dr_origin_is_odom_;
     }
+    ros::Time now = ros::Time::now();
+    tf_broadcaster_.sendTransform(tf::StampedTransform(image2arm_, now, "arm_link_5", "cam_pos"));
+    return;
   }
   else
   {
@@ -136,12 +145,15 @@ void TFLinker::publish()
   ros::Time now = ros::Time::now();
   if( use_gazebo_ground_truth_ )
   {
-    
+    // callback does that
   }
   else if( dr_origin_is_odom_ )
-    tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "odom", "dr_origin")); // dr origin to world is the identity if not set otherwise
-  else // tf with svo
   {
+    tf_broadcaster_.sendTransform(tf::StampedTransform(dr_origin2world, now, "odom", "dr_origin")); // dr origin to world is the identity if not set otherwise
+  }
+  /*else // tf with svo
+  {
+    ROS_INFO("Publishing!");
     tf::Transform t_WG = dr_origin2world;
     bool in_time = tf_listener_.waitForTransform( "cam_pos", "world", now, max_tf_wait_time_ );
     if( !in_time )
@@ -156,7 +168,7 @@ void TFLinker::publish()
     
     tf::Transform t_CG = t_CW*t_WG;
     tf_broadcaster_.sendTransform(tf::StampedTransform(t_CG, now, "cam_pos", "dr_origin"));
-  }
+  }*/
   
   tf_broadcaster_.sendTransform(tf::StampedTransform(image2arm_, now, "arm_link_5", "cam_pos"));
   /*
@@ -273,6 +285,26 @@ void TFLinker::modelStateCallback( const gazebo_msgs::ModelStatesConstPtr& _msg 
   
   tf_broadcaster_.sendTransform(tf::StampedTransform(t_GR, ros::Time::now(), "dr_origin", "base_footprint"));
   
+}
+
+void TFLinker::tfCallback( const tf::tfMessageConstPtr& _msg )
+{
+  if( use_gazebo_ground_truth_ || dr_origin_is_odom_ || !is_setup_ )
+  {
+    return;
+  }
+  
+  if( _msg->transforms[0].header.frame_id=="cam_pos" && _msg->transforms[0].child_frame_id=="world" )
+  {
+    tf::StampedTransform t_CW;
+    transformMsgToTF( _msg->transforms[0].transform, t_CW );
+    tf::Vector3 trans_CW = svo_scale_*t_CW.getOrigin();
+    t_CW.setOrigin(trans_CW);
+    
+    tf::Transform t_WG = dr_origin2world_;
+    tf::Transform t_CG = t_CW*t_WG;
+    tf_broadcaster_.sendTransform(tf::StampedTransform(t_CG, _msg->transforms[0].header.stamp, "cam_pos", "dr_origin"));
+  }
 }
 
 bool TFLinker::setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res )
