@@ -191,6 +191,10 @@ private:
   double information_weight_;
   std::vector<double> information_weights_;
   
+  std::random_device rd_;
+  std::mt19937 gen_;
+  std::uniform_int_distribution<unsigned int> distr_;
+  
   bool mark_visited_; /// views marked as already visited won't be taken into account for the next best view calculations
   
   double ray_resolution_x_;

@@ -1,0 +1,4 @@
+% subtracts the first time from all following times in the
+function time_vec = normalizeTime(time_vec_before)
+
+end

@@ -37,6 +37,8 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   ,max_movement_attempts_(3)
   ,mark_visited_(true)
   ,observe_timing_(false)
+  ,gen_(rd_())
+  ,distr_(0,100)
 {
   
   if( !nh_.getParam("/view_planner/data_folder", data_folder_) )
@@ -222,6 +224,7 @@ void ViewPlanner::run()
     for( unsigned int i=0; i<cost.size(); i++ )
     {
       RobotPlanningInterface::MovementCost cost_description;
+      
       View target = view_space_.getView( views_to_consider[i] );
       movementCost( cost_description, current_view_, target );
       
@@ -313,10 +316,11 @@ void ViewPlanner::run()
     // calculate NBV
     
     std::list<unsigned int> nbv_idx_queue;
-    nbv_idx_queue.push_front(0);
     
     if(!random_nbv_)
     {
+      nbv_idx_queue.push_front(0);
+      
       for( unsigned int i=0; i<views_to_consider.size(); ++i )
       {
 	if( cost[i]==-1 )
@@ -339,16 +343,26 @@ void ViewPlanner::run()
     }
     else
     {
+      ROS_INFO("Choosing next view randomly...");
       std::random_device rd;
       std::mt19937 gen(rd()); //mersenne-twister random number generator with random seed
       std::uniform_int_distribution<unsigned int> distr( 0,views_to_consider.size() );
       
-      nbv_idx_queue.push_back( distr(gen) );
-      nbv_idx_queue.push_back( distr(gen) );
+      unsigned int rand_1, rand_2;
+      do
+      {
+	rand_1 = distr_(gen_);
+	rand_2 = distr_(gen_);
+      }while( rand_1 >=views_to_consider.size() || rand_1>=views_to_consider.size() );
+      
+      nbv_idx_queue.push_back( rand_1 );
+      nbv_idx_queue.push_back( rand_2 );
       while( *(nbv_idx_queue.begin()) == *(++nbv_idx_queue.begin()) )
       {
-	*(++nbv_idx_queue.begin()) = distr(gen);
+	*(++nbv_idx_queue.begin()) = views_to_consider[distr(gen)];
       }
+      
+      ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". The random number was "<<rand_1<<"." );
     }
     
     ros::spinOnce();
@@ -588,13 +602,13 @@ void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_
   std::ofstream out(file_name, std::ofstream::trunc);
   
   // print weights
-  out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
+  /*out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
   for( unsigned int i=0; i<metrics_to_use_.size(); ++i )
   {
     out<<"\n"<<metrics_to_use_[i]<<" weight: "<<information_weights_[i];
   }
   out<<"\n\nRetrieved for step: "<<planning_data_.size()<<" (0=first step)";
-  
+  */
   // then line with names
   out<<"\n"<<planning_data_names_[0];
   for( unsigned int i=1; i<planning_data_names_.size(); ++i )
