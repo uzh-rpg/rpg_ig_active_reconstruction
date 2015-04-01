@@ -106,7 +106,7 @@ plot(counter,nrofunknownvoxels.total_score(1:20),plotcolors(5),'LineWidth',2);
 legend(plotnames);
 
 grid on
-xlabel('Reconstruction step');
+xlabel('Reconstruction step [nr]');
 ylabel('Nr of unknown voxels on ray');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,7 +122,7 @@ plot(counter,unknownobjectsidefrontier.total_score(1:20),plotcolors(6),'LineWidt
 legend(plotnames);
 
 grid on
-xlabel('Reconstruction step');
+xlabel('Reconstruction step [nr]');
 ylabel('Unknown objectside frontier score');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,7 +138,7 @@ plot(counter,unknownobjectvolumefrontier.total_score(1:20),plotcolors(7),'LineWi
 legend(plotnames);
 
 grid on
-xlabel('Reconstruction step');
+xlabel('Reconstruction step [nr]');
 ylabel('Unknown objectvolume frontier score');
 
 
@@ -161,10 +161,10 @@ figure
 hold on;
 
 for i=1:length(plotfunctions)
-    plot(counter,plotfunctions(i).totaloccupancycertainty(1:20),plotcolors(i));
+    plot(counter,plotfunctions(i).totaloccupancycertainty(1:20)/40000,plotcolors(i));
 end
 
 legend(plotnames);
 grid on
-xlabel('Reconstruction step');
-ylabel('Sum over the occupancy likelihood of all occupieds');
+xlabel('Reconstruction step [nr]');
+ylabel('Information gain');
