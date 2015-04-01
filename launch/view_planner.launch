@@ -5,24 +5,24 @@
     <param name="data_folder" value="$(find dense_reconstruction)/data/view_planning/" />
     
     <!-- the cost weight should be positive since it is internally counted negative -->
-    <param name="cost_weight" value="0.0" />
+    <param name="cost_weight" value="15000.0" />
     <param name="information_weight" value="1.0" />
     
-    <param name="information_metric/NrOfUnknownVoxels/weight" value="0.0" />
-    <param name="information_metric/AverageUncertainty/weight" value="1.0" />
-    <param name="information_metric/AverageEndPointUncertainty/weight" value="500.0" />
-    <param name="information_metric/UnknownObjectSideFrontier/weight" value="5.0" />
-    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="5.0" />
-    <param name="information_metric/ClassicFrontier/weight" value="1.0" />
-    <param name="information_metric/EndNodeOccupancySum/weight" value="1.0" />
+    <param name="information_metric/NrOfUnknownVoxels/weight" value="0.4" />
+    <param name="information_metric/AverageUncertainty/weight" value="0.0" />
+    <param name="information_metric/AverageEndPointUncertainty/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectSideFrontier/weight" value="200.0" />
+    <param name="information_metric/UnknownObjectVolumeFrontier/weight" value="0.2" />
+    <param name="information_metric/ClassicFrontier/weight" value="0.0" />
+    <param name="information_metric/EndNodeOccupancySum/weight" value="0.0" />
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     
     <param name="information/ray_resolution_x" value="0.01" />
     <param name="information/ray_resolution_y" value="0.01" />
     <param name="information/ray_step_size" value="1" />
-    <param name="information/subwindow_width_percentage" value="1" />
-    <param name="information/subwindow_height_percentage" value="1" />
+    <param name="information/subwindow_width_percentage" value="0.6" />
+    <param name="information/subwindow_height_percentage" value="0.6" />
     <param name="information/min_ray_depth" value="0.05" />
     <param name="information/max_ray_depth" value="3" />
     <param name="information/occupied_passthrough_threshold" value="0" />
