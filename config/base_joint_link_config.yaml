@@ -11,11 +11,11 @@ youbot_base:
   base_name: youbot_base #name of the base, joint values are published as three joint values base_name/x base_name/y base_name/theta, following moveit conventions
   
   pid_pos:
-    p: 3
+    p: 1
     i: 0
     d: 0
   pid_theta:
-    p: 6
+    p: 1
     i: 0
     d: 0
   

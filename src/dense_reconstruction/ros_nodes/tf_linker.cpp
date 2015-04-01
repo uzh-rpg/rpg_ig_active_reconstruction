@@ -216,6 +216,7 @@ bool TFLinker::setWorldPoseRequest( dense_reconstruction::PoseSetter::Request& _
     boost::mutex::scoped_lock scoped_lock(pose_protector_);
     tf::transformMsgToTF( new_world_pose, dr_origin2world_ );
   }
+  ROS_INFO("Setting world pose.");
   _res.success = true;
   is_setup_ = true;
   return true;
@@ -291,6 +292,7 @@ void TFLinker::tfCallback( const tf::tfMessageConstPtr& _msg )
 {
   if( use_gazebo_ground_truth_ || dr_origin_is_odom_ || !is_setup_ )
   {
+    ROS_INFO("Exiting for lack of information.");
     return;
   }
   
@@ -309,6 +311,7 @@ void TFLinker::tfCallback( const tf::tfMessageConstPtr& _msg )
 
 bool TFLinker::setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res )
 {
+  ROS_INFO_STREAM("TFLinker::setSVOScaleService:: Setting new SVO scale: "<<svo_scale_<<".");
   svo_scale_ = _req.scale;
   return true;
 }

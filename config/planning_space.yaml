@@ -13,7 +13,7 @@ planning_space:
     max_angle: 1.45 # [rad] as given by youbot, max angle joint_1 may assume, deactivated if smaller than min, default: 1.45
     nr_of_pos: 1 # total number of positions, including min and max, if 1, min angle is used, default:1
   arm:
-    min_view_distance: 0.6 # [m] closest distance two viewpoints in arm space may have, default: 0.2
+    min_view_distance: 0.3 # [m] closest distance two viewpoints in arm space may have, default: 0.2
     view_resolution: 10 # [pts/m] number of points generated for the arm space grid: The points of this grid are then filtered to fulfill scan_radius_ & arm_min_view_distance_, default:10
   link_5:
     min_angle: 2.9 # [rad] as given by youbot, min angle for joint 5, default: 2.9 ("even") (2.6 is a good alternative)

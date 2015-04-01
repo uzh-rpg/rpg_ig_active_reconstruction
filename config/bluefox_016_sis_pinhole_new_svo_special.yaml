@@ -1,0 +1,15 @@
+cam0:
+  cam_model: Pinhole
+  cam_width: 752
+  cam_height: 480
+  cam_fx: 425.391974081817
+  cam_fy: 426.242423913828
+  cam_cx: 366.443714837012
+  cam_cy: 213.600885097216
+  cam_d0: -0.288902092224342
+  cam_d1: 0.0710277143713427
+  cam_d2: 0.000142836695280059
+  cam_d3: -0.00192059714895184
+  cam_calib_date: '2014-12-22'
+  cam_serial_no: 26803016
+  cam_description: 'Bluefox Camera mvBlueFOX-ML/IGC200wC, Stefan Isler'

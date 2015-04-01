@@ -5,6 +5,7 @@ list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS
   angles
+  brics_actuator
   sensor_msgs
   cv_bridge
   geometry_msgs
@@ -69,7 +70,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv brics_actuator
   DEPENDS opencv opencv2 Eigen
 )
 

@@ -11,7 +11,7 @@
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true" >
 	  
 		<!-- Whether or not ray display messages are published for rviz to visualize the casted rays -->
-		<param name="display_rays" value="false" />
+		<param name="display_rays" value="true" />
 	    
 		<param name="resolution" value="0.005" />
 		
@@ -23,7 +23,7 @@
 		
 		<!-- camera info topic -->
 		<!--<param name="camera_info_topic" value="/camera/left/camera_info" />--><!-- for stereo cam simulation -->
-		<param name="camera_info_topic" value="/camera/camera_info" />
+		<param name="camera_info_topic" value="/bluefox_ros_node/camera_info" />
 		
 		<!--<param name="filter_ground" value="true" />
 		<param name="ground_filter/distance" value="0.1" />

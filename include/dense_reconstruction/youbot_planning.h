@@ -20,6 +20,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/robot_state/robot_state.h>
+#include "brics_actuator/JointPositions.h"
+#include "brics_actuator/JointValue.h"
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
@@ -53,6 +55,7 @@ namespace dense_reconstruction
 class YoubotPlanner: public RobotPlanningInterface
 {
 public:
+  bool no_moveit_;
   
   class SpaceInfo;
   class ViewInfo;
@@ -73,6 +76,10 @@ public:
   
   /// destructor
   ~YoubotPlanner();
+  
+  
+  /** publishes the current command set directly to the youbot using brics actuator commands */
+  void publishCommand( std::vector<double> _joint_positions );
   
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
    * @param _svo_scale  scaling to use for svo transformations
@@ -409,6 +416,7 @@ public:
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
+  ros::Publisher armStatePublisher_; // hack without moveit
   
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;

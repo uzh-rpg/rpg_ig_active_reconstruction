@@ -29,6 +29,8 @@
   <build_depend>octomap_server</build_depend>
   <build_depend>octomap_msgs</build_depend>
   <build_depend>svo_srv</build_depend>
+  <build_depend>brics_actuator</build_depend>
+  
   <run_depend>geometry_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>tf</run_depend>
@@ -45,6 +47,7 @@
   <run_depend>octomap_server</run_depend>
   <run_depend>octomap_msgs</run_depend>
   <run_depend>svo_srv</run_depend>
+  <run_depend>brics_actuator</run_depend>
 
 
 </package>

@@ -8,11 +8,11 @@
 	<!--<param name="cam_topic" value="/camera/image_rect" type="str" />-->
         
         <!-- Camera calibration file -->
-        <rosparam file="$(find dense_reconstruction)/config/gazebo_cam.yaml" />
+        <rosparam file="$(find dense_reconstruction)/config/bluefox_016_sis_pinhole_new.yaml" />
         
 	<!-- Camera calibration file -->
 	<!--<rosparam file="$(find rpg_calib)/cameras/bluefox_016_pinhole.yaml" />-->
-	<param name="calib_file" value="$(find dense_reconstruction)/config/gazebo_cam_svo_special.yaml" />
+	<param name="calib_file" value="$(find dense_reconstruction)/config/bluefox_016_sis_pinhole_new_svo_special.yaml" />
 	
         <!-- Default parameter settings: choose between vo_fast and vo_accurate -->
         <rosparam file="$(find svo_ros)/param/vo_fast.yaml" />

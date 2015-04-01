@@ -17,7 +17,7 @@
   
   
   <!-- send youbot urdf to param server -->
-  <!--<param name="robot_description" command="$(find xacro)/xacro.py '$(find youbot_description)/robots/youbot_with_cam.urdf.xacro'"/>-->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find youbot_description)/robots/youbot_with_cam.urdf.xacro'"/>
 
   <!-- push robot_description to factory and spawn robot in gazebo -->
   <!--<node pkg="gazebo_ros" type="spawn_model" name="spawn_robot" respawn="false" output="screen"
@@ -38,12 +38,12 @@
   <include file="$(find youbot_description)/launch/control/youbot_gripper_control.launch" />-->
   
   <!-- launches nodes for velocity based [twist messages] base controls -->
-  <include file="$(find dense_reconstruction)/launch/base_position_controller.launch" />
+  <!--<include file="$(find dense_reconstruction)/launch/base_position_controller.launch" />-->
   
   <!-- launch MoveIt! -->
   <include file="$(find youbot_moveit)/launch/cam_move_group.launch" />
   
   <!-- launch the tf linker which broadcasts static link transforms for completing the tf tree -->
-  -<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />
+  <!--<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />-->
   <node pkg="dense_reconstruction" type="remode_feeder" name="remode_feeder" respawn="false" output="screen" />
 </launch>

@@ -39,7 +39,10 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,plan_base_in_global_frame_(true)
   ,nr_of_measurements_for_svo_scale_estimate_(3)
   ,setup_tf_for_svo_(true)
+  ,no_moveit_(true)
 {
+  armStatePublisher_ = ros_node_->advertise<brics_actuator::JointPositions>("/arm_1/arm_controller/position_command",100);
+  
   std::string interface_namespace="/youbot_interface";
   data_folder_set_ = ros_node_->getParam(interface_namespace+"/data_folder",data_folder_);
   if( !data_folder_set_ )
@@ -134,6 +137,41 @@ YoubotPlanner::~YoubotPlanner()
 {
   if( init_view_!=nullptr )
     delete init_view_;
+}
+
+
+void YoubotPlanner::publishCommand( std::vector<double> _joint_positions )
+{
+  brics_actuator::JointPositions command;
+  command.poisonStamp.originator = "YoubotPlanner";
+  
+  std::vector<std::string> joint_names(5);
+  joint_names[0] = "arm_joint_1";
+  joint_names[1] = "arm_joint_2";
+  joint_names[2] = "arm_joint_3";
+  joint_names[3] = "arm_joint_4";
+  joint_names[4] = "arm_joint_5";
+  
+  if( _joint_positions.size()!=joint_names.size() )
+  {
+    ROS_ERROR("YoubotPlanner::publishCommand:: sent position command vector has incorrect size and is not being sent.");
+    return;
+  }
+  
+  ros::Time now = ros::Time::now();
+  
+  for( unsigned int i=0; i<joint_names.size(); ++i )
+  {
+    brics_actuator::JointValue toAdd;
+    toAdd.timeStamp = now;
+    toAdd.joint_uri = joint_names[i];
+    toAdd.unit = "rad";
+    toAdd.value = _joint_positions[i];
+    
+    command.positions.push_back(toAdd);
+  }
+  
+  armStatePublisher_.publish(command);
 }
 
 std::string YoubotPlanner::initializePlanningFrame( double _svo_scale )
@@ -620,8 +658,10 @@ double YoubotPlanner::getSVOScale()
   double svo_distance_sum=0;
   double robot_distance_sum=0;
   unsigned int nr_of_measurements = 0;
-  double j2_angle_1 = 1.8;
-  double j2_angle_2 = 0.1;
+  double j2_angle_1 = 1.4;
+  double j2_angle_2 = 0.6;
+  
+  double angle_movement=0.3;
   
   // initialize arm joint angles position vector with current robot state
   std::vector<double> arm_position;
@@ -632,6 +672,7 @@ double YoubotPlanner::getSVOScale()
     // assume first link pose
     arm_position[1] = j2_angle_1;
     assumeArmPosition(arm_position);
+    ros::Duration(3.0).sleep();
     
     // get state 1
     movements::Pose cam_1_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
@@ -645,6 +686,7 @@ double YoubotPlanner::getSVOScale()
     // assume second link pose
     arm_position[1] = j2_angle_2;
     assumeArmPosition(arm_position);
+    ros::Duration(3.0).sleep();
     
     // get state 2
     movements::Pose cam_2_R = getCurrentLinkPose("cam_pos");
@@ -666,6 +708,7 @@ double YoubotPlanner::getSVOScale()
     // assume first link pose
     arm_position[1] = j2_angle_1;
     assumeArmPosition(arm_position);
+    ros::Duration(3.0).sleep();
     
     // get state 2
     cam_1_R = getCurrentLinkPose("cam_pos");
@@ -702,6 +745,37 @@ bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values 
 {
   if( _joint_values.size()!=5 )
     return false;
+  
+  if( no_moveit_ )
+  {
+    std::vector<double> arm_position;
+    getCurrentArmPosition( arm_position );
+    std::vector<double> in_between = arm_position;
+    
+    int nr_of_steps=10;
+    
+    for(unsigned int i=0; i<nr_of_steps; ++i )
+    {
+      double step_0 = _joint_values[0] - arm_position[0];
+      double step_1 = _joint_values[1] - arm_position[1];
+      double step_2 = _joint_values[2] - arm_position[2];
+      double step_3 = _joint_values[3] - arm_position[3];
+      double step_4 = _joint_values[4] - arm_position[4];
+      
+      in_between[0] = in_between[0] + step_0/10;
+      in_between[1] = in_between[1] + step_1/10;
+      in_between[2] = in_between[2] + step_2/10;
+      in_between[3] = in_between[3] + step_3/10;
+      in_between[4] = in_between[4] + step_4/10;
+      
+      publishCommand(in_between);
+      ros::Duration(0.5).sleep();
+    }
+    
+    
+    publishCommand(_joint_values);
+    return true;
+  }
   
   robot_->setJointValueTarget("arm_joint_1", _joint_values[0] );
   robot_->setJointValueTarget("arm_joint_2", _joint_values[1] );
@@ -1751,6 +1825,7 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
   movements::Pose base_pose_rpf = getPose( base_planning_frame_,"base_footprint" ); // robot (moveit) planning frame /* need to  think about that - changed it to global now!! ->just use the base planning frame variable!*/ //////////////////////////////
+  
   movements::Pose base_pose;
   try
   {
@@ -1856,6 +1931,19 @@ bool YoubotPlanner::executeMovementsPath( movements::PoseVector& _path, moveit_m
 
 bool YoubotPlanner::executeMoveItPlan( moveit::planning_interface::MoveGroup::Plan& _plan )
 {
+  if( no_moveit_ )
+  {
+    
+    for( unsigned int i=0; i<_plan.trajectory_.joint_trajectory.points.size(); ++i )
+    {
+      std::vector<double> joint_target = _plan.trajectory_.joint_trajectory.points[i].positions;
+      publishCommand(joint_target);
+      ros::Duration(0.2).sleep();
+    }
+    
+    
+    return true;
+  }
   ros::AsyncSpinner spinner(1);  
   //scene_->unlockSceneRead();   
   spinner.start();
