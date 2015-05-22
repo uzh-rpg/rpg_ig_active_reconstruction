@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   octomap_server
   octomap_msgs
-  svo_srv
   gazebo_msgs
 )
 

@@ -42,7 +42,6 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/robot_planning_interface.h"
 
-#include <svo_srv/SetScale.h>
 
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ActionClient;
 

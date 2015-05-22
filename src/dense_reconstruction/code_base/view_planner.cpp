@@ -58,7 +58,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   }
   if( !nh_.getParam("/view_planner/information_weight", information_weight_) )
   {
-    ROS_WARN("No cost weight was found on parameter server. default '1.0' will be used...");
+    ROS_WARN("No information weight was found on parameter server. default '1.0' will be used...");
     information_weight_ = 1.0;
   }
   
@@ -302,12 +302,21 @@ void ViewPlanner::run()
     ROS_INFO("Calculating next best view...");
     // calculate return for each
     std::vector<double> view_returns(views_to_consider.size(),0);
+    std::vector<double> igs(views_to_consider.size(),0);
+    
+    double accumulated_ig = 0;
+    double accumulated_cost = 0;
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
       if( cost[i]==-1 )
 	continue;
-      
-      view_returns[i] = calculateReturn( cost[i], information[i] );
+      igs[i] = calculateReturn( cost[i], information[i] );
+      accumulated_ig+=igs[i];
+      accumulated_cost+=cost[i];
+    }
+    for( unsigned int i=0; i<view_returns.size(); ++i )
+    {
+      view_returns[i] = information_weight_/accumulated_ig*igs[i]-cost_weight_/accumulated_cost*cost[i];
     }
     ros::spinOnce();
     
@@ -464,10 +473,10 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
   
   for( unsigned int i=0; i<_informations.size(); ++i )
   {
-    view_return += information_weight_*information_weights_[i]*_informations[i];
+    view_return += information_weights_[i]*_informations[i];
   }
   
-  return view_return/(cost_weight_*_cost);
+  return view_return;///(cost_weight_*_cost);
 }
 
 bool ViewPlanner::terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain )
