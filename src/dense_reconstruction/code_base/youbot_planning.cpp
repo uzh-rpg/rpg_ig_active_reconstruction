@@ -40,6 +40,8 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,nr_of_measurements_for_svo_scale_estimate_(3)
   ,setup_tf_for_svo_(true)
   ,no_moveit_(true)
+  ,ignore_base_movement_errors_(true)
+  ,stop_data_retrieval_movement_(false)
 {
   armStatePublisher_ = ros_node_->advertise<brics_actuator::JointPositions>("/arm_1/arm_controller/position_command",100);
   
@@ -545,7 +547,10 @@ bool YoubotPlanner::moveTo( View& _target_view )
   arm_config[3] = (*referenced_view_point).arm_config_.j4_angle_;
   arm_config[4] = (*referenced_view_point).link5_config_.angle_;
   successfully_moved = assumeArmPosition(arm_config);
-    
+  if( !successfully_moved )
+  {
+    ROS_WARN("YoubotPlanner::moveTo:: assumeArmPosition return false, i.e. apparently the commanded arm position could not be assumed.");
+  }
   // move base
   movements::Pose base_target_pos = (*referenced_view_point).base_config_.pose_;
   /*
@@ -555,12 +560,16 @@ bool YoubotPlanner::moveTo( View& _target_view )
       std::cout<<std::endl<<"y:"<<base_target_pos.position.y();
       std::cout<<std::endl<<"z:"<<base_target_pos.position.z();*/
   successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
+  if( !successfully_moved )
+  {
+    ROS_WARN("YoubotPlanner::moveTo:: assume position failure: If this is the first warnign regarding a failed movement, then moveBaseCircularlyTo(...) returned a failure.");
+  }
   
   if( successfully_moved )
     current_view_ = referenced_view_point;
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
-  ROS_INFO("Movement execution finished so far, now waiting for 10 seconds.");
+  ROS_INFO("Movement execution finished so far, now waiting for 2 seconds.");
   ros::Duration(2.0).sleep(); //////////////////////////////////////// just short hack for now since trajectory executions seems to report success too early ////////////////////////
   
   ROS_INFO("Movement successfully executed.");
@@ -666,13 +675,15 @@ double YoubotPlanner::getSVOScale()
   // initialize arm joint angles position vector with current robot state
   std::vector<double> arm_position;
   getCurrentArmPosition( arm_position );
+  arm_position[1] = j2_angle_1;
+  
+  ROS_INFO("Assuming SVO get scale pose 1.");
+  assumeArmPosition(arm_position);
+  ros::Duration(10.0).sleep();
+  ROS_INFO("Okay.");
   
   for( unsigned int i=0; i<nr_of_measurements_for_svo_scale_estimate_; ++i )
   {
-    // assume first link pose
-    arm_position[1] = j2_angle_1;
-    assumeArmPosition(arm_position);
-    ros::Duration(3.0).sleep();
     
     // get state 1
     movements::Pose cam_1_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
@@ -680,20 +691,24 @@ double YoubotPlanner::getSVOScale()
     
     if( cam_1_R==movements::Pose() || cam_1_SVO==movements::Pose() )
     {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
       continue;
     }
     
     // assume second link pose
     arm_position[1] = j2_angle_2;
+    ROS_INFO("Assuming SVO get scale pose 2.");
     assumeArmPosition(arm_position);
-    ros::Duration(3.0).sleep();
+    ros::Duration(10.0).sleep();
+    ROS_INFO("Okay.");
     
     // get state 2
-    movements::Pose cam_2_R = getCurrentLinkPose("cam_pos");
+    movements::Pose cam_2_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
     movements::Pose cam_2_SVO = getPose("world","cam_pos", ros::Duration(10.0));
     
     if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
     {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
       continue;
     }
     
@@ -707,8 +722,10 @@ double YoubotPlanner::getSVOScale()
     
     // assume first link pose
     arm_position[1] = j2_angle_1;
+    ROS_INFO("Assuming SVO get scale pose 1.");
     assumeArmPosition(arm_position);
     ros::Duration(3.0).sleep();
+    ROS_INFO("Okay.");
     
     // get state 2
     cam_1_R = getCurrentLinkPose("cam_pos");
@@ -716,6 +733,7 @@ double YoubotPlanner::getSVOScale()
     
     if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
     {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
       continue;
     }
     
@@ -748,30 +766,37 @@ bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values 
   
   if( no_moveit_ )
   {
+    ROS_INFO("Assuming arm position without MoveIt! using direct position commands.");
     std::vector<double> arm_position;
     getCurrentArmPosition( arm_position );
-    std::vector<double> in_between = arm_position;
+    
+    std::vector<double> in_between;
+    for( unsigned int i=0; i<arm_position.size();i++ )
+    {
+      in_between.push_back( arm_position[i] );
+    }
     
     int nr_of_steps=10;
+    double step_0 = (_joint_values[0] - arm_position[0])/10;
+    double step_1 = (_joint_values[1] - arm_position[1])/10;
+    double step_2 = (_joint_values[2] - arm_position[2])/10;
+    double step_3 = (_joint_values[3] - arm_position[3])/10;
+    double step_4 = (_joint_values[4] - arm_position[4])/10;
     
     for(unsigned int i=0; i<nr_of_steps; ++i )
     {
-      double step_0 = _joint_values[0] - arm_position[0];
-      double step_1 = _joint_values[1] - arm_position[1];
-      double step_2 = _joint_values[2] - arm_position[2];
-      double step_3 = _joint_values[3] - arm_position[3];
-      double step_4 = _joint_values[4] - arm_position[4];
       
-      in_between[0] = in_between[0] + step_0/10;
-      in_between[1] = in_between[1] + step_1/10;
-      in_between[2] = in_between[2] + step_2/10;
-      in_between[3] = in_between[3] + step_3/10;
-      in_between[4] = in_between[4] + step_4/10;
+      in_between[0] = in_between[0] + step_0;
+      in_between[1] = in_between[1] + step_1;
+      ROS_INFO_STREAM("Commanded joint 2 angle: "<<in_between[1]);
+      in_between[2] = in_between[2] + step_2;
+      in_between[3] = in_between[3] + step_3;
+      in_between[4] = in_between[4] + step_4;
       
       publishCommand(in_between);
       ros::Duration(0.5).sleep();
     }
-    
+    ROS_INFO_STREAM("Executed "<<nr_of_steps<<" steps.");
     
     publishCommand(_joint_values);
     return true;
@@ -1911,6 +1936,9 @@ bool YoubotPlanner::executeMovementsTrajectoryOnBase( movements::PoseVector& _pa
   base_trajectory_sender_.sendGoal(traj);
   base_trajectory_sender_.waitForResult();
   
+  if( ignore_base_movement_errors_ ) 
+    return true;
+  
   if (base_trajectory_sender_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     return true;
   else
@@ -1938,7 +1966,14 @@ bool YoubotPlanner::executeMoveItPlan( moveit::planning_interface::MoveGroup::Pl
     {
       std::vector<double> joint_target = _plan.trajectory_.joint_trajectory.points[i].positions;
       publishCommand(joint_target);
-      ros::Duration(0.2).sleep();
+      ros::Duration(0.8).sleep();
+      ros::spinOnce(); // necessary for data retrieval stop
+      
+      if( stop_data_retrieval_movement_ )
+      {
+	stop_data_retrieval_movement_ = false;
+	return true;
+      }
     }
     
     

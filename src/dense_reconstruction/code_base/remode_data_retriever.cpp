@@ -82,6 +82,7 @@ RobotPlanningInterface::ReceiveInfo RemodeDataRetriever::retrieveData()
     
   if( scan.trajectory_.joint_trajectory.points.size()!=0 )
   {
+    ROS_INFO("RemodeDataRetrievalModule: Attempting to execute retrieval trajectory.");
     remode_commander_.publish(START_RECONSTRUCTION);
     remode_has_published_ = false;
     
@@ -138,6 +139,7 @@ bool RemodeDataRetriever::getRetrievalMovement( robot_state::RobotState& _state,
 void RemodeDataRetriever::octomapCallback( const octomap_msgs::OctomapConstPtr& _msg )
 {
   remode_has_published_ = true;
+  robot_interface_->stop_data_retrieval_movement_ = true;
 }
 
 }

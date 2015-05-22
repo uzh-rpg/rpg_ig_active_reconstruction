@@ -120,15 +120,16 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   robot_mover_ = nh_.serviceClient<dense_reconstruction::MoveToOrder>("/dense_reconstruction/robot_interface/move_to");
   
   planning_frame_ = "dr_origin";
-  metrics_to_use_.push_back("NrOfUnknownVoxels");
-  metrics_to_use_.push_back("AverageUncertainty");
-  metrics_to_use_.push_back("AverageEndPointUncertainty");
-  metrics_to_use_.push_back("UnknownObjectSideFrontier");
-  metrics_to_use_.push_back("UnknownObjectVolumeFrontier");
+  metrics_to_use_.push_back("IgnorantTotalIG");
+  metrics_to_use_.push_back("OccupancyAwareTotalIG");
   metrics_to_use_.push_back("ClassicFrontier");
-  metrics_to_use_.push_back("EndNodeOccupancySum");
+  metrics_to_use_.push_back("TotalUnknownIG");
+  metrics_to_use_.push_back("UnknownObjectSideFrontier");
+  metrics_to_use_.push_back("UnknownObjectVolumeIG");
   metrics_to_use_.push_back("TotalOccupancyCertainty");
   metrics_to_use_.push_back("TotalNrOfOccupieds");
+  metrics_to_use_.push_back("TotalNrOfFree");
+  metrics_to_use_.push_back("TotalEntropy");
   metrics_to_use_.push_back("TotalNrOfNodes");
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
@@ -302,12 +303,22 @@ void ViewPlanner::run()
     ROS_INFO("Calculating next best view...");
     // calculate return for each
     std::vector<double> view_returns(views_to_consider.size(),0);
+    std::vector<double> igs(views_to_consider.size(),0);
+    
+    double accumulated_ig = 0;
+    double accumulated_cost = 0;
+    
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
       if( cost[i]==-1 )
 	continue;
-      
-      view_returns[i] = calculateReturn( cost[i], information[i] );
+      igs[i] = calculateReturn( cost[i], information[i] );
+      accumulated_ig+=igs[i];
+      accumulated_cost+=cost[i];
+    }
+    for( unsigned int i=0; i<view_returns.size(); ++i )
+    {
+      view_returns[i] = information_weight_/accumulated_ig*igs[i]-cost_weight_/accumulated_cost*cost[i];
     }
     ros::spinOnce();
     
@@ -464,10 +475,10 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
   
   for( unsigned int i=0; i<_informations.size(); ++i )
   {
-    view_return += information_weight_*information_weights_[i]*_informations[i];
+    view_return += information_weights_[i]*_informations[i];
   }
   
-  return view_return/(cost_weight_*_cost);
+  return view_return;
 }
 
 bool ViewPlanner::terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain )

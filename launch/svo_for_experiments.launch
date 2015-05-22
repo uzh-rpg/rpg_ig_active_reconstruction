@@ -27,6 +27,7 @@
         <param name="T_world_imuinit/qz" value="0" />
         <param name="T_world_imuinit/qw" value="0" />-->
 	
+	
         <param name="detector_threshold_primary" value="10" />
 
         <!-- Dense Input -->
@@ -35,6 +36,7 @@
 	
 	
 	<!-- Initial camera orientation, make it point sideways "look for kfselect_criterion" -->
+	<param name="kfselect_criterion" value="FORWARD" />
 	<!--<param name="init_rx" value="0" />
 	<param name="init_ry" value="1.57" />
 	<param name="init_rz" value="0.00" />-->

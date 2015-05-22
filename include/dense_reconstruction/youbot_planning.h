@@ -450,6 +450,9 @@ private:
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame
   // the radius is calculated automatically by taking the distance between the movement center and the position when the movement is started
   
+  bool ignore_base_movement_errors_; // yea, just what it says
+  bool stop_data_retrieval_movement_; // self-explanatory
+  
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations
   std::string view_planning_frame_; /// planning frame for views
