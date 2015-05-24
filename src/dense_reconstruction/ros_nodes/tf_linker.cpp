@@ -311,8 +311,8 @@ void TFLinker::tfCallback( const tf::tfMessageConstPtr& _msg )
 
 bool TFLinker::setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res )
 {
-  ROS_INFO_STREAM("TFLinker::setSVOScaleService:: Setting new SVO scale: "<<svo_scale_<<".");
   svo_scale_ = _req.scale;
+  ROS_INFO_STREAM("TFLinker::setSVOScaleService:: Setting new SVO scale: "<<svo_scale_<<".");
   return true;
 }
 
