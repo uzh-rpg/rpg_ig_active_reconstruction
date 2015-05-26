@@ -29,6 +29,7 @@ namespace dense_reconstruction
 class ViewSpace
 {
 public:
+  
   ViewSpace();
   
   /** set view space from message, overwrites all previous data */
