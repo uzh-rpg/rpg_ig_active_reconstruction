@@ -679,7 +679,7 @@ double YoubotPlanner::getSVOScale()
   
   ROS_INFO("Assuming SVO get scale pose 1.");
   assumeArmPosition(arm_position);
-  ros::Duration(10.0).sleep();
+  ros::Duration(2.0).sleep();
   ROS_INFO("Okay.");
   
   for( unsigned int i=0; i<nr_of_measurements_for_svo_scale_estimate_; ++i )
@@ -699,7 +699,7 @@ double YoubotPlanner::getSVOScale()
     arm_position[1] = j2_angle_2;
     ROS_INFO("Assuming SVO get scale pose 2.");
     assumeArmPosition(arm_position);
-    ros::Duration(10.0).sleep();
+    ros::Duration(2.0).sleep();
     ROS_INFO("Okay.");
     
     // get state 2
@@ -724,7 +724,7 @@ double YoubotPlanner::getSVOScale()
     arm_position[1] = j2_angle_1;
     ROS_INFO("Assuming SVO get scale pose 1.");
     assumeArmPosition(arm_position);
-    ros::Duration(3.0).sleep();
+    ros::Duration(2.0).sleep();
     ROS_INFO("Okay.");
     
     // get state 2

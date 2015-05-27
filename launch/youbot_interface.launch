@@ -36,6 +36,7 @@
     <param name="initialization/remode/scan_radius" value="0.05" />
     <param name="initialization/remode/control_topic" value="/remode/command" />
     <param name="initialization/remode/octomap_topic" value="/octomap_full" />
+    <param name="initialization/remode/pcl_topic" value="/remode/pointcloud_single" />
     <param name="initialization/remode/max_wait_time" value="60.0" />
     
     <param name="initialization/stereo_camera/octomap_topic" value="/octomap_full" />
