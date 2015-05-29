@@ -949,6 +949,10 @@ void ViewPlanner::commandCallback( const std_msgs::StringConstPtr& _msg )
 
 bool ViewPlanner::saveViewSpaceToFileService( SaveViewSpace::Request& _req, SaveViewSpace::Response& _res )
 {
+  if( view_space_.size()==0)
+    getViewSpace();
+  ROS_INFO_STREAM("Received save view space to file request with path: "<<_req.save_path);
+  ROS_INFO_STREAM("Current view space size is: "<<view_space_.size());
   view_space_.saveToFile( _req.save_path );
   return true;
 }
