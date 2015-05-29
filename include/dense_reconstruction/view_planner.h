@@ -176,6 +176,8 @@ private:
   
   View current_view_;
   
+  unsigned int max_vp_visits_; // how many times a view point may be visited at max
+  
   bool start_;
   bool pause_;
   bool stop_and_print_;
@@ -195,7 +197,7 @@ private:
   std::mt19937 gen_;
   std::uniform_int_distribution<unsigned int> distr_;
   
-  bool mark_visited_; /// views marked as already visited won't be taken into account for the next best view calculations
+  bool mark_visited_; /// if set to true then views marked as already visited won't be taken into account for the next best view calculations
   
   double ray_resolution_x_;
   double ray_resolution_y_;

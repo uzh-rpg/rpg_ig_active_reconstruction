@@ -679,7 +679,7 @@ double YoubotPlanner::getSVOScale()
   
   ROS_INFO("Assuming SVO get scale pose 1.");
   assumeArmPosition(arm_position);
-  ros::Duration(2.0).sleep();
+  ros::Duration(1.0).sleep();
   ROS_INFO("Okay.");
   
   for( unsigned int i=0; i<nr_of_measurements_for_svo_scale_estimate_; ++i )
@@ -699,7 +699,7 @@ double YoubotPlanner::getSVOScale()
     arm_position[1] = j2_angle_2;
     ROS_INFO("Assuming SVO get scale pose 2.");
     assumeArmPosition(arm_position);
-    ros::Duration(2.0).sleep();
+    ros::Duration(1.0).sleep();
     ROS_INFO("Okay.");
     
     // get state 2
@@ -724,7 +724,7 @@ double YoubotPlanner::getSVOScale()
     arm_position[1] = j2_angle_1;
     ROS_INFO("Assuming SVO get scale pose 1.");
     assumeArmPosition(arm_position);
-    ros::Duration(2.0).sleep();
+    ros::Duration(1.0).sleep();
     ROS_INFO("Okay.");
     
     // get state 2
@@ -788,13 +788,12 @@ bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values 
       
       in_between[0] = in_between[0] + step_0;
       in_between[1] = in_between[1] + step_1;
-      ROS_INFO_STREAM("Commanded joint 2 angle: "<<in_between[1]);
       in_between[2] = in_between[2] + step_2;
       in_between[3] = in_between[3] + step_3;
       in_between[4] = in_between[4] + step_4;
       
       publishCommand(in_between);
-      ros::Duration(0.5).sleep();
+      ros::Duration(1).sleep();
     }
     ROS_INFO_STREAM("Executed "<<nr_of_steps<<" steps.");
     

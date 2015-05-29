@@ -39,6 +39,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   ,observe_timing_(false)
   ,gen_(rd_())
   ,distr_(0,100)
+  ,max_vp_visits_(2)
 {
   
   if( !nh_.getParam("/view_planner/data_folder", data_folder_) )
@@ -284,11 +285,11 @@ void ViewPlanner::run()
       
       getViewInformation( information[i], target_positions );
       
-      std::cout<<std::endl;
       for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
       {
 	ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
       }
+      std::cout<<std::endl;
     }
     
     if( observe_timing_ )
@@ -313,15 +314,32 @@ void ViewPlanner::run()
       if( cost[i]==-1 )
 	continue;
       igs[i] = calculateReturn( cost[i], information[i] );
+      ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
       accumulated_ig+=igs[i];
       accumulated_cost+=cost[i];
+      ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
     }
+    
+    double cost_t = cost_weight_;
+    if( accumulated_cost==0 )
+    {
+      accumulated_cost=1;
+      cost_t=0;
+    }
+    
+    double inf_t = information_weight_;
+    if( accumulated_ig==0 )
+    {
+      accumulated_ig=1;
+      inf_t = 0;
+    }
+    
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
-      view_returns[i] = information_weight_/accumulated_ig*igs[i]-cost_weight_/accumulated_cost*cost[i];
+      view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
+      ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
     }
     ros::spinOnce();
-    
     
     
     // calculate NBV
@@ -336,9 +354,16 @@ void ViewPlanner::run()
       {
 	if( cost[i]==-1 )
 	  continue;
+		
+	// skip view if it has been visited too often
+	if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
+	{
+	  ROS_INFO_STREAM("Skipping view that has been visited too often.");
+	  continue;
+	}
 	
 	for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
-	{
+	{	  	  
 	  if( view_returns[i] > view_returns[*it] )
 	  {
 	    nbv_idx_queue.insert(it, i );
@@ -351,6 +376,8 @@ void ViewPlanner::run()
 	  }
 	}
       }
+      
+      ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". Its utility function yielded "<<view_returns[nbv_idx_queue.front()]<<"." );
     }
     else
     {
@@ -374,6 +401,15 @@ void ViewPlanner::run()
       }
       
       ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". The random number was "<<rand_1<<"." );
+    }
+    
+    // no valid NBV left in set of achievable poses
+    if( nbv_idx_queue.size()==0 )
+    {
+      ROS_INFO("No achievable NBV left in view space that has not been visited too often. Stopping NBV procedure and saving data...");
+      
+      // reconstruction is done, end iteration
+      break;
     }
     
     ros::spinOnce();
@@ -421,7 +457,7 @@ void ViewPlanner::run()
       }
       
       // set view as visited!
-      if( successful_movement && mark_visited_ )
+      if( successful_movement )
 	view_space_.setVisited(views_to_consider[nbv_idx_queue.front()]);
       
     }
@@ -460,7 +496,7 @@ void ViewPlanner::pauseIfRequested()
 
 void ViewPlanner::determineAvailableViewSpace( std::vector<unsigned int>& _output )
 {
-  view_space_.getGoodViewSpace(_output);
+  view_space_.getGoodViewSpace(_output,mark_visited_);
 }
 
 double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informations )

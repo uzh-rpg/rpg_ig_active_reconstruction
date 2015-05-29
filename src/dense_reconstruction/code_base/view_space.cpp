@@ -17,6 +17,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "dense_reconstruction/view_space.h"
 #include "boost/foreach.hpp"
 #include <fstream>
+#include "ros/ros.h"
 
 namespace dense_reconstruction
 {
@@ -49,11 +50,11 @@ std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
   return view_space_;
 }
 
-void ViewSpace::getGoodViewSpace( std::vector<unsigned int>& _out )
+void ViewSpace::getGoodViewSpace( std::vector<unsigned int>& _out, bool _ignore_visited )
 {
   for( unsigned int i=0; i<view_space_.size(); ++i )
   {
-    if( view_space_[i].reachable() && view_space_[i].timesVisited()==0 && !view_space_[i].bad() )
+    if( view_space_[i].reachable() && (view_space_[i].timesVisited()==0||!_ignore_visited) && !view_space_[i].bad() )
     {
       _out.push_back(i);
     }
@@ -67,6 +68,15 @@ View ViewSpace::getView( unsigned int _index )
     throw std::invalid_argument("ViewSpace::getView: the given index is out of range");
   }
   return view_space_[_index];
+}
+
+unsigned int ViewSpace::timesVisited( unsigned int _index )
+{
+  if( _index<view_space_.size() )
+  {
+    return view_space_[_index].timesVisited();
+  }
+  return 0;
 }
 
 void ViewSpace::setBad( unsigned int _index )
