@@ -19,6 +19,9 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "utils/math.h"
 #include <fstream>
 #include <sstream>
+#include <list>
+#include <ctime>
+#include <random>
 
 
 namespace dense_reconstruction
@@ -31,10 +34,22 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   ,stop_and_print_(false)
   ,reinit_(false)
   ,abort_loop_(false)
+  ,max_movement_attempts_(3)
+  ,mark_visited_(true)
+  ,observe_timing_(false)
+  ,gen_(rd_())
+  ,distr_(0,100)
+  ,max_vp_visits_(2)
 {
+  
   if( !nh_.getParam("/view_planner/data_folder", data_folder_) )
   {
     ROS_WARN("No data folder was found on parameter server. Planning data will be saved to ROS execution directory...");
+  }
+  
+  if( !nh_.getParam("/view_planner/discard_visited", mark_visited_) )
+  {
+    ROS_WARN("You didn't specify whether to discard already visited view or not. (No '/view_planner/discard_visited' param found on server), by default visited views are discarded.");
   }
   
   if( !nh_.getParam("/view_planner/cost_weight", cost_weight_) )
@@ -88,6 +103,15 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
     ROS_WARN("Undefined parameter '/view_planner/information/occupied_passthrough_threshold'. Default '0' will be used...");
     occupied_passthrough_threshold_ = 0;
   }
+  if( !nh_.getParam("/view_planner/random_nbv", random_nbv_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/random_nbv'. Default 'false' will be used.");
+    random_nbv_ = false;
+  }
+  if( !nh_.getParam("/view_planner/observe_timing", observe_timing_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/observe_timing'. Default 'false' will be used.");
+  }
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
   current_view_retriever_ = nh_.serviceClient<dense_reconstruction::ViewRequest>("/dense_reconstruction/robot_interface/current_view");
@@ -97,15 +121,17 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   robot_mover_ = nh_.serviceClient<dense_reconstruction::MoveToOrder>("/dense_reconstruction/robot_interface/move_to");
   
   planning_frame_ = "dr_origin";
-  metrics_to_use_.push_back("NrOfUnknownVoxels");
-  metrics_to_use_.push_back("AverageUncertainty");
-  metrics_to_use_.push_back("AverageEndPointUncertainty");
-  metrics_to_use_.push_back("UnknownObjectSideFrontier");
-  metrics_to_use_.push_back("UnknownObjectVolumeFrontier");
+  metrics_to_use_.push_back("IgnorantTotalIG");
+  metrics_to_use_.push_back("OccupancyAwareTotalIG");
   metrics_to_use_.push_back("ClassicFrontier");
-  metrics_to_use_.push_back("EndNodeOccupancySum");
+  metrics_to_use_.push_back("TotalUnknownIG");
+  metrics_to_use_.push_back("UnknownObjectSideFrontier");
+  metrics_to_use_.push_back("UnknownObjectVolumeIG");
   metrics_to_use_.push_back("TotalOccupancyCertainty");
   metrics_to_use_.push_back("TotalNrOfOccupieds");
+  metrics_to_use_.push_back("TotalNrOfFree");
+  metrics_to_use_.push_back("TotalEntropy");
+  metrics_to_use_.push_back("TotalNrOfNodes");
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
   {
@@ -130,17 +156,14 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   planning_data_names_.push_back("return_value_mean");
   planning_data_names_.push_back("return_value_stddev");
   planning_data_names_.push_back("cost");
-  planning_data_names_.push_back("NrOfUnknownVoxels");
-  planning_data_names_.push_back("AverageUncertainty");
-  planning_data_names_.push_back("AverageEndPointUncertainty");
-  planning_data_names_.push_back("UnknownObjectSideFrontier");
-  planning_data_names_.push_back("UnknownObjectVolumeFrontier");
-  planning_data_names_.push_back("ClassicFrontier");
-  planning_data_names_.push_back("EndNodeOccupancySum");
-  planning_data_names_.push_back("TotalOccupancyCertainty");
-  planning_data_names_.push_back("TotalNrOfOccupieds");
+  BOOST_FOREACH( auto metric_name, metrics_to_use_ )
+  {
+    planning_data_names_.push_back(metric_name);
+  }
   
   command_ = nh_.subscribe( "/dense_reconstruction/view_planner/command", 100, &ViewPlanner::commandCallback, this );
+  
+  save_view_space_server_ = nh_.advertiseService("/dense_reconstruction/view_planner/view_space_to_file", &ViewPlanner::saveViewSpaceToFileService, this );
 }
 
 void ViewPlanner::run()
@@ -159,6 +182,8 @@ void ViewPlanner::run()
     waitAndSpin(2);
   }
   
+  ROS_INFO_STREAM("The view space has "<<view_space_.size()<<" views.");
+  
   // get current view
   while( !getCurrentView(current_view_) )
   {
@@ -173,8 +198,10 @@ void ViewPlanner::run()
   // enter loop
   do
   {
-    pauseIfRequested();
+    std::vector<double> timing_profiler;
+    ros::Time temp;
     
+    pauseIfRequested();
     
     // retrieve new information
     retrieveDataAndWait();
@@ -184,13 +211,22 @@ void ViewPlanner::run()
     determineAvailableViewSpace( views_to_consider );
     ROS_INFO_STREAM("Nr of  views that are part of the choice: "<<views_to_consider.size() );
     
+    
     // get movement costs
     ROS_INFO("Retrieve movement costs...");
     std::vector<double> cost(views_to_consider.size());
+    std::vector<RobotPlanningInterface::MovementCost> full_cost(views_to_consider.size());
     int achievable_poses_count = 0;
+    
+    if( observe_timing_ )
+    {
+      temp = ros::Time::now();
+    }
+    
     for( unsigned int i=0; i<cost.size(); i++ )
     {
       RobotPlanningInterface::MovementCost cost_description;
+      
       View target = view_space_.getView( views_to_consider[i] );
       movementCost( cost_description, current_view_, target );
       
@@ -203,9 +239,17 @@ void ViewPlanner::run()
       else
       {
 	cost[i] = cost_description.cost;
+	full_cost[i] = cost_description;
 	++achievable_poses_count;
       }
     }
+    
+    if( observe_timing_ )
+    {
+      ros::Duration passed = ros::Time::now() - temp;
+      timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
+    }
+    
     pauseIfRequested();
     
     if( achievable_poses_count==0 )
@@ -221,9 +265,15 @@ void ViewPlanner::run()
     // get expected informations for each
     ROS_INFO("Retrieve information score...");
     std::vector< std::vector<double> > information(views_to_consider.size());
+    
+    if( observe_timing_ )
+    {
+      temp = ros::Time::now();
+    }
+    
     for( unsigned int i=0; i<information.size(); i++ )
     {
-      ROS_INFO_STREAM("Retrieving information score for view candidate "<<i<<"/"<<information.size()<<".");
+      ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
       
       if( cost[i]==-1 )
 	continue;
@@ -235,65 +285,180 @@ void ViewPlanner::run()
       
       getViewInformation( information[i], target_positions );
       
-      std::cout<<std::endl;
       for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
       {
 	ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
       }
+      std::cout<<std::endl;
     }
+    
+    if( observe_timing_ )
+    {
+      ros::Duration passed = ros::Time::now() - temp;
+      timing_profiler.push_back( passed.toSec()/(double)information.size()  );
+    }
+    
     ros::spinOnce();
     pauseIfRequested();
     
     ROS_INFO("Calculating next best view...");
     // calculate return for each
     std::vector<double> view_returns(views_to_consider.size(),0);
+    std::vector<double> igs(views_to_consider.size(),0);
+    
+    double accumulated_ig = 0;
+    double accumulated_cost = 0;
+    
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
       if( cost[i]==-1 )
 	continue;
-      
-      view_returns[i] = calculateReturn( cost[i], information[i] );
+      igs[i] = calculateReturn( cost[i], information[i] );
+      ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
+      accumulated_ig+=igs[i];
+      accumulated_cost+=cost[i];
+      ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
     }
-    ros::spinOnce();
-    // calculate NBV
-    unsigned int nbv_index = 0; // ATTENTION this is the index in the vector here, not the view index in the view space!
-    double highest_return = view_returns[0];
-    double second_highest = view_returns[0];
-
-    for( unsigned int i=0; i<views_to_consider.size(); ++i )
+    
+    double cost_t = cost_weight_;
+    if( accumulated_cost==0 )
     {
-      if( cost[i]==-1 )
-	continue;
-      
-      if( view_returns[i]>highest_return )
-      {
-	nbv_index = i;
-	second_highest = highest_return;
-	highest_return = view_returns[i];
-      }
+      accumulated_cost=1;
+      cost_t=0;
+    }
+    
+    double inf_t = information_weight_;
+    if( accumulated_ig==0 )
+    {
+      accumulated_ig=1;
+      inf_t = 0;
+    }
+    
+    for( unsigned int i=0; i<view_returns.size(); ++i )
+    {
+      view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
+      ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
     }
     ros::spinOnce();
+    
+    
+    // calculate NBV
+    
+    std::list<unsigned int> nbv_idx_queue;
+    
+    if(!random_nbv_)
+    {
+      nbv_idx_queue.push_front(0);
+      
+      for( unsigned int i=0; i<views_to_consider.size(); ++i )
+      {
+	if( cost[i]==-1 )
+	  continue;
+		
+	// skip view if it has been visited too often
+	if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
+	{
+	  ROS_INFO_STREAM("Skipping view that has been visited too often.");
+	  continue;
+	}
+	
+	for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
+	{	  	  
+	  if( view_returns[i] > view_returns[*it] )
+	  {
+	    nbv_idx_queue.insert(it, i );
+	    break;
+	  }
+	  else if( it==(--nbv_idx_queue.end()) )
+	  {
+	    nbv_idx_queue.insert(nbv_idx_queue.end(), i );
+	    break;
+	  }
+	}
+      }
+      
+      ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". Its utility function yielded "<<view_returns[nbv_idx_queue.front()]<<"." );
+    }
+    else
+    {
+      ROS_INFO("Choosing next view randomly...");
+      std::random_device rd;
+      std::mt19937 gen(rd()); //mersenne-twister random number generator with random seed
+      std::uniform_int_distribution<unsigned int> distr( 0,views_to_consider.size() );
+      
+      unsigned int rand_1, rand_2;
+      do
+      {
+	rand_1 = distr_(gen_);
+	rand_2 = distr_(gen_);
+      }while( rand_1 >=views_to_consider.size() || rand_1>=views_to_consider.size() );
+      
+      nbv_idx_queue.push_back( rand_1 );
+      nbv_idx_queue.push_back( rand_2 );
+      while( *(nbv_idx_queue.begin()) == *(++nbv_idx_queue.begin()) )
+      {
+	*(++nbv_idx_queue.begin()) = views_to_consider[distr(gen)];
+      }
+      
+      ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". The random number was "<<rand_1<<"." );
+    }
+    
+    // no valid NBV left in set of achievable poses
+    if( nbv_idx_queue.size()==0 )
+    {
+      ROS_INFO("No achievable NBV left in view space that has not been visited too often. Stopping NBV procedure and saving data...");
+      
+      // reconstruction is done, end iteration
+      break;
+    }
+    
+    ros::spinOnce();
+    
+    
     // data storage...
     ReturnValueInformation return_info;
-    return_info.return_value = highest_return;
-    return_info.winning_margin = highest_return - second_highest;
+    return_info.return_value = view_returns[nbv_idx_queue.front()];
+    return_info.winning_margin = view_returns[nbv_idx_queue.front()] - view_returns[*(++nbv_idx_queue.begin())];
     st_is::StdError return_val_errors(view_returns);
     return_info.return_value_mean = return_val_errors.mean;
     return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
     
-    saveNBVData(views_to_consider[nbv_index], return_info, cost[nbv_index], information[nbv_index] );
+    saveNBVData(views_to_consider[nbv_idx_queue.front()], return_info, cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], &full_cost[nbv_idx_queue.front()].additional_field_names, &full_cost[nbv_idx_queue.front()].additional_fields_values );
+    
+    if( observe_timing_ )
+    {
+      timing_.push_back(timing_profiler);
+    }
+    
+    saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, &full_cost );
     
     ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
     
     // check if termination criteria is fulfilled
-    if( !terminationCriteriaFulfilled(highest_return, cost[nbv_index], information[nbv_index]) )
+    if( !terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()]) )
     {
       // move to this view
-      View nbv = view_space_.getView(views_to_consider[nbv_index]);
-      moveToAndWait(nbv);
+      std::list<unsigned int>::iterator nbv_it = nbv_idx_queue.begin();
+      View nbv = view_space_.getView(views_to_consider[*nbv_it]);
+      bool successful_movement = moveToAndWait(nbv);
+      while( !successful_movement )
+      {
+	ROS_INFO("Choosing next best view instead.");
+	view_space_.setUnReachable(views_to_consider[*nbv_it]);
+	++nbv_it;
+	if( nbv_it==nbv_idx_queue.end() ) // no more view available
+	{
+	  ROS_INFO("No more views available, terminating...");
+	  stop_and_print_ = true;
+	  break;
+	}
+	nbv = view_space_.getView(views_to_consider[*nbv_it]);
+	successful_movement = moveToAndWait(nbv);
+      }
       
       // set view as visited!
-      view_space_.setVisited(views_to_consider[nbv_index]);
+      if( successful_movement )
+	view_space_.setVisited(views_to_consider[nbv_idx_queue.front()]);
       
     }
     else
@@ -331,12 +496,12 @@ void ViewPlanner::pauseIfRequested()
 
 void ViewPlanner::determineAvailableViewSpace( std::vector<unsigned int>& _output )
 {
-  view_space_.getGoodViewSpace(_output);
+  view_space_.getGoodViewSpace(_output,mark_visited_);
 }
 
 double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informations )
 {
-  double view_return = -1*cost_weight_*_cost;
+  double view_return = 0;//-1*cost_weight_*_cost;
   
   if( _informations.size()>information_weights_.size() )
   {
@@ -346,7 +511,7 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
   
   for( unsigned int i=0; i<_informations.size(); ++i )
   {
-    view_return += information_weight_*information_weights_[i]*_informations[i];
+    view_return += information_weights_[i]*_informations[i];
   }
   
   return view_return;
@@ -409,10 +574,12 @@ void ViewPlanner::saveDataToFile()
   
   std::stringstream filename;
   ros::Time now = ros::Time::now();
-  filename << data_folder_<<"planning_data"<<ros::Time::now()<<".data";
+  time_t current_time;
+  time(&current_time);
+  filename << data_folder_<<"planning_data"<<current_time;
   std::string file_name = filename.str();
   
-  std::ofstream out(file_name, std::ofstream::trunc);
+  std::ofstream out(file_name+".data", std::ofstream::trunc);
   
   // print weights
   out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
@@ -435,6 +602,121 @@ void ViewPlanner::saveDataToFile()
     for( unsigned int j=1; j<planning_data_[i].size(); ++j )
     {
       out<<" "<<planning_data_[i][j];
+    }
+  }
+  out.close();
+  
+  if( timing_.size()==0 )
+    return;
+  
+  std::ofstream out2(file_name+"_timing.data", std::ofstream::trunc);
+  out2<<"average_cost_retrieval_time_per_view average_information_retrieval_time_per_view";
+  for( unsigned int i=0; i<timing_.size(); ++i )
+  {
+    out2<<"\n"<<timing_[i][0]<<" "<<timing_[i][1];
+  }
+}
+
+void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs )
+{
+  int number_of_views = _views_to_consider.size();
+  if( number_of_views==0 )
+    return;
+  if( number_of_views != _view_returns.size() ||
+     number_of_views != _costs.size() ||
+     number_of_views != _information_gain.size()
+  )
+  {
+    ROS_ERROR("ViewPlanner::saveCurrentChoiceDataToFile:: Failed because array sizes didn't match.");
+    return;
+  }
+  if( _detailed_costs!=nullptr )
+  {
+    if( _detailed_costs->size()!=number_of_views)
+    {
+      ROS_ERROR("ViewPlanner::saveCurrentChoiceDataToFile:: Failed because size of the _detailed_costs array didn't match the others.");
+      return;
+    }
+  }
+     
+  std::stringstream filename;
+  ros::Time now = ros::Time::now();
+  time_t current_time;
+  time(&current_time);
+  filename << data_folder_<<"all_scores_at_distinct_steps/scores"<<current_time<<".data";
+  std::string file_name = filename.str();
+  
+  std::ofstream out(file_name, std::ofstream::trunc);
+  
+  // print weights
+  /*out<<"cost_weight: "<<cost_weight_<<"\ninformation_weight: "<<information_weight_;
+  for( unsigned int i=0; i<metrics_to_use_.size(); ++i )
+  {
+    out<<"\n"<<metrics_to_use_[i]<<" weight: "<<information_weights_[i];
+  }
+  out<<"\n\nRetrieved for step: "<<planning_data_.size()<<" (0=first step)";
+  */
+  // then line with names
+  out<<"\n"<<planning_data_names_[0];
+  for( unsigned int i=1; i<planning_data_names_.size(); ++i )
+  {
+    out<<" "<<planning_data_names_[i];
+  }
+  
+  // then all values
+  for( unsigned int i=0; i<number_of_views; ++i )
+  {
+    std::vector<double> nbv_data;
+    View nbv = view_space_.getView(_views_to_consider[i]);
+    
+    nbv_data.push_back( now.toSec() );
+    nbv_data.push_back( nbv.pose().position.x() );
+    nbv_data.push_back( nbv.pose().position.y() );
+    nbv_data.push_back( nbv.pose().position.z() );
+    nbv_data.push_back( nbv.pose().orientation.x() );
+    nbv_data.push_back( nbv.pose().orientation.y() );
+    nbv_data.push_back( nbv.pose().orientation.z() );
+    nbv_data.push_back( nbv.pose().orientation.w() );
+    nbv_data.push_back( _view_returns[i] );
+    nbv_data.push_back( 0 );
+    nbv_data.push_back( 0 );
+    nbv_data.push_back( 0 );
+    nbv_data.push_back( _costs[i] );
+    BOOST_FOREACH( auto information, _information_gain[i] )
+    {
+      nbv_data.push_back( information );
+    }
+    
+    if( _detailed_costs!=nullptr )
+    {
+      if( (*_detailed_costs)[i].additional_field_names.size()==(*_detailed_costs)[i].additional_fields_values.size() )
+      {
+	std::vector<double> sorted_costs;
+	unsigned int lowest_additional_field_index=nbv_data.size();
+	for( unsigned int j=0; j<(*_detailed_costs)[i].additional_field_names.size(); ++j )
+	{
+	  unsigned int index = getIndexForAdditionalField((*_detailed_costs)[i].additional_field_names[j]);
+	  if( index<lowest_additional_field_index )
+	    lowest_additional_field_index=index;
+	  if( sorted_costs.size()<=index )
+	  {
+	    sorted_costs.resize( index+1 );
+	  }
+	  sorted_costs[index] = ((*_detailed_costs)[i].additional_fields_values)[j];
+	}
+	for( unsigned int j=lowest_additional_field_index; j<sorted_costs.size(); ++j )
+	{
+	  nbv_data.push_back(sorted_costs[j]);
+	}
+      }
+    }
+    
+    out<<"\n";
+    out<<ros::Time::now().toSec();
+    
+    for( unsigned int j=1; j<nbv_data.size(); ++j )
+    {
+      out<<" "<<nbv_data[j];
     }
   }
   out.close();
@@ -467,15 +749,25 @@ void ViewPlanner::retrieveDataAndWait( double _sec )
   }
 }
 
-void ViewPlanner::moveToAndWait( View& _target_view, double _sec )
+bool ViewPlanner::moveToAndWait( View& _target_view, double _sec )
 {
   bool successfully_moved;
   bool service_succeeded = false;
+  unsigned int attempts = 0;
   do
   {
+    ++attempts;
+    
     service_succeeded = moveTo( successfully_moved, _target_view );
+    
     if( !service_succeeded || !successfully_moved )
     {
+      if( attempts==max_movement_attempts_ )
+      {
+	ROS_INFO_STREAM("moveToAndWait: The service failed or the robot movement has failed "<<attempts<<" times and thus run out of attempts. The commanded view will be marked as unreachable.");
+	return false;
+      }
+      
       ROS_INFO("moveToAndWait: Either the service failed or the robot movement. Trying again in a few...");
       ros::Duration(_sec).sleep();
       ros::spinOnce();
@@ -491,6 +783,7 @@ void ViewPlanner::moveToAndWait( View& _target_view, double _sec )
   {
     ROS_INFO("Robot movement service reported successful movement.");
   }
+  return true;
 }
 
 unsigned int ViewPlanner::getIndexForAdditionalField( std::string _name )
@@ -654,5 +947,14 @@ void ViewPlanner::commandCallback( const std_msgs::StringConstPtr& _msg )
   }
 }
 
+bool ViewPlanner::saveViewSpaceToFileService( SaveViewSpace::Request& _req, SaveViewSpace::Response& _res )
+{
+  if( view_space_.size()==0)
+    getViewSpace();
+  ROS_INFO_STREAM("Received save view space to file request with path: "<<_req.save_path);
+  ROS_INFO_STREAM("Current view space size is: "<<view_space_.size());
+  view_space_.saveToFile( _req.save_path );
+  return true;
+}
 
 }
