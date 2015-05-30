@@ -59,7 +59,7 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   }
   if( !nh_.getParam("/view_planner/information_weight", information_weight_) )
   {
-    ROS_WARN("No cost weight was found on parameter server. default '1.0' will be used...");
+    ROS_WARN("No information weight was found on parameter server. default '1.0' will be used...");
     information_weight_ = 1.0;
   }
   
@@ -308,7 +308,7 @@ void ViewPlanner::run()
     
     double accumulated_ig = 0;
     double accumulated_cost = 0;
-    
+
     for( unsigned int i=0; i<view_returns.size(); ++i )
     {
       if( cost[i]==-1 )
