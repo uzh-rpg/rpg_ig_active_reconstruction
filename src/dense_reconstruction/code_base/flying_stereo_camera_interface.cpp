@@ -136,6 +136,7 @@ RobotPlanningInterface::ReceiveInfo FlyingStereoCameraInterface::retrieveData()
 
 RobotPlanningInterface::MovementCost FlyingStereoCameraInterface::movementCost( View& _target_view )
 {
+  
   RobotPlanningInterface::MovementCost cost;
   cost.cost = 0;  
   cost.exception = RobotPlanningInterface::MovementCost::NONE;
@@ -144,8 +145,14 @@ RobotPlanningInterface::MovementCost FlyingStereoCameraInterface::movementCost( 
 
 RobotPlanningInterface::MovementCost FlyingStereoCameraInterface::movementCost( View& _start_view, View& _target_view, bool _fill_additional_information )
 {
+  movements::Pose start_view = _start_view.pose();
+  movements::Pose target_view = _target_view.pose();
+  
+  Eigen::Vector3d dist_vec = target_view.position - start_view.position;
+  
+  
   RobotPlanningInterface::MovementCost cost;
-  cost.cost = 0;  
+  cost.cost = dist_vec.norm();  
   return cost;
 }
 

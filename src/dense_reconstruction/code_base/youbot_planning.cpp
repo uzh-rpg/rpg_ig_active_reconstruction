@@ -26,6 +26,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <geometry_msgs/Pose2D.h>
 #include <movements/circular_ground_path.h>
 #include "dense_reconstruction/PoseSetter.h"
+#include "dense_reconstruction/SetScale.h"
 #include "dense_reconstruction/remode_data_retriever.h"
 #include "dense_reconstruction/stereo_camera_data_retriever.h"
 
