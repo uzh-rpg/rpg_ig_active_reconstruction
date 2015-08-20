@@ -57,6 +57,8 @@ public:
   /** get the associated data */
   boost::shared_ptr<ViewInfo>& associatedData();
   
+  unsigned int index; /// to use if the views are indexed
+  
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
   movements::Pose pose_; /// the pose...

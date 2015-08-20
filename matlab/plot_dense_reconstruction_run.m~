@@ -1,0 +1,59 @@
+clear all;
+close all;
+
+A = importdata('../data/view_planning/flying_stereo_cam_data/information_score_tests/AverageEndPointUncertainty/planning_data1427694255.data',' ',1);
+averageendpointuncertainty = namedstructure(A);
+A = importdata('../data/view_planning/flying_stereo_cam_data/information_score_tests/AverageUncertainty/planning_data1427689366.data',' ',1);
+averageuncertainty = namedstructure(A);
+A = importdata('../data/view_planning/flying_stereo_cam_data/information_score_tests/ClassicFrontier/planning_data1427737352.data',' ',1);
+classicfrontier = namedstructure(A);
+A = importdata('../data/view_planning/flying_stereo_cam_data/information_score_tests/EndNodeOccupancySum/planning_data1427741013.data',' ',1);
+endnodeoccupancysum = namedstructure(A);
+
+plotnames = {'Average end point uncertainty','Average uncertainty','Classic frontier','End node occupancy sum'};
+
+plotfunctions(1) = averageendpointuncertainty;
+plotfunctions(1) = averageuncertainty;
+plotfunctions(1) = classicfrontier;
+plotfunctions(1) = averageendpointuncertainty;
+
+figure
+hold on;
+
+counter = 1:1:20;
+plot(counter,averageendpointuncertainty.total_score(1:20),'b','LineWidth',2);
+plot(counter,averageuncertainty.averageendpointuncertainty,'m');
+plot(counter,classicfrontier.averageendpointuncertainty,'c');
+plot(counter,endnodeoccupancysum.averageendpointuncertainty(1:20),'r');
+
+legend(plotnames);
+
+grid on
+xlabel('Reconstruction step');
+ylabel('Average end point uncertainty');
+
+% nr of occupieds plot
+figure
+hold on;
+plot(counter,averageendpointuncertainty.totalnrofoccupieds(1:20),'b');
+plot(counter,averageuncertainty.totalnrofoccupieds,'m');
+plot(counter,classicfrontier.totalnrofoccupieds,'c');
+plot(counter,endnodeoccupancysum.totalnrofoccupieds(1:20),'r');
+
+legend(plotnames);
+grid on
+xlabel('reconstruction step');
+ylabel('Nr of occupieds');
+
+% totaloccupancycertainty plot
+figure
+hold on;
+plot(counter,averageendpointuncertainty.totaloccupancycertainty(1:20),'b');
+plot(counter,averageuncertainty.totaloccupancycertainty,'m');
+plot(counter,classicfrontier.totaloccupancycertainty,'c');
+plot(counter,endnodeoccupancysum.totaloccupancycertainty(1:20),'r');
+
+legend(plotnames);
+grid on
+xlabel('reconstruction step');
+ylabel('Sum over the certainty of all occupieds');

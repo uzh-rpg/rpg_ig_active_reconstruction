@@ -21,6 +21,7 @@ namespace dense_reconstruction
   
 std_msgs::String RemodeDataRetriever::START_RECONSTRUCTION;
 std_msgs::String RemodeDataRetriever::STOP_AND_SMOOTH;
+std_msgs::String RemodeDataRetriever::SET_IDLE;
 
 
 RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::string _youbot_interface_namespace )
@@ -28,13 +29,14 @@ RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::
 {
   START_RECONSTRUCTION.data="SET_NEXT_FRAME_IS_REFERENCE";
   STOP_AND_SMOOTH.data="SMOOTH_AND_STOP_UPDATING";
+  SET_IDLE.data="SET_IDLE";
   
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/scan_radius",scanning_radius_) )
   {
     ROS_WARN_STREAM("RemodeDataRetriever:: No scan radius was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/scan_radius"<<"'), the default (0.05m) will be used.");
     scanning_radius_=0.05;
   }
-  std::string remode_control_topic, octomap_topic;
+  std::string remode_control_topic, octomap_topic, pcl_topic;
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/control_topic",remode_control_topic) )
   {
     ROS_WARN_STREAM("RemodeDataRetriever:: No control topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/control_topic"<<"'), the default ('/remode/command') will be used.");
@@ -42,8 +44,13 @@ RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::
   }
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/octomap_topic",octomap_topic) )
   {
-    ROS_WARN_STREAM("RemodeDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/octomap_topic"<<"'), the default ('/remode/pointcloud') will be used.");
-    octomap_topic="/remode/pointcloud";
+    ROS_WARN_STREAM("RemodeDataRetriever:: No octomap topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/octomap_topic"<<"'), the default ('/octomap_full') will be used.");
+    octomap_topic="/octomap_full";
+  }
+  if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/pcl_topic",pcl_topic) )
+  {
+    ROS_WARN_STREAM("RemodeDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/remode/pcl_topic"<<"'), the default ('/remode/pointcloud_single') will be used.");
+    octomap_topic="/remode/pointcloud_single";
   }
   double max_wait_time;
   if( !robot_interface_->ros_node_->getParam("/"+_youbot_interface_namespace+"/initialization/remode/max_wait_time",max_wait_time) )
@@ -57,8 +64,10 @@ RemodeDataRetriever::RemodeDataRetriever( YoubotPlanner* _robot_interface, std::
   }
   
   remode_has_published_=false;
+  octomap_has_published_ = false;
   remode_commander_ = robot_interface_->ros_node_->advertise<std_msgs::String>( remode_control_topic, 1 );
   octomap_topic_subsriber_ = robot_interface_->ros_node_->subscribe( octomap_topic,1, &dense_reconstruction::RemodeDataRetriever::octomapCallback, this );
+  remode_topic_subscriber_ = robot_interface_->ros_node_->subscribe( pcl_topic,1, &dense_reconstruction::RemodeDataRetriever::remodeCallback, this );
 }
 
 std::string RemodeDataRetriever::movementConfigurationDescription()
@@ -79,23 +88,36 @@ RobotPlanningInterface::ReceiveInfo RemodeDataRetriever::retrieveData()
   
   moveit::planning_interface::MoveGroup::Plan scan;
   robot_interface_->getFullMotionPlan( *(robot_interface_->current_view_), scan );
+  int max_execution_runs = 3;
+  int current_run = 0;
     
   if( scan.trajectory_.joint_trajectory.points.size()!=0 )
   {
+    ROS_INFO("RemodeDataRetrievalModule: Attempting to execute retrieval trajectory.");
     remode_commander_.publish(START_RECONSTRUCTION);
     remode_has_published_ = false;
+    octomap_has_published_=false;
     
     robot_interface_->executeMoveItPlan( scan );
     
-    remode_commander_.publish(STOP_AND_SMOOTH);
+    //remode_commander_.publish(STOP_AND_SMOOTH);
     
     ros::Time publish_time = ros::Time::now();
-    while( !remode_has_published_ && robot_interface_->ros_node_->ok() ) // wait for remode to publish
+    while( !octomap_has_published_ && !remode_has_published_ && robot_interface_->ros_node_->ok() ) // wait for remode to publish
     {
       if( ros::Time::now() > (publish_time+max_remode_wait_time_) )
       {
-	ROS_WARN("No data retrieved in time.");
-	break; // no data received, waited long enough
+	if( current_run>=max_execution_runs )
+	{
+	  ROS_WARN("No data retrieved in time.");
+	  break; // no data received, waited long enough
+	}
+	else
+	{
+	  current_run++;
+	  robot_interface_->executeMoveItPlan( scan );
+	  publish_time = ros::Time::now();
+	}
       }
       ros::Duration(0.005).sleep();
       ros::spinOnce();
@@ -137,7 +159,14 @@ bool RemodeDataRetriever::getRetrievalMovement( robot_state::RobotState& _state,
 
 void RemodeDataRetriever::octomapCallback( const octomap_msgs::OctomapConstPtr& _msg )
 {
+  octomap_has_published_ = true;
+}
+
+void RemodeDataRetriever::remodeCallback( const sensor_msgs::PointCloud2::ConstPtr& _remode_cloud )
+{
   remode_has_published_ = true;
+  robot_interface_->stop_data_retrieval_movement_ = true;
+  remode_commander_.publish(SET_IDLE);
 }
 
 }

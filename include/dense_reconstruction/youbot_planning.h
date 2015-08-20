@@ -20,6 +20,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <moveit/move_group_interface/move_group.h>
 #include <moveit/planning_scene_monitor/planning_scene_monitor.h>
 #include <moveit/robot_state/robot_state.h>
+#include "brics_actuator/JointPositions.h"
+#include "brics_actuator/JointValue.h"
 
 #include <Eigen/Core>
 #include <Eigen/StdVector>
@@ -42,8 +44,6 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/robot_planning_interface.h"
 
-#include <svo_srv/SetScale.h>
-
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> ActionClient;
 
 namespace dense_reconstruction
@@ -53,6 +53,7 @@ namespace dense_reconstruction
 class YoubotPlanner: public RobotPlanningInterface
 {
 public:
+  bool no_moveit_;
   
   class SpaceInfo;
   class ViewInfo;
@@ -74,9 +75,14 @@ public:
   /// destructor
   ~YoubotPlanner();
   
+  
+  /** publishes the current command set directly to the youbot using brics actuator commands */
+  void publishCommand( std::vector<double> _joint_positions );
+  
   /** returns the name of the global planning frame (currently "dr_origin" for 'dense reconstruction origin) and does all calculations needed in order to set up the tf tree for that frame, e.g. initialize SVO, save transformation from SVO frame (world) to (dr_origin) etc.
+   * @param _svo_scale  scaling to use for svo transformations
    */
-  virtual std::string initializePlanningFrame();
+  virtual std::string initializePlanningFrame( double _svo_scale = 1.0 );
   
   /** if at least one of the planning space parameters is set on the parameter server,
    * this function initializes the planning frame
@@ -293,6 +299,11 @@ public:
    */
   movements::Pose getEndEffectorPoseFromTF( ros::Duration _max_wait_time= ros::Duration(5.0) );
   
+  /**
+   * loads the transform between the two given frames
+   */
+  movements::Pose getPose( std::string _target_frame, std::string _source_frame, ros::Duration _wait_time = ros::Duration(3.0) );
+  
   /** loads pose of link _link relative to the robot (moveit) planning frame (using tf, not moveit)
    * That is transform to transforms entities in _link frame to the planning frame
    */
@@ -364,8 +375,10 @@ public:
    */
   void setEndEffectorPlanningFrame( std::string _name );
   
-  /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf */
-  void initializeTF();
+  /** Attempts to set up the tf structure in order to combine the svo and robot trees. The origin is currently equal to the odom origin, a fixed transform is being setup between the svo frame and the dr_origin frame by using the transform between one SVO pose at startup and the robot tree, waits until SVO cam_pos is available on /tf
+   * @param _svo_scale  scaling to use for svo transformations
+   */
+  void initializeTF( double _svo_scale = 1.0 );
   
   /** attempts to load the initialization trajectory from file init_trajectory in data folder */
   bool loadInitTrajectory( boost::shared_ptr< std::vector< Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > > _trajectory );
@@ -401,6 +414,7 @@ public:
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 private:
+  ros::Publisher armStatePublisher_; // hack without moveit
   
   ros::NodeHandle* ros_node_;
   ros::ServiceClient eye_client_;
@@ -433,6 +447,9 @@ private:
   double scan_radius_; // for now...
   movements::Pose base_movement_center_; // center around which the base moves in the base_controller control frame
   // the radius is calculated automatically by taking the distance between the movement center and the position when the movement is started
+  
+  bool ignore_base_movement_errors_; // yea, just what it says
+  bool stop_data_retrieval_movement_; // self-explanatory
   
   std::string planning_group_; // the group for which planning is done
   std::string base_planning_frame_; /// relative base frame for end effector calculations

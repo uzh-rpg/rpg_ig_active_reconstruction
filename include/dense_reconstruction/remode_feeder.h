@@ -27,6 +27,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <tf/transform_listener.h>
 #include <movements/core>
 #include <gazebo_msgs/LinkStates.h>
+#include "dense_reconstruction/SetScale.h"
+#include "dense_reconstruction/Booleans.h"
 
 namespace dense_reconstruction
 {
@@ -53,17 +55,30 @@ public:
   
   /** svo callback function */
   void svoCallback( const svo_msgs::DenseInputWithFeaturesConstPtr& _svo_output );
+  
+  /**
+   * service to set the scale to apply to the svo output
+   */
+  bool setSVOScaleService( SetScale::Request& _req, SetScale::Response& _res );
+  
+  /**
+   * turns remode feeding on and off
+   */
 private:
   ros::NodeHandle nh_;
   ros::Publisher feeder_;
   ros::Subscriber image_stream_;
   ros::Subscriber svo_subscriber_;
+  ros::ServiceServer start_feeding_server_;;
+  ros::ServiceServer set_svo_scale_server_;
   
   tf::TransformListener tf_listener_;
   //ros::Subscriber svo_; // not used yet would be used e.g. for features
   
   std::string world_frame_;
   std::string camera_frame_;
+  
+  double svo_scale_;
   
   double min_depth_; // for remode
   double max_depth_; // for remode

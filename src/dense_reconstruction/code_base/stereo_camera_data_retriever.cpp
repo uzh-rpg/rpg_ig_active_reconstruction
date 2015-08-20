@@ -21,8 +21,7 @@ namespace dense_reconstruction
 
 
 StereoCameraDataRetriever::StereoCameraDataRetriever( YoubotPlanner* _robot_interface, std::string _youbot_interface_namespace )
-  :robot_interface_(_robot_interface)
-  ,republish_(false)
+  :republish_(false)
 {
   std::string  octomap_topic, pcl_in_topic, pcl_out_topic;
   if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/octomap_topic",octomap_topic) )

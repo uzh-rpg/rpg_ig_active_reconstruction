@@ -18,6 +18,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/youbot_planning.h"
 #include "octomap_msgs/Octomap.h"
+#include <sensor_msgs/PointCloud2.h>
 
 namespace dense_reconstruction
 {
@@ -58,18 +59,22 @@ public:
   virtual bool getRetrievalMovement( robot_state::RobotState& _state, movements::KinematicMovementDescription* _retrieval_movement, movements::KinematicMovementDescription::PathInfo* _additional_info );
   
   void octomapCallback( const octomap_msgs::OctomapConstPtr& _msg );
+  void remodeCallback( const sensor_msgs::PointCloud2::ConstPtr& _remode_cloud );
 private:
   YoubotPlanner* robot_interface_;
   double scanning_radius_; /// max radius of the scanning spirals default = 0.05
   
-  ros::Subscriber octomap_topic_subsriber_; /// to check whether remode has published
+  ros::Subscriber octomap_topic_subsriber_; /// to check whether octomap has published
+  ros::Subscriber remode_topic_subscriber_; /// to check whether remode has published
   ros::Publisher remode_commander_; /// interface to send commands to Remode
   
+  bool octomap_has_published_; /// set by callback function when octomap has published data
   bool remode_has_published_; /// set by callback function if remode data was published
   ros::Duration max_remode_wait_time_; ///max time to wait for remode to publish before receiving data assumes that it failed
   
   static std_msgs::String START_RECONSTRUCTION; /// string message commands for remode
   static std_msgs::String STOP_AND_SMOOTH; /// string message commands for remode
+  static std_msgs::String SET_IDLE; /// string message commands for remode
 };
 
 }

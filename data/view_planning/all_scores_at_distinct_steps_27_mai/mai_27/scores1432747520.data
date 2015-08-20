@@ -1,0 +1,6 @@
+
+time pos_x pos_y pos_z rot_x rot_y rot_z rot_w return_value winning_margin return_value_mean return_value_stddev cost IgnorantTotalIG OccupancyAwareTotalIG ClassicFrontier TotalUnknownIG UnknownObjectSideFrontier UnknownObjectVolumeIG TotalOccupancyCertainty TotalNrOfOccupieds TotalNrOfFree TotalEntropy TotalNrOfNodes base_distance_cost arm_distance_cost energy_cost
+1.43275e+09 0.748117 0.823299 0.201752 0.696496 0.0537758 -0.0208131 0.71524 -nan 0 0 0 1.04849 0 0 283 0 93 0 22303.4 36218 648285 357977 827981 0.98476 0.254916 7
+1.43275e+09 1.0096 0.835403 0.44202 0.467737 0.530533 -0.496117 0.503612 -nan 0 0 0 0.98476 0 0 102 0 20 0 22303.4 36218 648285 357977 827981 0.98476 0 4
+1.43275e+09 0.239732 0.404052 0.201752 0.622899 0.31622 0.254482 0.668761 -nan 0 0 0 1.91673 0 0 303 0 121 0 22303.4 36218 648285 357977 827981 1.853 0.254916 7
+1.43275e+09 0.416071 0.597509 0.44202 0.229106 0.669144 -0.265628 0.655133 -nan 0 0 0 1.853 0 0 268 0 88 0 22303.4 36218 648285 357977 827981 1.853 0 4

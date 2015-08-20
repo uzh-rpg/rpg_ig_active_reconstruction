@@ -5,6 +5,7 @@ list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS
   angles
+  brics_actuator
   sensor_msgs
   cv_bridge
   geometry_msgs
@@ -18,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   octomap_server
   octomap_msgs
-  svo_srv
+  gazebo_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,6 +56,9 @@ add_service_files(
   RetrieveData.srv
   MovementCostCalculation.srv
   MoveToOrder.srv
+  SaveViewSpace.srv
+  SetScale.srv
+  Booleans.srv
 )
 
 generate_messages(
@@ -65,7 +69,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv brics_actuator
   DEPENDS opencv opencv2 Eigen
 )
 
@@ -108,6 +112,26 @@ target_link_libraries(youbot_interface
 )
 
 add_dependencies(youbot_interface
+ ${catkin_EXPORTED_TARGETS}
+)
+
+
+add_executable(flying_stereo_camera_interface
+  src/dense_reconstruction/ros_nodes/flying_stereo_camera_interface_node.cpp
+  src/dense_reconstruction/code_base/flying_stereo_camera_interface.cpp
+  src/utils/ros_eigen.cpp
+  ${movement_sources}
+  ${DENSE_RECONSTRUCTION_BASE_SRC}
+  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
+)
+
+target_link_libraries(flying_stereo_camera_interface
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  movements
+)
+
+add_dependencies(flying_stereo_camera_interface
  ${catkin_EXPORTED_TARGETS}
 )
 

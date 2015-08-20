@@ -46,6 +46,7 @@ View::View( ViewMsg& _msg )
   visited_ = _msg.visited;
   additional_fields_names_ = _msg.associated_names;
   additional_fields_values_ = _msg.associated_values;
+  index = _msg.index;
 }
 
 ViewMsg View::toMsg()
@@ -55,8 +56,10 @@ ViewMsg View::toMsg()
   msg.source_frame = source_frame_;
   msg.is_bad = is_bad_;
   msg.visited = visited_;
+  msg.is_reachable = is_reachable_;
   msg.associated_names = additional_fields_names_;
   msg.associated_values = additional_fields_values_;
+  msg.index = index;
   return msg;
 }
 

@@ -1,0 +1,22 @@
+% shows the time used to retrieve the infromation scores (only for one
+% simulation run though)
+
+clear all;
+close all;
+
+A = importdata('../data/view_planning/youbot_simulation/cost_only/planning_data1427818423_timing.data',' ',1);
+B = importdata('../data/view_planning/youbot_simulation/cost_only/planning_data1427818423.data',' ',1);
+
+reconstruction_data = namedstructure(B);
+average_information_retrieval_time_per_view = A.data(:,
+
+figure
+hold on;
+
+
+%plot(counter,averageendpointuncertainty.total_score(1:20),'b');
+
+
+grid on
+xlabel('Average information score retrieval time per view [s]');
+ylabel('Nr of nodes in octomap.');

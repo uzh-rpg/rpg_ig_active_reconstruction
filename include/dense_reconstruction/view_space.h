@@ -29,24 +29,36 @@ namespace dense_reconstruction
 class ViewSpace
 {
 public:
+  
   ViewSpace();
   
   /** set view space from message, overwrites all previous data */
   void fromMsg( const ViewSpaceMsg& _msg );
+  
+  /** creates a view space msg with the content of the view space
+   */
+  ViewSpaceMsg toMsg();
   
   /** returns all view points in the view space as a vector 
    */
   std::vector<View, Eigen::aligned_allocator<View> > getViewSpace();
   
   /** returns indexes of all view points in the view space as a vector that are reachable, have never been visited and are not "bad"
+   * @param _ignore_visited whether already visited views are left out of the "good viewspace" or not
    */
-  void getGoodViewSpace( std::vector<unsigned int>& _out );
+  void getGoodViewSpace( std::vector<unsigned int>& _out, bool _ignore_visited=true );
   
   /**
    * returns the view corresponding to index _index.
    * @throws std::invalid_argument if _index is invalid
    */
   View getView( unsigned int _index );
+  
+  /**
+   * returns how many times the view with index _index has already been visited
+   * @param _index view index
+   */
+  unsigned int timesVisited( unsigned int _index );
   
   void setBad( unsigned int _index );
   void setGood( unsigned int _index );
@@ -76,6 +88,16 @@ public:
    * @param _sub_space vector to fill with the results
    */
   void getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space );
+  
+  /**
+   * saves the poses in the view space to file
+   */
+  void saveToFile( std::string _filename );
+  
+  /**
+   * loads poses from file
+   */
+  void loadFromFile( std::string _filename );
   
 private:
   std::vector<View, Eigen::aligned_allocator<View> > view_space_;

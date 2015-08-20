@@ -26,6 +26,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <geometry_msgs/Pose2D.h>
 #include <movements/circular_ground_path.h>
 #include "dense_reconstruction/PoseSetter.h"
+#include "dense_reconstruction/SetScale.h"
 #include "dense_reconstruction/remode_data_retriever.h"
 #include "dense_reconstruction/stereo_camera_data_retriever.h"
 
@@ -39,14 +40,19 @@ YoubotPlanner::YoubotPlanner( ros::NodeHandle* _n )
   ,plan_base_in_global_frame_(true)
   ,nr_of_measurements_for_svo_scale_estimate_(3)
   ,setup_tf_for_svo_(true)
+  ,no_moveit_(true)
+  ,ignore_base_movement_errors_(true)
+  ,stop_data_retrieval_movement_(false)
 {
+  armStatePublisher_ = ros_node_->advertise<brics_actuator::JointPositions>("/arm_1/arm_controller/position_command",100);
+  
   std::string interface_namespace="/youbot_interface";
   data_folder_set_ = ros_node_->getParam(interface_namespace+"/data_folder",data_folder_);
   if( !data_folder_set_ )
     ROS_WARN("No data folder was set on parameter server. Precomputed arm configurations will not be loaded or stored.");
   
   std::string data_module_type;
-  if( !ros_node_->getParam(interface_namespace+"/data_retreiver_type",data_module_type) )
+  if( !ros_node_->getParam(interface_namespace+"/data_retriever_type",data_module_type) )
   {
     ROS_WARN_STREAM("YoubotPlanner::No data retreiver type set on '"<<interface_namespace<<"/data_retreiver_type"<<"', using default 'remode'.");
     data_module_type = "remode";
@@ -136,12 +142,47 @@ YoubotPlanner::~YoubotPlanner()
     delete init_view_;
 }
 
-std::string YoubotPlanner::initializePlanningFrame()
+
+void YoubotPlanner::publishCommand( std::vector<double> _joint_positions )
+{
+  brics_actuator::JointPositions command;
+  command.poisonStamp.originator = "YoubotPlanner";
+  
+  std::vector<std::string> joint_names(5);
+  joint_names[0] = "arm_joint_1";
+  joint_names[1] = "arm_joint_2";
+  joint_names[2] = "arm_joint_3";
+  joint_names[3] = "arm_joint_4";
+  joint_names[4] = "arm_joint_5";
+  
+  if( _joint_positions.size()!=joint_names.size() )
+  {
+    ROS_ERROR("YoubotPlanner::publishCommand:: sent position command vector has incorrect size and is not being sent.");
+    return;
+  }
+  
+  ros::Time now = ros::Time::now();
+  
+  for( unsigned int i=0; i<joint_names.size(); ++i )
+  {
+    brics_actuator::JointValue toAdd;
+    toAdd.timeStamp = now;
+    toAdd.joint_uri = joint_names[i];
+    toAdd.unit = "rad";
+    toAdd.value = _joint_positions[i];
+    
+    command.positions.push_back(toAdd);
+  }
+  
+  armStatePublisher_.publish(command);
+}
+
+std::string YoubotPlanner::initializePlanningFrame( double _svo_scale )
 {
   if( setup_tf_for_svo_ )
   {
     ROS_INFO("YoubotPlanner::YoubotPlanner::Initializing tf structures...");
-    initializeTF();
+    initializeTF(_svo_scale);
     ROS_INFO("YoubotPlanner::YoubotPlanner:: tf structures Initialized.");
   }
   
@@ -399,10 +440,20 @@ double YoubotPlanner::baseDistanceCost( ViewPointData* _start_state, ViewPointDa
   else
     target_theta = 2*acos( -target.orientation.w() );
   
+  double start_radius = (origin.position - base_movement_center_.position).norm();
+  double end_radius = (target.position - base_movement_center_.position).norm();
+  double average_radius = fabs((start_radius-end_radius)/2);
+  
+  movements::KinMove circle_seg = movements::CircularGroundPath::create( origin.position, target.position, base_radial_speed_, movements::CircularGroundPath::SHORTEST );
+  boost::shared_ptr<movements::CircularGroundPath> circles = boost::dynamic_pointer_cast< movements::CircularGroundPath >( circle_seg.operator->() );
+  double angle_to_move = fabs(circles->totalAngle( base_movement_center_ ));
+  
+  //double pos_dist = angle_to_move*average_radius;
+  
   double x_dist = origin.position(0) - target.position(0);
   double y_dist = origin.position(1) - target.position(1);
-  
   double pos_dist = sqrt(x_dist*x_dist+y_dist*y_dist);
+  
   double ang_dist = fabs(origin_theta - target_theta);
   
   double youbot_base_mid_to_wheel = 0.27934; // [m]
@@ -434,18 +485,18 @@ double YoubotPlanner::armDistanceCost( ViewPointData* _start_state, ViewPointDat
   movements::Pose link_1_from_l4 =  relativeLinkPoseInRobotState("arm_link_4","arm_link_1",robot_state);
   movements::Pose link_1_from_l5 =  relativeLinkPoseInRobotState("arm_link_5","arm_link_1",robot_state);
   
-  effective_movement_radius[0] = std::max( std::max(link_1_from_l2.position(0),link_1_from_l3.position(0)), std::max(link_1_from_l4.position(0),link_1_from_l5.position(0)) );
+  effective_movement_radius[0] = std::max( std::max(fabs(link_1_from_l2.position(0)),fabs(link_1_from_l3.position(0))), std::max(fabs(link_1_from_l4.position(0)),fabs(link_1_from_l5.position(0))) );
   
   // link2: arm moves in z/x plane, but projections on z-axis matter
   movements::Pose link_2_from_l3 = relativeLinkPoseInRobotState("arm_link_3","arm_link_2",robot_state);
   movements::Pose link_2_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_2",robot_state);
   movements::Pose link_2_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_2",robot_state);
-  effective_movement_radius[1] = std::max( std::max(link_2_from_l3.position(2),link_2_from_l4.position(2)),link_2_from_l5.position(2));
+  effective_movement_radius[1] = std::max( std::max(fabs(link_2_from_l3.position(2)),fabs(link_2_from_l4.position(2))),fabs(link_2_from_l5.position(2)));
   
   // link3: analog to link 2
   movements::Pose link_3_from_l4 = relativeLinkPoseInRobotState("arm_link_4","arm_link_3",robot_state);
   movements::Pose link_3_from_l5 = relativeLinkPoseInRobotState("arm_link_5","arm_link_3",robot_state);
-  effective_movement_radius[2] = std::max( link_3_from_l4.position(2),link_3_from_l5.position(2));
+  effective_movement_radius[2] = std::max( fabs(link_3_from_l4.position(2)),fabs(link_3_from_l5.position(2)));
   
   // link4: since only taking distances to link 5 into account, this length is constant
   effective_movement_radius[3] = 0.032; // [m] - from spec sheet
@@ -497,7 +548,10 @@ bool YoubotPlanner::moveTo( View& _target_view )
   arm_config[3] = (*referenced_view_point).arm_config_.j4_angle_;
   arm_config[4] = (*referenced_view_point).link5_config_.angle_;
   successfully_moved = assumeArmPosition(arm_config);
-    
+  if( !successfully_moved )
+  {
+    ROS_WARN("YoubotPlanner::moveTo:: assumeArmPosition return false, i.e. apparently the commanded arm position could not be assumed.");
+  }
   // move base
   movements::Pose base_target_pos = (*referenced_view_point).base_config_.pose_;
   /*
@@ -507,12 +561,17 @@ bool YoubotPlanner::moveTo( View& _target_view )
       std::cout<<std::endl<<"y:"<<base_target_pos.position.y();
       std::cout<<std::endl<<"z:"<<base_target_pos.position.z();*/
   successfully_moved = successfully_moved && moveBaseCircularlyTo( base_target_pos, base_movement_center_, base_radial_speed_ );
+  if( !successfully_moved )
+  {
+    ROS_WARN("YoubotPlanner::moveTo:: assume position failure: If this is the first warnign regarding a failed movement, then moveBaseCircularlyTo(...) returned a failure.");
+  }
   
   if( successfully_moved )
     current_view_ = referenced_view_point;
   else current_view_ = nullptr; // movement unsuccessful, pose possibly unknown
   
-  ros::Duration(10.0); /////////////////////////////////////////////////////////////////////////////////// just short hack for now////////////////////////
+  ROS_INFO("Movement execution finished so far, now waiting for 2 seconds.");
+  ros::Duration(2.0).sleep(); //////////////////////////////////////// just short hack for now since trajectory executions seems to report success too early ////////////////////////
   
   ROS_INFO("Movement successfully executed.");
   return successfully_moved;
@@ -520,18 +579,19 @@ bool YoubotPlanner::moveTo( View& _target_view )
 
 void YoubotPlanner::initializeExtrinsics()
 {
-  // setup tf
-  initializePlanningFrame();
   
   // set svo scaling
-  /*svo_srv::SetScale command;
+  dense_reconstruction::SetScale command;
   double svo_scale = getSVOScale();
-  command.request.scale = svo_scale;
-  ros::service::call("/svo/set_scale",command);
-  ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
-  
   ros::Duration(3.0).sleep();
-  initializePlanningFrame();*/
+  ROS_INFO_STREAM("Calculated scale factor for SVO is "<<svo_scale<<".");
+
+  // setup tf
+  initializePlanningFrame(svo_scale);
+  
+  command.request.scale = svo_scale;
+  ros::service::call("/dense_reconstruction/remode_feeder/set_svo_scale",command);
+  ros::service::call("/dense_reconstruction/tf_linker/set_svo_scale",command);
   
   // move arm into initial pose
   assumeAndSetInitialPose();
@@ -603,42 +663,53 @@ bool YoubotPlanner::assumeAndSetInitialPose()
 
 double YoubotPlanner::getSVOScale()
 {
- 
-  double svo_distance_sum;
-  double robot_distance_sum;
+  ROS_INFO("Running routine to estimate the SVO scale.");
+  
+  double svo_distance_sum=0;
+  double robot_distance_sum=0;
   unsigned int nr_of_measurements = 0;
-  double j2_angle_1 = 1.8;
-  double j2_angle_2 = 0.1;
+  double j2_angle_1 = 1.4;
+  double j2_angle_2 = 0.6;
+  
+  double angle_movement=0.3;
   
   // initialize arm joint angles position vector with current robot state
   std::vector<double> arm_position;
   getCurrentArmPosition( arm_position );
+  arm_position[1] = j2_angle_1;
+  
+  ROS_INFO("Assuming SVO get scale pose 1.");
+  assumeArmPosition(arm_position);
+  ros::Duration(1.0).sleep();
+  ROS_INFO("Okay.");
   
   for( unsigned int i=0; i<nr_of_measurements_for_svo_scale_estimate_; ++i )
   {
-    // assume first link pose
-    arm_position[1] = j2_angle_1;
-    assumeArmPosition(arm_position);
     
     // get state 1
     movements::Pose cam_1_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
-    movements::Pose cam_1_SVO = getCurrentGlobalLinkPose("cam_pos", ros::Duration(10.0));
+    movements::Pose cam_1_SVO = getPose("world","cam_pos", ros::Duration(10.0));
     
     if( cam_1_R==movements::Pose() || cam_1_SVO==movements::Pose() )
     {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
       continue;
     }
     
     // assume second link pose
     arm_position[1] = j2_angle_2;
+    ROS_INFO("Assuming SVO get scale pose 2.");
     assumeArmPosition(arm_position);
+    ros::Duration(1.0).sleep();
+    ROS_INFO("Okay.");
     
     // get state 2
-    movements::Pose cam_2_R = getCurrentLinkPose("cam_pos");
-    movements::Pose cam_2_SVO = getCurrentGlobalLinkPose("cam_pos");
+    movements::Pose cam_2_R = getCurrentLinkPose("cam_pos", ros::Duration(10.0) );
+    movements::Pose cam_2_SVO = getPose("world","cam_pos", ros::Duration(10.0));
     
     if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
     {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
       continue;
     }
     
@@ -646,6 +717,31 @@ double YoubotPlanner::getSVOScale()
     Eigen::Vector3d robot_diff = cam_1_R.position - cam_2_R.position;
     robot_distance_sum += robot_diff.norm();
     Eigen::Vector3d svo_diff = cam_1_SVO.position - cam_2_SVO.position;
+    svo_distance_sum += svo_diff.norm();
+    
+    ++nr_of_measurements;
+    
+    // assume first link pose
+    arm_position[1] = j2_angle_1;
+    ROS_INFO("Assuming SVO get scale pose 1.");
+    assumeArmPosition(arm_position);
+    ros::Duration(1.0).sleep();
+    ROS_INFO("Okay.");
+    
+    // get state 2
+    cam_1_R = getCurrentLinkPose("cam_pos");
+    cam_1_SVO = getPose("world","cam_pos", ros::Duration(10.0));
+    
+    if( cam_2_R==movements::Pose() || cam_2_SVO==movements::Pose() )
+    {
+      ROS_WARN("getSVOScale(): Something went seriously wrong with the pose retrieva, got empty pose. Trying again...");
+      continue;
+    }
+    
+    // update differences
+    robot_diff = cam_1_R.position - cam_2_R.position;
+    robot_distance_sum += robot_diff.norm();
+    svo_diff = cam_1_SVO.position - cam_2_SVO.position;
     svo_distance_sum += svo_diff.norm();
     
     ++nr_of_measurements;
@@ -668,6 +764,43 @@ bool YoubotPlanner::assumeArmPosition( const std::vector<double>& _joint_values 
 {
   if( _joint_values.size()!=5 )
     return false;
+  
+  if( no_moveit_ )
+  {
+    ROS_INFO("Assuming arm position without MoveIt! using direct position commands.");
+    std::vector<double> arm_position;
+    getCurrentArmPosition( arm_position );
+    
+    std::vector<double> in_between;
+    for( unsigned int i=0; i<arm_position.size();i++ )
+    {
+      in_between.push_back( arm_position[i] );
+    }
+    
+    int nr_of_steps=10;
+    double step_0 = (_joint_values[0] - arm_position[0])/10;
+    double step_1 = (_joint_values[1] - arm_position[1])/10;
+    double step_2 = (_joint_values[2] - arm_position[2])/10;
+    double step_3 = (_joint_values[3] - arm_position[3])/10;
+    double step_4 = (_joint_values[4] - arm_position[4])/10;
+    
+    for(unsigned int i=0; i<nr_of_steps; ++i )
+    {
+      
+      in_between[0] = in_between[0] + step_0;
+      in_between[1] = in_between[1] + step_1;
+      in_between[2] = in_between[2] + step_2;
+      in_between[3] = in_between[3] + step_3;
+      in_between[4] = in_between[4] + step_4;
+      
+      publishCommand(in_between);
+      ros::Duration(1).sleep();
+    }
+    ROS_INFO_STREAM("Executed "<<nr_of_steps<<" steps.");
+    
+    publishCommand(_joint_values);
+    return true;
+  }
   
   robot_->setJointValueTarget("arm_joint_1", _joint_values[0] );
   robot_->setJointValueTarget("arm_joint_2", _joint_values[1] );
@@ -1605,6 +1738,32 @@ movements::Pose YoubotPlanner::getEndEffectorPoseFromTF( ros::Duration _max_wait
   return movements::Pose( translation, rotation );
 }
 
+movements::Pose YoubotPlanner::getPose( std::string _target_frame, std::string _source_frame, ros::Duration _wait_time )
+{
+  bool new_tf_available = tf_listener_.waitForTransform( _target_frame,_source_frame, ros::Time::now(), _wait_time );
+  
+  if( !new_tf_available )
+    return movements::Pose();
+  
+  tf::StampedTransform end_effector_pose_tf;
+  geometry_msgs::TransformStamped end_effector_pose_ros;
+  
+  try{
+    tf_listener_.lookupTransform(_target_frame, _source_frame, ros::Time(0), end_effector_pose_tf);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+    return movements::Pose();
+  }
+  
+  tf::transformStampedTFToMsg( end_effector_pose_tf, end_effector_pose_ros  );
+  
+  Eigen::Quaterniond rotation = st_is::geometryToEigen( end_effector_pose_ros.transform.rotation );
+  Eigen::Vector3d translation = st_is::geometryToEigen( end_effector_pose_ros.transform.translation );
+  
+  return movements::Pose( translation, rotation );
+}
+
 movements::Pose YoubotPlanner::getCurrentLinkPose( std::string _link, ros::Duration _wait_time )
 {
   bool new_tf_available = tf_listener_.waitForTransform( base_planning_frame_,_link, ros::Time::now(), _wait_time );
@@ -1690,7 +1849,8 @@ movements::Pose YoubotPlanner::moveitPlanningFrameToViewPlanningFrame( movements
 
 bool YoubotPlanner::moveBaseCircularlyTo( movements::Pose& _target_position, movements::Pose& _center, double _radial_speed )
 {
-  movements::Pose base_pose_rpf = getCurrentGlobalLinkPose("base_footprint"); // robot (moveit) planning frame /* need to  think about that - changed it to global now!!*/ //////////////////////////////
+  movements::Pose base_pose_rpf = getPose( base_planning_frame_,"base_footprint" ); // robot (moveit) planning frame /* need to  think about that - changed it to global now!! ->just use the base planning frame variable!*/ //////////////////////////////
+  
   movements::Pose base_pose;
   try
   {
@@ -1736,6 +1896,25 @@ bool YoubotPlanner::executeMovementsTrajectoryOnBase( movements::PoseVector& _pa
   traj.trajectory.joint_names.push_back("youbot_base/y");
   traj.trajectory.joint_names.push_back("youbot_base/theta");
   
+  double position_tolerance = 0.05; // 5 cm
+  double orientation_tolerance = 0.08; // ~5°
+  
+  control_msgs::JointTolerance x_pos_tolerance;
+  x_pos_tolerance.name = "youbot_base/x";
+  x_pos_tolerance.position = position_tolerance;
+  
+  control_msgs::JointTolerance y_pos_tolerance;
+  y_pos_tolerance.name = "youbot_base/y";
+  y_pos_tolerance.position = position_tolerance;
+  
+  control_msgs::JointTolerance theta_pos_tolerance;
+  theta_pos_tolerance.name = "youbot_base/theta";
+  theta_pos_tolerance.position = orientation_tolerance;
+  
+  traj.goal_tolerance.push_back(x_pos_tolerance);
+  traj.goal_tolerance.push_back(y_pos_tolerance);
+  traj.goal_tolerance.push_back(theta_pos_tolerance);
+  
   double associated_time = 0;
   BOOST_FOREACH( auto pose, _path )
   {
@@ -1757,6 +1936,9 @@ bool YoubotPlanner::executeMovementsTrajectoryOnBase( movements::PoseVector& _pa
   base_trajectory_sender_.sendGoal(traj);
   base_trajectory_sender_.waitForResult();
   
+  if( ignore_base_movement_errors_ ) 
+    return true;
+  
   if (base_trajectory_sender_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     return true;
   else
@@ -1777,6 +1959,26 @@ bool YoubotPlanner::executeMovementsPath( movements::PoseVector& _path, moveit_m
 
 bool YoubotPlanner::executeMoveItPlan( moveit::planning_interface::MoveGroup::Plan& _plan )
 {
+  if( no_moveit_ )
+  {
+    
+    for( unsigned int i=0; i<_plan.trajectory_.joint_trajectory.points.size(); ++i )
+    {
+      std::vector<double> joint_target = _plan.trajectory_.joint_trajectory.points[i].positions;
+      publishCommand(joint_target);
+      ros::Duration(0.8).sleep();
+      ros::spinOnce(); // necessary for data retrieval stop
+      
+      if( stop_data_retrieval_movement_ )
+      {
+	stop_data_retrieval_movement_ = false;
+	return true;
+      }
+    }
+    
+    
+    return true;
+  }
   ros::AsyncSpinner spinner(1);  
   //scene_->unlockSceneRead();   
   spinner.start();
@@ -2185,7 +2387,7 @@ bool YoubotPlanner::setupTFService( std_srvs::Empty::Request& _req, std_srvs::Em
   initializeExtrinsics();
 }
 
-void YoubotPlanner::initializeTF()
+void YoubotPlanner::initializeTF( double _svo_scale )
 {
   // t_OW = t_OI*t_IW - O:dr_origin(=odom at initialization), W:world, I:image frame
   ros::Time now = ros::Time::now();
@@ -2198,6 +2400,13 @@ void YoubotPlanner::initializeTF()
   tf::StampedTransform t_WI;
   tf_listener_.lookupTransform("world","cam_pos",now,t_WI);
   
+  
+  // setting the scale...
+  tf::Vector3 W_trans_WI = t_WI.getOrigin();
+  double x_new = W_trans_WI.x()*_svo_scale;
+  double y_new = W_trans_WI.y()*_svo_scale;
+  double z_new = W_trans_WI.z()*_svo_scale;
+  t_WI.setOrigin( tf::Vector3(x_new,y_new,z_new) );
   
   tf::Transform t_IA;
   tf::transformMsgToTF(arm2image_,t_IA);
@@ -2398,7 +2607,7 @@ void YoubotPlanner::getLink5Space( boost::shared_ptr<SpaceInfo> _info, std::vect
   }
   else
   {
-    double step_size = (link_5_nr_of_pos-link_5_min_angle)/(link_5_nr_of_pos-5);
+    double step_size = (link_5_max_angle-link_5_min_angle)/(link_5_nr_of_pos-1);
     for( double angle = link_5_min_angle; angle<=link_5_max_angle; angle+=step_size )
     {
       angle_set.push_back(angle);

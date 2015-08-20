@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start trajectory republisher -->
+  <!--<node name="arm_trajectory_republisher" pkg="youbot_description" type="arm_trajectory_republisher" output="screen"/>-->
+
+  <!-- start base command republisher -->
+  <!--<node name="base_command_republisher" pkg="youbot_description" type="base_command_republisher" output="screen"/>-->
+
+  <!-- start gazebo empty world-->
+  <!--<param name="/use_sim_time" value="true" />-->
+  <!-- loads gazebo and a simulation environment -->
+  <!--  <include file="$(find gazebo_ros)/launch/empty_world.launch">	    
+      <arg name="world_name" value="$(find dense_reconstruction)/gazebo/worlds/reconstruction_scene_3.xml"/>
+	    <arg name="gui" value="true"/>	  
+  </include>-->
+  
+  
+  <!-- send youbot urdf to param server -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find youbot_description)/robots/youbot_with_cam.urdf.xacro'"/>
+
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <!--<node pkg="gazebo_ros" type="spawn_model" name="spawn_robot" respawn="false" output="screen"
+  args="-param robot_description
+	-urdf
+	-x 0
+	-y -1
+	-z 0.4
+	-R 0
+	-P 0
+	-Y 1.570796327
+	-model youbot">
+  </node>-->
+  
+  <!-- control configurations for the youbot inside the Gazebo environment -->
+  <!--<include file="$(find youbot_description)/launch/control/youbot_base_control.launch" />
+  <include file="$(find youbot_description)/launch/control/youbot_arm_control.launch" />
+  <include file="$(find youbot_description)/launch/control/youbot_gripper_control.launch" />-->
+  
+  <!-- launches nodes for velocity based [twist messages] base controls -->
+  <!--<include file="$(find dense_reconstruction)/launch/base_position_controller.launch" />-->
+  
+  <!-- launch MoveIt! -->
+  <include file="$(find youbot_moveit)/launch/cam_move_group.launch" />
+  
+  <!-- launch the tf linker which broadcasts static link transforms for completing the tf tree -->
+  <!--<include file="$(find dense_reconstruction)/launch/tf_linker.launch" />-->
+  <node pkg="dense_reconstruction" type="remode_feeder" name="remode_feeder" respawn="false" output="screen" />
+</launch>

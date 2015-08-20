@@ -14,15 +14,15 @@
     <param name="random_nbv" value="false" />
     
     <!-- the cost weight should be positive since it is internally counted negative -->
-    <param name="cost_weight" value="0.1" />
+    <param name="cost_weight" value="0.0" />
     <param name="information_weight" value="1.0" />
     
-    <param name="information_metric/IgnorantTotalIG/weight" value="0.01" />
-    <param name="information_metric/OccupancyAwareTotalIG/weight" value="10.0" />
-    <param name="information_metric/ClassicFrontier/weight" value="200.0" />
-    <param name="information_metric/TotalUnknownIG/weight" value="200.0" />
-    <param name="information_metric/UnknownObjectSideFrontier/weight" value="50.0" />
-    <param name="information_metric/UnknownObjectVolumeIG/weight" value="50.0" />
+    <param name="information_metric/IgnorantTotalIG/weight" value="1" />
+    <param name="information_metric/OccupancyAwareTotalIG/weight" value="0.0" />
+    <param name="information_metric/ClassicFrontier/weight" value="0.0" />
+    <param name="information_metric/TotalUnknownIG/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectSideFrontier/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectVolumeIG/weight" value="0.0" />
     <param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     <param name="information_metric/TotalNrOfFree/weight" value="0.0" />

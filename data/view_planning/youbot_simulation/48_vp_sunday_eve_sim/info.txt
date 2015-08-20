@@ -1,0 +1,11 @@
+cost_weight: 0
+information_weight: 1
+NrOfUnknownVoxels weight: 0
+AverageUncertainty weight: 1
+AverageEndPointUncertainty weight: 500
+UnknownObjectSideFrontier weight: 5
+UnknownObjectVolumeFrontier weight: 5
+ClassicFrontier weight: 1
+EndNodeOccupancySum weight: 1
+TotalOccupancyCertainty weight: 0
+TotalNrOfOccupieds weight: 0

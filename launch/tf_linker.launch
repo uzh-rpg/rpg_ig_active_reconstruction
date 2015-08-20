@@ -6,7 +6,7 @@
   <rosparam file="$(find dense_reconstruction)/config/tf_linker_config.yaml" command="load" ns=""/>
   
   <!-- if set then the gazebo ground truth is published as dr_origin (specifically set for the youbot atm) -->
-  <param name="/use_gazebo_ground_truth" value="true" />
+  <param name="/use_gazebo_ground_truth" value="false" />
     
   <node name="tf_linker" pkg="dense_reconstruction" type="tf_linker" respawn="false" output="screen"/>
   

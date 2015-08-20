@@ -1,0 +1,17 @@
+cost_weight: 15000
+information_weight: 1
+IgnorantTotalIG weight: 0.25
+OccupancyAwareTotalIG weight: 0.5
+ClassicFrontier weight: 0
+TotalUnknownIG weight: 0.5
+UnknownObjectSideFrontier weight: 0
+UnknownObjectVolumeIG weight: 1
+TotalOccupancyCertainty weight: 0
+TotalNrOfOccupieds weight: 0
+TotalNrOfFree weight: 0
+TotalEntropy weight: 0
+TotalNrOfNodes weight: 0
+time pos_x pos_y pos_z rot_x rot_y rot_z rot_w return_value winning_margin return_value_mean return_value_stddev cost IgnorantTotalIG OccupancyAwareTotalIG ClassicFrontier TotalUnknownIG UnknownObjectSideFrontier UnknownObjectVolumeIG TotalOccupancyCertainty TotalNrOfOccupieds TotalNrOfFree TotalEntropy TotalNrOfNodes base_distance_cost arm_distance_cost energy_cost
+1.43232e+09 0.176704 -0.251892 0.201752 0.454469 0.530525 0.491037 0.520466 -93.6543 0 -937.438 402.357 0.225252 91.4256 0.625503 169 0.625503 24 0 34420.2 61482 1.34401e+06 686749 1.66394e+06 0.0200663 0.820743 7
+1.43232e+09 0.164597 0.00959304 0.44202 -0.0444077 0.705883 0.00530423 0.706915 -28.2363 0 -999.933 384.957 0.061914 0 0 324 0 25 0 50376.9 89843 2.26285e+06 1.17896e+06 2.80997e+06 0 0.247656 3
+1.43232e+09 0.402497 -0.583936 0.44202 -0.311157 0.635157 0.275425 0.651075 -449.779 29.0221 -1071.36 294.605 0.98476 0 0 507 0 67 0 52973.4 94734 2.57098e+06 1.31891e+06 3.17542e+06 0.98476 0 4
