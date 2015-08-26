@@ -15,6 +15,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "dense_reconstruction/stereo_camera_data_retriever.h"
+#include <rosbag/bag.h>
 
 namespace dense_reconstruction
 {
@@ -23,6 +24,7 @@ namespace dense_reconstruction
 StereoCameraDataRetriever::StereoCameraDataRetriever( std::string interface_namespace )
   :republish_(false)
   ,wait_for_octomap_(true)
+  ,dataCount_(0)
 {
   std::string  octomap_topic, pcl_out_topic;
   if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/octomap_topic",octomap_topic) )
@@ -135,6 +137,15 @@ void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2Const
   {
     pcl_publisher_.publish(_msg);
     republish_ = false;
+    
+    // dump data to file
+    std::stringstream name;
+    name<<"/home/stefan/bunny_set_"<<dataCount_;
+    ++dataCount_;
+    
+    rosbag::Bag;
+    bag.open(name.str(), rosbag::bagmode::Write);
+    bag.write("pcl", ros::Time::now(), _msg );
     
     // don't listen anymore, only one reception is necessary
     pcl_subscriber_.shutdown();

@@ -59,6 +59,7 @@ private:
   bool wait_for_octomap_;
   
   std::string pcl_in_topic_;
+  unsigned int dataCount_;
   
   ros::Subscriber octomap_topic_subscriber_; /// to check whether octomap has published
   ros::Subscriber pcl_subscriber_;
