@@ -143,7 +143,7 @@ void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2Const
     name<<"/home/stefan/bunny_set_"<<dataCount_;
     ++dataCount_;
     
-    rosbag::Bag;
+    rosbag::Bag bag;
     bag.open(name.str(), rosbag::bagmode::Write);
     bag.write("pcl", ros::Time::now(), _msg );
     
