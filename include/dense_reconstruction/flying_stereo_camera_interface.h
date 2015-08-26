@@ -35,8 +35,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <tf/transform_broadcaster.h>
 
-#include "dense_reconstruction/youbot_planning.h"
 #include "dense_reconstruction/robot_planning_interface.h"
+#include "dense_reconstruction/stereo_camera_data_retriever.h"
 
 namespace dense_reconstruction
 {
@@ -156,7 +156,7 @@ private:
   
   tf::TransformBroadcaster tf_broadcaster_;
   
-  boost::shared_ptr<YoubotPlanner::DataRetrievalModule> data_retreiver_;
+  boost::shared_ptr<StereoCameraDataRetriever> data_retreiver_;
   
   std::string view_planning_frame_; /// planning frame for views
   std::string end_effector_planning_frame_; /// name of the frame for which the end effector pose shall be controlled

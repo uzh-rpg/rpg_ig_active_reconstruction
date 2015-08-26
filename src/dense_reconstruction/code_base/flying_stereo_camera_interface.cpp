@@ -24,7 +24,6 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "utils/ros_eigen.h"
 #include <geometry_msgs/Pose2D.h>
 #include "dense_reconstruction/PoseSetter.h"
-#include "dense_reconstruction/remode_data_retriever.h"
 #include "dense_reconstruction/stereo_camera_data_retriever.h"
 #include "gazebo_msgs/SetModelState.h"
 
@@ -39,7 +38,7 @@ FlyingStereoCameraInterface::FlyingStereoCameraInterface( ros::NodeHandle* _n )
 {
   std::string interface_namespace="flying_stereo_camera_interface";
   
-  data_retreiver_ = boost::shared_ptr<YoubotPlanner::DataRetrievalModule>( new StereoCameraDataRetriever(nullptr,interface_namespace) );
+  data_retreiver_ = boost::shared_ptr<StereoCameraDataRetriever>( new StereoCameraDataRetriever(interface_namespace) );
   
   
   view_planning_frame_="dr_origin";

@@ -20,29 +20,30 @@ namespace dense_reconstruction
 {
 
 
-StereoCameraDataRetriever::StereoCameraDataRetriever( YoubotPlanner* _robot_interface, std::string _youbot_interface_namespace )
+StereoCameraDataRetriever::StereoCameraDataRetriever( std::string interface_namespace )
   :republish_(false)
+  ,wait_for_octomap_(true)
 {
-  std::string  octomap_topic, pcl_in_topic, pcl_out_topic;
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/octomap_topic",octomap_topic) )
+  std::string  octomap_topic, pcl_out_topic;
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/octomap_topic",octomap_topic) )
   {
-    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/octomap_topic"<<"'), the default ('/octomap_full') will be used.");
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+interface_namespace+"/initialization/stereo_camera/octomap_topic"<<"'), the default ('/octomap_full') will be used.");
     octomap_topic="/octomap_full";
   }
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/pcl_in_topic",pcl_in_topic) )
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/pcl_in_topic_",pcl_in_topic_) )
   {
-    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/pcl_in_topic"<<"'), the default ('/camera/points2') will be used.");
-    pcl_in_topic="/camera/points2";
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+interface_namespace+"/initialization/stereo_camera/pcl_in_topic_"<<"'), the default ('/camera/points2') will be used.");
+    pcl_in_topic_="/camera/points2";
   }
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/pcl_out_topic",pcl_out_topic) )
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/pcl_out_topic",pcl_out_topic) )
   {
-    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/pcl_out_topic"<<"'), the default ('/remode/pointcloud_single') will be used.");
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No pointcloud topic was found on parameter server ('"<<"/"+interface_namespace+"/initialization/stereo_camera/pcl_out_topic"<<"'), the default ('/remode/pointcloud_single') will be used.");
     pcl_out_topic="/remode/pointcloud_single";
   }
   double max_wait_time;
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_pcl_wait_time",max_wait_time) )
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/max_pcl_wait_time",max_wait_time) )
   {
-    ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_wait_time was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_wait_time"<<"'), the default (3s) will be used.");
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_wait_time was found on parameter server ('"<<"/"+interface_namespace+"/initialization/stereo_camera/max_wait_time"<<"'), the default (3s) will be used.");
     max_pointcloud_wait_time_=ros::Duration(3.0); // 3 seconds
   }
   else
@@ -50,23 +51,24 @@ StereoCameraDataRetriever::StereoCameraDataRetriever( YoubotPlanner* _robot_inte
     max_pointcloud_wait_time_=ros::Duration(max_wait_time); // [s]
   }
   double max_octomap_wait_time;
-  if( !ros::param::get("/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time",max_octomap_wait_time) )
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time",max_octomap_wait_time) )
   {
-    ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_octomap_wait_time was found on parameter server ('"<<"/"+_youbot_interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time"<<"'), the default (10s) will be used.");
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: No max_octomap_wait_time was found on parameter server ('"<<"/"+interface_namespace+"/initialization/stereo_camera/max_octomap_wait_time"<<"'), the default (10s) will be used.");
     max_octomap_wait_time_=ros::Duration(10.0); // 3 seconds
   }
   else
   {
     max_octomap_wait_time_=ros::Duration(max_octomap_wait_time); // [s]
   }
+  if( !ros::param::get("/"+interface_namespace+"/initialization/stereo_camera/wait_for_octomap",wait_for_octomap_) )
+  {
+    ROS_WARN_STREAM("StereoCameraDataRetriever:: 'wait_for_octomap' wasn't specified - Will wait for octomap (default:true).");
+  }
   
   octomap_has_published_=false;
-  
-  ros::NodeHandle nh;
-  
-  octomap_topic_subscriber_ = nh.subscribe( octomap_topic,1, &dense_reconstruction::StereoCameraDataRetriever::octomapCallback, this );
-  pcl_subscriber_ = nh.subscribe( pcl_in_topic,1, &dense_reconstruction::StereoCameraDataRetriever::pclCallback, this );
-  pcl_publisher_ = nh.advertise<sensor_msgs::PointCloud2>( pcl_out_topic, 1 );
+    
+  octomap_topic_subscriber_ = nh_.subscribe( octomap_topic,1, &dense_reconstruction::StereoCameraDataRetriever::octomapCallback, this );
+  pcl_publisher_ = nh_.advertise<sensor_msgs::PointCloud2>( pcl_out_topic, 1 );
 }
 
 std::string StereoCameraDataRetriever::movementConfigurationDescription()
@@ -83,9 +85,10 @@ RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData()
     // TODO in unknown pose: replan!
     ROS_WARN("YoubotPlanner::StereoCameraDataRetriever::retrieveData::Retrieving data but the view seems to be unknown, might have problems with the poses.");
   }*/
+  // subscribe to stereo_image_proc node
+  pcl_subscriber_ = nh_.subscribe( pcl_in_topic_,1, &dense_reconstruction::StereoCameraDataRetriever::pclCallback, this );
   
-  
-  // get pointcloud from topic and republish it to octomap
+    // get pointcloud from topic and republish it to octomap
   ros::Time max = ros::Time::now() + max_pointcloud_wait_time_;
   
   octomap_has_published_ = false;
@@ -102,6 +105,11 @@ RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData()
       ROS_WARN("StereoCameraDataRetriever::retrieveData:: Didn't get any PCL input in time.");
       return RobotPlanningInterface::RECEPTION_FAILED;
     }
+  }
+  
+  if( !wait_for_octomap_ )
+  {
+      return RobotPlanningInterface::RECEIVED;
   }
   
   max = ros::Time::now() + max_octomap_wait_time_;
@@ -121,23 +129,15 @@ RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData()
   return RobotPlanningInterface::RECEIVED;
 }
 
-bool StereoCameraDataRetriever::movementNeeded()
-{
-  return false;
-}
-
-bool StereoCameraDataRetriever::getRetrievalMovement( robot_state::RobotState& _state, movements::KinematicMovementDescription* _retrieval_movement, movements::KinematicMovementDescription::PathInfo* _additional_info )
-{
-  
-  return false;
-}
-
 void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2ConstPtr& _msg )
 {
   if( republish_ )
   {
     pcl_publisher_.publish(_msg);
     republish_ = false;
+    
+    // don't listen anymore, only one reception is necessary
+    pcl_subscriber_.shutdown();
   }
 }
 

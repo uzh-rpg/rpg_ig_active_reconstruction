@@ -16,20 +16,24 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "dense_reconstruction/youbot_planning.h"
+#include "ros/ros.h"
+
+#include <sensor_msgs/PointCloud2.h>
+
 #include "octomap_msgs/Octomap.h"
+#include "dense_reconstruction/robot_planning_interface.h"
 
 namespace dense_reconstruction
 {
 
-class StereoCameraDataRetriever: public YoubotPlanner::DataRetrievalModule
+class StereoCameraDataRetriever
 {
 public:
   /**
    * constructor expects a YoubotPlannerInstance pointer
-   * @param _youbot_interface_namespace interface under which parameters will be sought
+   * @param interface_namespace interface under which parameters will be sought
    */
-  StereoCameraDataRetriever( YoubotPlanner* _robot_interface = nullptr , std::string _youbot_interface_namespace="youbot_interface" );
+  StereoCameraDataRetriever( std::string interface_namespace="stereo_camera" );
     
   /**
    * returns a string that describes the movement executed, if any, e.g. 'InOutSpiral_0.05' or 'Static' (for no movement at all)
@@ -43,30 +47,18 @@ public:
    */
   virtual RobotPlanningInterface::ReceiveInfo retrieveData();
   
-  /**
-   * returns true if a movement needs to be executed in order to retrieve data
-   */
-  virtual bool movementNeeded();
-  
-  /**
-   * If a trajectory is necessary to retrieve data, this function is used to calculate it
-   * @param _state state of the robot for which trajectory shall be calculated (currently only trajectories for arm links 2..4 are supported)
-   * @param _retrieval_movement The trajectory
-   * @param _additional_info at what time the trajectory shall start and at what it shall end
-   * @return true if a trajectory is needed, false if not (which leaves the _retrieval_movement untouched)
-   */
-  virtual bool getRetrievalMovement( robot_state::RobotState& _state, movements::KinematicMovementDescription* _retrieval_movement, movements::KinematicMovementDescription::PathInfo* _additional_info );
-  
   /** retrieves a pointcloud to republish it to octomap if asked
    */
   void pclCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );
   
   void octomapCallback( const octomap_msgs::OctomapConstPtr& _msg );
 private:
-  YoubotPlanner* robot_interface_;
-  
+  ros::NodeHandle nh_;
   bool octomap_has_published_;
   bool republish_;
+  bool wait_for_octomap_;
+  
+  std::string pcl_in_topic_;
   
   ros::Subscriber octomap_topic_subscriber_; /// to check whether octomap has published
   ros::Subscriber pcl_subscriber_;

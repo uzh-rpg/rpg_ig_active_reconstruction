@@ -65,9 +65,12 @@ public:
   /**
    * returns true if the values of the next best view fulfill the termination criteria, which
    * means that the computation will be stopped and the result accepted
-   * TODO: not yet implemented
+   * Currently the number of occupied voxels is evaluated and iteration stops if it doesn't change sufficiently anymore.
    */
-  bool terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain );
+  bool terminationCriteriaFulfilled( double _return_value, 
+                                     double _cost, 
+                                     std::vector<double>& _information_gain, 
+                                     std::vector<double>& _model_statistics );
   
   struct ReturnValueInformation
   {
@@ -105,9 +108,15 @@ public:
    * @param _view_returns information struct regarding the return value of the NBV
    * @param _costs movement cost to reach the view (summed as given by robot)
    * @param _information_gain information gains calculated for the NBV
+   * @param _model_statistics overall model statistics
    * @param _detailed_costs cost fields (parts of which the robot movement cost consisted of)
    */
-  void saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs=nullptr );
+  void saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, 
+                                    std::vector<double> _view_returns, 
+                                    std::vector<double> _costs, 
+                                    std::vector< std::vector<double> >& _information_gain, 
+                                    std::vector<double>& _model_statistics, 
+                                    std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs=nullptr );
   
   /**
    * calls the data retrieval service and waits until it succeeded
@@ -163,12 +172,26 @@ public:
    */
   bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses );
   
+  /**
+   * retreives expected informations for the complete current model state
+   * @param _output the calculated statistic values for the given metrics
+   * @return true if the view information service was called successfully
+   */
+  bool getModelInformation( std::vector<double>& _output );
+  
   void commandCallback( const std_msgs::StringConstPtr& _msg );
   
   bool saveViewSpaceToFileService( SaveViewSpace::Request& _req, SaveViewSpace::Response& _res );
 private:
+    unsigned int occupiedMetricId_;
+    unsigned int previousNrOfOccupieds_;
+    double saturationThreshold_; // If the occupancy nr doesn't change more than this anymore, end the iteration
+    
+    bool onlyIterateViewSpace_;
+    unsigned int occplaneMetricId_;
   std::string planning_frame_;
-  std::vector<std::string> metrics_to_use_;
+  std::vector<std::string> metrics_to_use_; // metrics used to evalute views
+  std::vector<std::string> model_metrics_; // metrics used to evaluate the current model
   
   ros::ServiceServer save_view_space_server_;
   

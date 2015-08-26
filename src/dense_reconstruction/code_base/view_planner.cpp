@@ -29,6 +29,8 @@ namespace dense_reconstruction
 
 ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   :nh_(_n)
+  ,previousNrOfOccupieds_(0)
+  ,saturationThreshold_(0.02)
   ,start_(false)
   ,pause_(false)
   ,stop_and_print_(false)
@@ -112,6 +114,16 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   {
     ROS_WARN("Undefined parameter '/view_planner/observe_timing'. Default 'false' will be used.");
   }
+  onlyIterateViewSpace_ = false;
+  if( !nh_.getParam("/view_planner/only_iterate_viewspace", onlyIterateViewSpace_) )
+  {
+    ROS_WARN("Undefined parameter '/view_planner/only_iterate_viewspace'. Default 'false' will be used.");
+  }
+  if( !nh_.getParam("/view_planner/saturation_threshold", saturationThreshold_) )
+  {
+    ROS_WARN_STREAM("Undefined parameter '/view_planner/saturation_threshold'. Default '"<<saturationThreshold_<<"' will be used.");
+  }
+  
   
   view_space_retriever_ = nh_.serviceClient<dense_reconstruction::FeasibleViewSpaceRequest>("/dense_reconstruction/robot_interface/feasible_view_space");
   current_view_retriever_ = nh_.serviceClient<dense_reconstruction::ViewRequest>("/dense_reconstruction/robot_interface/current_view");
@@ -123,15 +135,23 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   planning_frame_ = "dr_origin";
   metrics_to_use_.push_back("IgnorantTotalIG");
   metrics_to_use_.push_back("OccupancyAwareTotalIG");
-  metrics_to_use_.push_back("ClassicFrontier");
+  //metrics_to_use_.push_back("ClassicFrontier");
   metrics_to_use_.push_back("TotalUnknownIG");
   metrics_to_use_.push_back("UnknownObjectSideFrontier");
   metrics_to_use_.push_back("UnknownObjectVolumeIG");
-  metrics_to_use_.push_back("TotalOccupancyCertainty");
-  metrics_to_use_.push_back("TotalNrOfOccupieds");
-  metrics_to_use_.push_back("TotalNrOfFree");
-  metrics_to_use_.push_back("TotalEntropy");
-  metrics_to_use_.push_back("TotalNrOfNodes");
+  //metrics_to_use_.push_back("TotalOccupancyCertainty");
+  //metrics_to_use_.push_back("TotalEntropy");
+  metrics_to_use_.push_back("AverageEntropy");
+  metrics_to_use_.push_back("VasquezGomezAreaFactor");
+  metrics_to_use_.push_back("OccupiedPercentage");
+  occplaneMetricId_ = metrics_to_use_.size()-1;
+  
+  model_metrics_.push_back("TotalNrOfOccupieds");
+  occupiedMetricId_ = model_metrics_.size()-1;
+  model_metrics_.push_back("TotalNrOfFree");
+  model_metrics_.push_back("TotalNrOfNodes");
+  model_metrics_.push_back("TotalNrOfUnmarked");
+  model_metrics_.push_back("TotalNrOfOccluded");
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
   {
@@ -157,6 +177,10 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   planning_data_names_.push_back("return_value_stddev");
   planning_data_names_.push_back("cost");
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
+  {
+    planning_data_names_.push_back(metric_name);
+  }
+  BOOST_FOREACH( auto metric_name, model_metrics_ )
   {
     planning_data_names_.push_back(metric_name);
   }
@@ -194,10 +218,36 @@ void ViewPlanner::run()
   ROS_INFO("Successfully received view space and current view.");
   
     
-  ROS_INFO("Start planning");
+  
+  if( onlyIterateViewSpace_ ) // retrieve viewspace, iterate through it retrieving 3d data
+  {
+      ROS_INFO_STREAM("Iterating Viewspace.");
+      
+      std::vector<unsigned int> views_to_consider;
+      determineAvailableViewSpace( views_to_consider );
+      
+      for( unsigned int i=0; i<views_to_consider.size(); ++i )
+      {
+          View nbv = view_space_.getView(views_to_consider[i]);
+          bool successful_movement = moveToAndWait(nbv);
+          if( successful_movement )
+          {
+              retrieveDataAndWait();
+              ros::Duration(0.1).sleep();
+          }
+      }
+      ROS_INFO_STREAM("Finished viewspace iteration");
+      return;
+  }
+  
   // enter loop
+  
+  ROS_INFO("Start planning");
+  unsigned int iterationCount=0;
   do
   {
+    ++iterationCount;
+    
     std::vector<double> timing_profiler;
     ros::Time temp;
     
@@ -265,13 +315,25 @@ void ViewPlanner::run()
     // get expected informations for each
     ROS_INFO("Retrieve information score...");
     std::vector< std::vector<double> > information(views_to_consider.size());
+    std::vector< double > currentModelMetric;
+    
+    getModelInformation(currentModelMetric);
+    
+    for( unsigned int j=0; j<currentModelMetric.size(); ++j )
+    {
+        ROS_INFO_STREAM(model_metrics_[j]<<" score:"<<currentModelMetric[j]);
+    }
+    std::cout<<std::endl;
     
     if( observe_timing_ )
     {
       temp = ros::Time::now();
     }
     
-    for( unsigned int i=0; i<information.size(); i++ )
+    movements::PoseVector target_positions;
+    target_positions.resize(1);
+    
+    for( unsigned int i=0; i<information.size(); ++i )
     {
       ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
       
@@ -280,8 +342,7 @@ void ViewPlanner::run()
       
       View target_view = view_space_.getView( views_to_consider[i] );
       
-      movements::PoseVector target_positions;
-      target_positions.push_back( target_view.pose() );
+      target_positions[0] = target_view.pose();
       
       getViewInformation( information[i], target_positions );
       
@@ -346,36 +407,74 @@ void ViewPlanner::run()
     
     std::list<unsigned int> nbv_idx_queue;
     
+    unsigned int passedCount;
+    unsigned int filteredCount;
+    double desiredOccupiedPerc = 0.2;
+    
+    unsigned int maxLowSuccessIterations = 3; // how many times the termination criteria must be successively fulfilled to actually terminate
+    unsigned int terminationCount = 0;
+
     if(!random_nbv_)
     {
-      nbv_idx_queue.push_front(0);
-      
-      for( unsigned int i=0; i<views_to_consider.size(); ++i )
-      {
-	if( cost[i]==-1 )
-	  continue;
-		
-	// skip view if it has been visited too often
-	if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
-	{
-	  ROS_INFO_STREAM("Skipping view that has been visited too often.");
-	  continue;
-	}
-	
-	for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
-	{	  	  
-	  if( view_returns[i] > view_returns[*it] )
-	  {
-	    nbv_idx_queue.insert(it, i );
-	    break;
-	  }
-	  else if( it==(--nbv_idx_queue.end()) )
-	  {
-	    nbv_idx_queue.insert(nbv_idx_queue.end(), i );
-	    break;
-	  }
-	}
-      }
+        bool again;
+        do
+        {
+            again = false;
+            passedCount=0;
+            filteredCount=0;
+            
+            nbv_idx_queue.push_front(0);
+            
+            for( unsigned int i=0; i<views_to_consider.size(); ++i )
+            {
+                if( cost[i]==-1 )
+                continue;
+                        
+                // skip view if it has been visited too often
+                if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
+                {
+                    ROS_INFO_STREAM("Skipping view that has been visited too often.");
+                    continue;
+                }
+                if( information[i][occplaneMetricId_]<desiredOccupiedPerc )
+                {
+                    ++filteredCount;
+                    continue;
+                }
+                else
+                {
+                    ++passedCount;
+                }
+                
+                for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
+                {	  	  
+                if( view_returns[i] > view_returns[*it] )
+                {
+                    nbv_idx_queue.insert(it, i );
+                    break;
+                }
+                else if( it==(--nbv_idx_queue.end()) )
+                {
+                    nbv_idx_queue.insert(nbv_idx_queue.end(), i );
+                    break;
+                }
+                }
+            }
+            
+            if(passedCount==0)
+            {
+                desiredOccupiedPerc -= 0.1;
+                ROS_WARN_STREAM("No views had enough occupied voxels, reducing desired percentage. New target: "<<desiredOccupiedPerc<<"%.");
+                if( desiredOccupiedPerc<0 )
+                {
+                    ROS_ERROR_STREAM("Couldn't find view that passed preprocessor filter.");
+                    break;
+                }
+                again = true;
+            }
+        }while(again);
+        
+        ROS_INFO_STREAM("Occplane percentage filter: "<<filteredCount<<" removed, "<<passedCount<<" passed.");
       
       ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". Its utility function yielded "<<view_returns[nbv_idx_queue.front()]<<"." );
     }
@@ -430,12 +529,22 @@ void ViewPlanner::run()
       timing_.push_back(timing_profiler);
     }
     
-    saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, &full_cost );
+    saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, currentModelMetric, &full_cost );
     
     ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
     
     // check if termination criteria is fulfilled
-    if( !terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()]) )
+    bool termCritAck = terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], currentModelMetric);
+    if( termCritAck )
+    {
+        ++terminationCount;
+    }
+    else if(terminationCount!=0)
+    {
+        terminationCount=0;
+    }
+    
+    if( terminationCount!=maxLowSuccessIterations )
     {
       // move to this view
       std::list<unsigned int>::iterator nbv_it = nbv_idx_queue.begin();
@@ -467,7 +576,7 @@ void ViewPlanner::run()
       ROS_INFO("The termination critera was fulfilled and the reconstruction is thus considered to have succeeded. The view planner will shut down.");
       break;
     }
-    
+    ROS_INFO_STREAM("Finished NBV iteration nr. "<<iterationCount);
     ros::spinOnce();
   }while(!stop_and_print_);
   
@@ -517,9 +626,18 @@ double ViewPlanner::calculateReturn( double _cost, std::vector<double>& _informa
   return view_return;
 }
 
-bool ViewPlanner::terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain )
+bool ViewPlanner::terminationCriteriaFulfilled( double _return_value, double _cost, std::vector<double>& _information_gain, std::vector<double>& _model_statistics )
 {
-  // TODO: need to test which values/metrics saturate and then pick one of these and test it for saturation
+    unsigned int currentOccupiedCount = _model_statistics[occupiedMetricId_];
+    int newOccupiedCount = currentOccupiedCount - previousNrOfOccupieds_;
+    int occupiedThreshold = saturationThreshold_ * previousNrOfOccupieds_;
+    
+    previousNrOfOccupieds_ = currentOccupiedCount;
+    
+    if( newOccupiedCount < occupiedThreshold )
+    {
+        return true;
+    }
   return false;
 }
 
@@ -617,7 +735,7 @@ void ViewPlanner::saveDataToFile()
   }
 }
 
-void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs )
+void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_to_consider, std::vector<double> _view_returns, std::vector<double> _costs, std::vector< std::vector<double> >& _information_gain, std::vector<double>& _model_statistics, std::vector<RobotPlanningInterface::MovementCost>* _detailed_costs )
 {
   int number_of_views = _views_to_consider.size();
   if( number_of_views==0 )
@@ -685,6 +803,10 @@ void ViewPlanner::saveCurrentChoiceDataToFile( std::vector<unsigned int> _views_
     BOOST_FOREACH( auto information, _information_gain[i] )
     {
       nbv_data.push_back( information );
+    }
+    BOOST_FOREACH( auto statistic, _model_statistics )
+    {
+        nbv_data.push_back( statistic );
     }
     
     if( _detailed_costs!=nullptr )
@@ -879,6 +1001,40 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   request.request.call.poses.resize(1);
   request.request.call.poses[0] = movements::toROS( _poses[0] );//movements::toROS(_poses);
   request.request.call.metric_names = metrics_to_use_;
+  
+  request.request.call.ray_resolution_x = ray_resolution_x_;
+  request.request.call.ray_resolution_y = ray_resolution_y_;
+  request.request.call.ray_step_size = ray_step_size_;
+  
+  double image_width = 752;
+  double image_height = 480;
+  double subwindow_width = subwindow_width_percentage_*image_width; // [px]
+  double subwindow_height = subwindow_height_percentage_*image_height; // [px]
+  request.request.call.max_x = 376 + subwindow_width/2;
+  request.request.call.min_x = 376 - subwindow_width/2;
+  request.request.call.max_y = 240 + subwindow_height/2;
+  request.request.call.min_y = 240 - subwindow_height/2;
+  
+  request.request.call.min_ray_depth = min_ray_depth_;
+  request.request.call.max_ray_depth = max_ray_depth_;
+  request.request.call.occupied_passthrough_threshold = occupied_passthrough_threshold_;
+  
+  bool response = view_information_retriever_.call(request);
+  
+  if( response )
+  {
+    _output = request.response.expected_information.values;
+  }
+  
+  return response;
+}
+
+bool ViewPlanner::getModelInformation( std::vector<double>& _output )
+{
+  ViewInformationReturn request;
+  request.request.call.poses.resize(1);
+  request.request.call.poses[0] = movements::toROS( movements::Pose() );//movements::toROS(_poses);
+  request.request.call.metric_names = model_metrics_;
   
   request.request.call.ray_resolution_x = ray_resolution_x_;
   request.request.call.ray_resolution_y = ray_resolution_y_;

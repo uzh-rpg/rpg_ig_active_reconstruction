@@ -3,6 +3,7 @@ project(movements)
 
 find_package(catkin REQUIRED COMPONENTS
   angles
+  cmake_modules
 )
 
 find_package(Eigen REQUIRED)

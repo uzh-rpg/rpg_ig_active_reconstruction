@@ -4,17 +4,14 @@ project(dense_reconstruction)
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS
+  cmake_modules
   angles
-  brics_actuator
   sensor_msgs
   cv_bridge
   geometry_msgs
   roscpp
   tf
-  moveit_core
-  moveit_ros_planning_interface
   control_msgs
-  svo_msgs
   message_generation
   std_msgs
   octomap_server
@@ -29,7 +26,7 @@ find_package(PCL REQUIRED QUIET COMPONENTS common sample_consensus io segmentati
 
 find_package(octomap REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+#list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 list(APPEND USER_LIBRARIES movements)
 add_subdirectory(lib)
@@ -69,7 +66,7 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge moveit_core moveit_ros_planning_interface control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs svo_srv brics_actuator
+  CATKIN_DEPENDS roscpp geometry_msgs sensor_msgs cv_bridge control_msgs tf gazebo_msgs message_runtime std_msgs angles octomap_server octomap_msgs
   DEPENDS opencv opencv2 Eigen
 )
 
@@ -90,29 +87,8 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
   src/utils/math.cpp
 )
 
-set(DENSE_RECONSTRUCTION_YOUBOT_SRC
-  src/dense_reconstruction/code_base/youbot_planning.cpp
-  src/dense_reconstruction/code_base/remode_data_retriever.cpp
+set(DENSE_RECONSTRUCTION_STEREO_CAM_SRC
   src/dense_reconstruction/code_base/stereo_camera_data_retriever.cpp
-)
-
-
-add_executable(youbot_interface
-  src/dense_reconstruction/ros_nodes/youbot_planner_node.cpp
-  src/utils/ros_eigen.cpp
-  ${movement_sources}
-  ${DENSE_RECONSTRUCTION_BASE_SRC}
-  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
-)
-
-target_link_libraries(youbot_interface
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  movements
-)
-
-add_dependencies(youbot_interface
- ${catkin_EXPORTED_TARGETS}
 )
 
 
@@ -122,7 +98,7 @@ add_executable(flying_stereo_camera_interface
   src/utils/ros_eigen.cpp
   ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
-  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
+  ${DENSE_RECONSTRUCTION_STEREO_CAM_SRC}
 )
 
 target_link_libraries(flying_stereo_camera_interface
@@ -152,26 +128,6 @@ add_dependencies(dense_reconstruction_control
  ${catkin_EXPORTED_TARGETS}
 )
 
-
-add_executable(develop
-  src/dense_reconstruction/ros_nodes/develop.cpp
-  src/utils/ros_eigen.cpp
-  ${movement_sources}
-  ${DENSE_RECONSTRUCTION_BASE_SRC}
-  ${DENSE_RECONSTRUCTION_YOUBOT_SRC}
-)
-
-target_link_libraries(develop
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  movements
-)
-
-add_dependencies(develop
- ${catkin_EXPORTED_TARGETS}
-)
-
-
 add_executable(view_planner
   src/dense_reconstruction/ros_nodes/view_planner_node.cpp
   src/utils/ros_eigen.cpp
@@ -186,42 +142,6 @@ target_link_libraries(view_planner
 )
 
 add_dependencies(view_planner
- ${catkin_EXPORTED_TARGETS}
-)
-
-
-add_executable(youbot_fixed_waypoint_reconstruction
-  src/dense_reconstruction/ros_nodes/youbot_fixed_waypoint_reconstruction_node.cpp
-  src/dense_reconstruction/code_base/youbot_fixed_waypoint_reconstruction_controller.cpp
-  src/utils/ros_eigen.cpp
-  ${movement_sources}
-)
-
-target_link_libraries(youbot_fixed_waypoint_reconstruction
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  movements
-)
-
-add_dependencies(youbot_fixed_waypoint_reconstruction
- ${catkin_EXPORTED_TARGETS}
-)
-
-
-add_executable(remode_feeder
-  src/dense_reconstruction/code_base/remode_feeder.cpp
-  src/dense_reconstruction/ros_nodes/feeder_node.cpp
-  src/utils/ros_eigen.cpp
-  ${movement_sources}
-)
-
-target_link_libraries(remode_feeder
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-  movements
-)
-
-add_dependencies(remode_feeder
  ${catkin_EXPORTED_TARGETS}
 )
 
