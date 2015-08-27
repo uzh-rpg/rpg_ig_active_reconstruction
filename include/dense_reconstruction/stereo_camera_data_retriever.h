@@ -47,6 +47,12 @@ public:
    */
   virtual RobotPlanningInterface::ReceiveInfo retrieveData();
   
+  /**
+   * function is used to load the pcls from file instead of actually processing data...
+   * @param pclFile name and path of the rosbag file which includes one pcl message in the "pcl" topic
+   */
+  virtual RobotPlanningInterface::ReceiveInfo retrieveData( std::string pclFile );
+  
   /** retrieves a pointcloud to republish it to octomap if asked
    */
   void pclCallback( const sensor_msgs::PointCloud2ConstPtr& _msg );

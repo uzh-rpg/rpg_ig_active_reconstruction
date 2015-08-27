@@ -218,7 +218,7 @@ void ViewPlanner::run()
   ROS_INFO("Successfully received view space and current view.");
   
     
-  
+  //int choice=0;
   if( onlyIterateViewSpace_ ) // retrieve viewspace, iterate through it retrieving 3d data
   {
       ROS_INFO_STREAM("Iterating Viewspace.");
@@ -228,12 +228,16 @@ void ViewPlanner::run()
       
       for( unsigned int i=0; i<views_to_consider.size(); ++i )
       {
+	ROS_INFO_STREAM("Now retrieving info from viewpoint "<<i<<".");
+	//ROS_INFO("Please choose a view to move to!");
+	//std::cin>>choice;
+          //View nbv = view_space_.getView(choice);
           View nbv = view_space_.getView(views_to_consider[i]);
           bool successful_movement = moveToAndWait(nbv);
           if( successful_movement )
           {
               retrieveDataAndWait();
-              ros::Duration(0.1).sleep();
+              ros::Duration(2).sleep();
           }
       }
       ROS_INFO_STREAM("Finished viewspace iteration");

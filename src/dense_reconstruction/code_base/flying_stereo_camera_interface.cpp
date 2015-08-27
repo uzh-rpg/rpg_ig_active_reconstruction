@@ -199,7 +199,10 @@ bool FlyingStereoCameraInterface::currentViewService( dense_reconstruction::View
 bool FlyingStereoCameraInterface::retrieveDataService( dense_reconstruction::RetrieveData::Request& _req, dense_reconstruction::RetrieveData::Response& _res )
 {
   ROS_INFO("Data retrieval service called.");
-  _res.receive_info = data_retreiver_->retrieveData();
+  //_res.receive_info = data_retreiver_->retrieveData();
+  std::stringstream pclFile;
+  pclFile<<"/home/stewess/catkin_ws/src/dense_reconstruction/data/bunny_pcl/bunny_set_"<<current_view_;
+  _res.receive_info = data_retreiver_->retrieveData( pclFile.str() );
   return true;
 }
 

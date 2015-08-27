@@ -16,6 +16,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "dense_reconstruction/stereo_camera_data_retriever.h"
 #include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <boost/foreach.hpp>
 
 namespace dense_reconstruction
 {
@@ -131,6 +133,57 @@ RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData()
   return RobotPlanningInterface::RECEIVED;
 }
 
+RobotPlanningInterface::ReceiveInfo StereoCameraDataRetriever::retrieveData( std::string pclFile )
+{
+  ros::Time max = ros::Time::now() + max_pointcloud_wait_time_;
+  
+  octomap_has_published_ = false;
+  
+  rosbag::Bag bag;
+  bag.open( pclFile, rosbag::bagmode::Read );
+  
+  std::vector<std::string> topics;
+  topics.push_back("pcl");
+  rosbag::View viewer( bag, rosbag::TopicQuery(topics) );
+  
+  BOOST_FOREACH( rosbag::MessageInstance const m, viewer )
+  {
+    sensor_msgs::PointCloud2::Ptr msg = m.instantiate<sensor_msgs::PointCloud2>();
+    
+    if( msg!=NULL )
+    {
+      msg->header.stamp = ros::Time::now(); // because the timestamp in the saved message won't be valid...
+      pcl_publisher_.publish(msg);
+    }
+    else
+    {
+      ROS_WARN_STREAM("StereoCameraDataRetriever::retrieveData:: Couldn't load pcl from file: '"<<pclFile<<"'.");
+      return RobotPlanningInterface::RECEPTION_FAILED;
+    }
+  }
+  
+  if( !wait_for_octomap_ )
+  {
+      return RobotPlanningInterface::RECEIVED;
+  }
+  
+  max = ros::Time::now() + max_octomap_wait_time_;
+  
+  while( !octomap_has_published_ )
+  {
+    ros::Duration(0.005).sleep();
+    ros::spinOnce();
+    
+    if( ros::Time::now()>max )
+    {
+      ROS_WARN("StereoCameraDataRetriever::retrieveData:: Octomap didn't publish data in time.");
+      return RobotPlanningInterface::RECEPTION_FAILED;
+    }
+  }
+    
+  return RobotPlanningInterface::RECEIVED;
+}
+
 void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2ConstPtr& _msg )
 {
   if( republish_ )
@@ -138,7 +191,7 @@ void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2Const
     pcl_publisher_.publish(_msg);
     republish_ = false;
     
-    // dump data to file
+    /*// dump data to file
     std::stringstream name;
     name<<"/home/stefan/bunny_set_"<<dataCount_;
     ++dataCount_;
@@ -146,7 +199,7 @@ void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2Const
     rosbag::Bag bag;
     bag.open(name.str(), rosbag::bagmode::Write);
     bag.write("pcl", ros::Time::now(), _msg );
-    
+    */
     // don't listen anymore, only one reception is necessary
     pcl_subscriber_.shutdown();
   }
