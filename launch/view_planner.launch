@@ -26,14 +26,14 @@
     <param name="information_metric/OccupancyAwareTotalIG/weight" value="0.0" />
     <!--<param name="information_metric/ClassicFrontier/weight" value="0.0" />-->
     <param name="information_metric/TotalUnknownIG/weight" value="0.0" />
-    <param name="information_metric/UnknownObjectSideFrontier/weight" value="1.0" />
-    <param name="information_metric/UnknownObjectVolumeIG/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectSideFrontier/weight" value="0.0" />
+    <param name="information_metric/UnknownObjectVolumeIG/weight" value="1.0" />
     <!--<param name="information_metric/TotalOccupancyCertainty/weight" value="0.0" />-->
     <param name="information_metric/TotalNrOfOccupieds/weight" value="0.0" />
     <param name="information_metric/TotalNrOfFree/weight" value="0.0" />
     <!--<param name="information_metric/TotalEntropy/weight" value="0.0" />-->
     <param name="information_metric/TotalNrOfNodes/weight" value="0.0" />
-    <param name="information_metric/AverageEntropy/weight" value="0.0" />
+    <param name="information_metric/AverageEntropy/weight" value="20.0" />
     <param name="information_metric/VasquezGomezAreaFactor/weight" value="0.0" />
     <param name="information_metric/TotalNrOfUnmarked/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccluded/weight" value="0.0" />

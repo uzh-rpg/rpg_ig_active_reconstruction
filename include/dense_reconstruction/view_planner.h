@@ -87,10 +87,17 @@ public:
    * @param _return_value_information information struct regarding the return value of the NBV
    * @param _cost movement cost to reach the view
    * @param _information_gain information gains calculated for the NBV
+   * @param _model_statistics overall model statistics
    * @param _additional_field_names (optional) pointer to vector with the names of the additional fields
    * @param _additional_field_values (optional) values for the additional fields, if its size doesn't match the size of _additional_field_names, then the information is dropped
    */
-  void saveNBVData( unsigned int _nbv_index, ReturnValueInformation& _return_value_information, double _cost, std::vector<double>& _information_gain, std::vector<std::string>* _additional_field_names=nullptr, std::vector<double>* _additional_field_values=nullptr );
+  void saveNBVData( unsigned int _nbv_index, 
+                    ReturnValueInformation& _return_value_information, 
+                    double _cost, 
+                    std::vector<double>& _information_gain, 
+                    std::vector<double>& _model_statistics, 
+                    std::vector<std::string>* _additional_field_names=nullptr, 
+                    std::vector<double>* _additional_field_values=nullptr );
   
   /**
    * saves the data stored in planning_data_ to a file in the data_folder_ folder.
@@ -192,6 +199,8 @@ private:
   std::string planning_frame_;
   std::vector<std::string> metrics_to_use_; // metrics used to evalute views
   std::vector<std::string> model_metrics_; // metrics used to evaluate the current model
+  
+  std::string experiment_id_; // string describing the current run, saved as part of file names
   
   ros::ServiceServer save_view_space_server_;
   

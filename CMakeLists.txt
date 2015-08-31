@@ -85,6 +85,7 @@ set(DENSE_RECONSTRUCTION_BASE_SRC
   src/dense_reconstruction/code_base/view_planner.cpp
   src/dense_reconstruction/code_base/view_space.cpp
   src/utils/math.cpp
+  src/dense_reconstruction/code_base/rosbag_creator.cpp
 )
 
 set(DENSE_RECONSTRUCTION_STEREO_CAM_SRC

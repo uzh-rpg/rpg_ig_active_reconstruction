@@ -29,6 +29,7 @@ ViewSpace::ViewSpace()
 
 void ViewSpace::fromMsg( const ViewSpaceMsg& _msg )
 {
+  view_space_.clear();
   BOOST_FOREACH( auto view_msg, _msg.views )
   {
     view_space_.push_back( View(view_msg) );
