@@ -38,6 +38,7 @@
     <param name="information_metric/TotalNrOfUnmarked/weight" value="0.0" />
     <param name="information_metric/TotalNrOfOccluded/weight" value="0.0" />
     <param name="information_metric/OccupiedPercentage/weight" value="0.0" />
+    <param name="information_metric/DepthHypothesis/weight" value="0.0" />
     
     <param name="information/ray_resolution_x" value="0.1" />
     <param name="information/ray_resolution_y" value="0.1" />

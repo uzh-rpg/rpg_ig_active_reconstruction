@@ -149,13 +149,14 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   metrics_to_use_.push_back("VasquezGomezAreaFactor"); // 6
   metrics_to_use_.push_back("OccupiedPercentage"); // 7
   occplaneMetricId_ = metrics_to_use_.size()-1;
+  metrics_to_use_.push_back("DepthHypothesis"); // 8
   
-  model_metrics_.push_back("TotalNrOfOccupieds"); // 8
+  model_metrics_.push_back("TotalNrOfOccupieds"); // 9
   occupiedMetricId_ = model_metrics_.size()-1;
-  model_metrics_.push_back("TotalNrOfFree"); // 9
-  model_metrics_.push_back("TotalNrOfNodes"); // 10
-  model_metrics_.push_back("TotalNrOfUnmarked"); // 11
-  model_metrics_.push_back("TotalNrOfOccluded"); // 12
+  model_metrics_.push_back("TotalNrOfFree"); // 10
+  model_metrics_.push_back("TotalNrOfNodes"); // 11
+  model_metrics_.push_back("TotalNrOfUnmarked"); // 12
+  model_metrics_.push_back("TotalNrOfOccluded"); // 13
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
   {
@@ -250,11 +251,11 @@ void ViewPlanner::run()
   
   // enter loop
   unsigned int experiment_run = 0;
-  unsigned int max_iterations_per_run = 2;
+  unsigned int max_iterations_per_run = 25;
   
-  for( unsigned int run_id = 0; run_id<6; ++run_id )
+  for( unsigned int run_id = 0; run_id<2; ++run_id )
   {
-      ROS_INFO_STREAM("Start experiment nr "<<experiment_run<<".");
+      ROS_INFO_STREAM("Start experiment nr "<<run_id<<".");
       
       // reset viewspace
       getViewSpace();
@@ -264,16 +265,37 @@ void ViewPlanner::run()
       std_srvs::Empty quest;
       ros::service::call("/octomap_dense_reconstruction/reset",quest);
       
+      // reset data
+      planning_data_.clear();
+      
     // to make several runs
       switch(run_id)
       {
-          case 0:
+	  case 0:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[8] = 1;
+		experiment_id_ = "DragonICPDepthHypothesis";
+		break;
+	  case 1:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[4] = 1;
+		information_weights_[5] = 20;
+		experiment_id_ = "DragonICPCombined1";
+		break;
+		
+          /*case 0:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
               information_weights_[1] = 1;
-              experiment_id_ = "OccupancyAwareTotalIG";
+              experiment_id_ = "TeapotICP80OccupancyAwareTotalIG";
               break;
           case 1:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -281,7 +303,7 @@ void ViewPlanner::run()
                   information_weights_[w] = 0;
               }
               information_weights_[2] = 1;
-              experiment_id_ = "TotalUnknownIG";
+              experiment_id_ = "TeapotICP80TotalUnknownIG";
               break;
           case 2:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -289,7 +311,7 @@ void ViewPlanner::run()
                   information_weights_[w] = 0;
               }
               information_weights_[3] = 1;
-              experiment_id_ = "UnknownObjectSideFrontier";
+              experiment_id_ = "TeapotICP80UnknownObjectSideFrontier";
               break;
           case 3:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -297,7 +319,7 @@ void ViewPlanner::run()
                   information_weights_[w] = 0;
               }
               information_weights_[4] = 1;
-              experiment_id_ = "UnknownObjectVolumeIG";
+              experiment_id_ = "TeapotICP80UnknownObjectVolumeIG";
               break;
           case 4:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -305,7 +327,7 @@ void ViewPlanner::run()
                   information_weights_[w] = 0;
               }
               information_weights_[5] = 1;
-              experiment_id_ = "AverageEntropy";
+              experiment_id_ = "TeapotICP80AverageEntropy";
               break;
           case 5:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -313,8 +335,26 @@ void ViewPlanner::run()
                   information_weights_[w] = 0;
               }
               information_weights_[6] = 1;
-              experiment_id_ = "VasquezGomezAreaFactor";
+              experiment_id_ = "TeapotICP80VasquezGomezAreaFactor";
               break;
+          case 6:
+              for( int w=0; w<information_weights_.size(); ++w )
+              {
+                  information_weights_[w] = 0;
+              }
+              information_weights_[5] = 20;
+              information_weights_[4] = 1;
+              information_weights_[3] = 1;
+              experiment_id_ = "TeapotICP80Combined1";
+              break;
+          case 7:
+              for( int w=0; w<information_weights_.size(); ++w )
+              {
+                  information_weights_[w] = 0;
+              }
+              information_weights_[8] = 1;
+              experiment_id_ = "TeapotICPDepthHypothesis";
+              break;*/
       }
       
       ROS_INFO_STREAM("New experiment starting... "<<experiment_id_<<"!!!");
@@ -322,7 +362,7 @@ void ViewPlanner::run()
       std::stringstream bagname;
       time_t current_time;
       time(&current_time);
-      bagname<<"/home/stefan/paper/"<<experiment_id_<<current_time<<".bag";
+      bagname<<"/home/stewess/paper/"<<experiment_id_<<current_time<<".bag";
       
       RosbagCreator rosbagOut( bagname.str() );
     
