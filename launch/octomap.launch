@@ -7,6 +7,7 @@
   Copy this file into your workspace and adjust as needed, see
   www.ros.org/wiki/octomap_server for details  
 -->
+<!-- debug prefix:  launch-prefix="gdb -ex run (2)-args" -->
 <launch>
 	<node pkg="octomap_server" type="dr_octomap_server" name="octomap_dense_reconstruction" output="screen" clear_params="true">
 	  
@@ -44,12 +45,15 @@
 		<param name="publish_colors" value="false" />
 		
 		<!-- bounding box:  -->
-		<!--<param name="update_volume/min/x" value="0.25" />
-		<param name="update_volume/min/y" value="-0.75" />-->
-		<param name="update_volume/min/z" value="0.03" />
-		<!--<param name="update_volume/max/x" value="1.75" />
-		<param name="update_volume/max/y" value="0.75" />-->
-		<param name="update_volume/max/z" value="0.6" />
+		<param name="update_volume/min/x" value="-1.5" />
+		<param name="update_volume/min/y" value="-1.5" />
+		<param name="update_volume/min/z" value="0.01" />
+		<param name="update_volume/max/x" value="1.5" />
+		<param name="update_volume/max/y" value="1.5" />
+		<param name="update_volume/max/z" value="1.5" />
+                
+                
+                <param name="use_icp" value="false" /> <!-- Whether iterative closest point is used to match incoming pointclouds, default:false -->
 		
 		<param name="occupancy_threshold" value="0.6"/> <!--default: 0.5 -->
 
@@ -61,7 +65,7 @@
 		
 		<param name="sensor_model/hit" value="0.8"/> <!-- probability for being occupied on a hit, default: 0.7 -->
 		<param name="sensor_model/miss" value="0.2"/><!-- probability for being occupied on a miss, default: 0.4 -->
-                <param name="sensor_model/min" value="0.12"/> <!-- lower clamping threshold, default: 0.12 -->
+                <param name="sensor_model/min" value="0.03"/> <!-- lower clamping threshold, default: 0.12 -->
                 <param name="sensor_model/max" value="0.97"/><!-- upper clamping threshold, default: 0.97 -->
 		
 		<!-- data source to integrate (PointCloud2) -->

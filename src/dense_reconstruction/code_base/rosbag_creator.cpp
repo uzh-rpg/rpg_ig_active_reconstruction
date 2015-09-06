@@ -8,6 +8,7 @@ RosbagCreator::RosbagCreator( std::string bagName )
     octFreeTopic_ = "/free_cells_vis_array";
     tfTopic_ = "/tf";
     octFullTopic_ = "/octomap_full";
+    pclOctoTopic_ = "/dense_reconstruction/model/pointcloud";
     
     start();
 }
@@ -22,6 +23,7 @@ void RosbagCreator::start()
     tfCbSub_ = n.subscribe(tfTopic_, 10, &RosbagCreator::tfCallback, this);
     octFuCbSub_ = n.subscribe(octFullTopic_, 10, &RosbagCreator::octomapFullCb, this);
     octFrCbSub_ = n.subscribe(octFreeTopic_, 10, &RosbagCreator::octomapFreeCb, this);
+    pclOctoTopicCbSub_ = n.subscribe(pclOctoTopic_, 10, &RosbagCreator::pclOctoTopicCb, this);
 }
 
 void RosbagCreator::stop()
@@ -58,4 +60,9 @@ void RosbagCreator::octomapFullCb( const octomap_msgs::OctomapConstPtr& _msg )
 void RosbagCreator::octomapFreeCb( const visualization_msgs::MarkerArrayConstPtr& _msg )
 {
     bag_.write(octFreeTopic_, ros::Time::now(), _msg );
+}
+
+void RosbagCreator::pclOctoTopicCb( const sensor_msgs::PointCloud2ConstPtr& _msg )
+{
+    bag_.write(pclOctoTopic_, ros::Time::now(), _msg );
 }

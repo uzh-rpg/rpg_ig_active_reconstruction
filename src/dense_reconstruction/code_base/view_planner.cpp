@@ -149,13 +149,14 @@ ViewPlanner::ViewPlanner( ros::NodeHandle& _n )
   metrics_to_use_.push_back("VasquezGomezAreaFactor"); // 6
   metrics_to_use_.push_back("OccupiedPercentage"); // 7
   occplaneMetricId_ = metrics_to_use_.size()-1;
+  metrics_to_use_.push_back("ProximityCount"); // 8
   
-  model_metrics_.push_back("TotalNrOfOccupieds"); // 8
+  model_metrics_.push_back("TotalNrOfOccupieds"); // 9
   occupiedMetricId_ = model_metrics_.size()-1;
-  model_metrics_.push_back("TotalNrOfFree"); // 9
-  model_metrics_.push_back("TotalNrOfNodes"); // 10
-  model_metrics_.push_back("TotalNrOfUnmarked"); // 11
-  model_metrics_.push_back("TotalNrOfOccluded"); // 12
+  model_metrics_.push_back("TotalNrOfFree"); // 10
+  model_metrics_.push_back("TotalNrOfNodes"); // 11
+  model_metrics_.push_back("TotalNrOfUnmarked"); // 12
+  model_metrics_.push_back("TotalNrOfOccluded"); // 13
   
   BOOST_FOREACH( auto metric_name, metrics_to_use_ )
   {
@@ -236,6 +237,7 @@ void ViewPlanner::run()
 	//ROS_INFO("Please choose a view to move to!");
 	//std::cin>>choice;
           //View nbv = view_space_.getView(choice);
+        ROS_INFO_STREAM("Iterating through view "<<i<<" of "<<views_to_consider.size()<<".");
           View nbv = view_space_.getView(views_to_consider[i]);
           bool successful_movement = moveToAndWait(nbv);
           if( successful_movement )
@@ -250,9 +252,10 @@ void ViewPlanner::run()
   
   // enter loop
   unsigned int experiment_run = 0;
-  unsigned int max_iterations_per_run = 2;
+  unsigned int max_iterations_per_run = 25;
+  unsigned int number_of_runs = 1;
   
-  for( unsigned int run_id = 0; run_id<6; ++run_id )
+  for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
   {
       ROS_INFO_STREAM("Start experiment nr "<<experiment_run<<".");
       
@@ -263,7 +266,10 @@ void ViewPlanner::run()
       // reset octomap
       std_srvs::Empty quest;
       ros::service::call("/octomap_dense_reconstruction/reset",quest);
+      //
+      planning_data_.clear();
       
+      std::string stringFront = "BunnyICPTest";
     // to make several runs
       switch(run_id)
       {
@@ -272,48 +278,65 @@ void ViewPlanner::run()
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[1] = 1;
-              experiment_id_ = "OccupancyAwareTotalIG";
+              information_weights_[5] = 1;
+              experiment_id_ = stringFront+"AverageEntropy";
               break;
           case 1:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[2] = 1;
-              experiment_id_ = "TotalUnknownIG";
+              information_weights_[6] = 1;
+              experiment_id_ = stringFront+"VasquezGomezAreaFactor";
               break;
           case 2:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[3] = 1;
-              experiment_id_ = "UnknownObjectSideFrontier";
+              information_weights_[5] = 30;
+              information_weights_[4] = 1;
+              experiment_id_ = stringFront+"Combined";
               break;
           case 3:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[4] = 1;
-              experiment_id_ = "UnknownObjectVolumeIG";
+              information_weights_[8] = 1;
+              experiment_id_ = stringFront+"ProximityCount";
               break;
           case 4:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[5] = 1;
-              experiment_id_ = "AverageEntropy";
+              information_weights_[1] = 1;
+              experiment_id_ = stringFront+"OccupancyAwareTotalIG";
               break;
           case 5:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[6] = 1;
-              experiment_id_ = "VasquezGomezAreaFactor";
+              information_weights_[2] = 1;
+              experiment_id_ = stringFront+"TotalUnknownIG";
+              break;
+          case 6:
+              for( int w=0; w<information_weights_.size(); ++w )
+              {
+                  information_weights_[w] = 0;
+              }
+              information_weights_[3] = 1;
+              experiment_id_ = stringFront+"UnknownObjectSideFrontier";
+              break;
+          case 7:
+              for( int w=0; w<information_weights_.size(); ++w )
+              {
+                  information_weights_[w] = 0;
+              }
+              information_weights_[4] = 1;
+              experiment_id_ = stringFront+"UnknownObjectVolumeIG";
               break;
       }
       
@@ -468,21 +491,26 @@ void ViewPlanner::run()
         double cost_t = cost_weight_;
         if( accumulated_cost==0 )
         {
-        accumulated_cost=1;
-        cost_t=0;
+            accumulated_cost=1;
+            cost_t=0;
         }
         
         double inf_t = information_weight_;
         if( accumulated_ig==0 )
         {
-        accumulated_ig=1;
-        inf_t = 0;
+            accumulated_ig=1;
+            inf_t = 0;
         }
         
         for( unsigned int i=0; i<view_returns.size(); ++i )
         {
-        view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
-        ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
+            view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
+            ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
+            if( std::isnan(view_returns[i]) )
+            {
+                ROS_WARN_STREAM("Calculation produced a NAN for a view return - Setting it to zero instead.");
+                view_returns[i] = 0;
+            }
         }
         ros::spinOnce();
         

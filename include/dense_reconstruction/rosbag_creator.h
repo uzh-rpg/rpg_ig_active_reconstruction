@@ -27,6 +27,7 @@ public:
     void tfCallback( const tf2_msgs::TFMessageConstPtr& _msg );
     void octomapFullCb( const octomap_msgs::OctomapConstPtr& _msg );
     void octomapFreeCb( const visualization_msgs::MarkerArrayConstPtr& _msg );
+    void pclOctoTopicCb( const sensor_msgs::PointCloud2ConstPtr& _msg );
     
 private:
     rosbag::Bag bag_;
@@ -37,10 +38,12 @@ private:
     std::string octFreeTopic_;
     std::string tfTopic_;
     std::string octFullTopic_;
+    std::string pclOctoTopic_;
     
     ros::Subscriber pclCbSub_;
     ros::Subscriber octOccCbSub_;
     ros::Subscriber tfCbSub_;
     ros::Subscriber octFuCbSub_;
     ros::Subscriber octFrCbSub_;
+    ros::Subscriber pclOctoTopicCbSub_;
 };
