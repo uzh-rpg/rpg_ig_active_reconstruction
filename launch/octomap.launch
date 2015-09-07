@@ -47,7 +47,7 @@
 		<!-- bounding box:  -->
 		<param name="update_volume/min/x" value="-1.5" />
 		<param name="update_volume/min/y" value="-1.5" />
-		<param name="update_volume/min/z" value="0.01" />
+		<param name="update_volume/min/z" value="-10" />
 		<param name="update_volume/max/x" value="1.5" />
 		<param name="update_volume/max/y" value="1.5" />
 		<param name="update_volume/max/z" value="1.5" />
@@ -55,7 +55,7 @@
                 
                 <param name="use_icp" value="false" /> <!-- Whether iterative closest point is used to match incoming pointclouds, default:false -->
 		
-		<param name="occupancy_threshold" value="0.6"/> <!--default: 0.5 -->
+		<param name="occupancy_threshold" value="0.8"/> <!--default: 0.5 -->
 
 		<!-- use stereo sensor model (quadratic error) -->
 		<param name="sensor_model/stereo_model" value="true"/>
