@@ -257,7 +257,7 @@ void ViewPlanner::run()
   
   for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
   {
-      ROS_INFO_STREAM("Start experiment nr "<<experiment_run<<".");
+      ROS_INFO_STREAM("Start experiment nr "<<run_id<<".");
       
       // reset viewspace
       getViewSpace();
@@ -266,7 +266,8 @@ void ViewPlanner::run()
       // reset octomap
       std_srvs::Empty quest;
       ros::service::call("/octomap_dense_reconstruction/reset",quest);
-      //
+      
+      // reset data
       planning_data_.clear();
       
       std::string stringFront = "BunnyICPTest";
@@ -327,6 +328,8 @@ void ViewPlanner::run()
               {
                   information_weights_[w] = 0;
               }
+              information_weights_[5] = 20;
+              information_weights_[4] = 1;
               information_weights_[3] = 1;
               experiment_id_ = stringFront+"UnknownObjectSideFrontier";
               break;
@@ -345,7 +348,7 @@ void ViewPlanner::run()
       std::stringstream bagname;
       time_t current_time;
       time(&current_time);
-      bagname<<"/home/stefan/paper/"<<experiment_id_<<current_time<<".bag";
+      bagname<<"/home/stewess/paper/"<<experiment_id_<<current_time<<".bag";
       
       RosbagCreator rosbagOut( bagname.str() );
     
