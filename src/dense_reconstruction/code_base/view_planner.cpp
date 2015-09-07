@@ -253,7 +253,7 @@ void ViewPlanner::run()
   // enter loop
   unsigned int experiment_run = 0;
   unsigned int max_iterations_per_run = 25;
-  unsigned int number_of_runs = 1;
+  unsigned int number_of_runs = 8;
   
   for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
   {
@@ -270,7 +270,7 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
-      std::string stringFront = "BunnyICPTest";
+      std::string stringFront = "BunnyICPNewTest";
     // to make several runs
       switch(run_id)
       {

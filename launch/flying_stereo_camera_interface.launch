@@ -4,7 +4,7 @@
   <node pkg="dense_reconstruction" type="flying_stereo_camera_interface" name="flying_stereo_camera_interface"  clear_params="true" output="screen" >
     
     <param name="data_folder" value="$(find dense_reconstruction)/data/view_space" />
-    <param name="view_space_name" value="viewspace_80.txt" />
+    <param name="view_space_name" value="viewspace_48.txt" />
     
     <param name="view_planning_frame" value="dr_origin" />
     
