@@ -188,18 +188,18 @@ void StereoCameraDataRetriever::pclCallback( const sensor_msgs::PointCloud2Const
 {
   if( republish_ )
   {
-    pcl_publisher_.publish(_msg);
+    //pcl_publisher_.publish(_msg);
     republish_ = false;
     
-    /*// dump data to file
+    // dump data to file
     std::stringstream name;
-    name<<"/home/stefan/bunny_set_"<<dataCount_;
+    name<<"/home/stefan/teapot_set80/teapot_"<<dataCount_<<".bag";
     ++dataCount_;
-    
+    ROS_INFO_STREAM("Saving to file: "<<name.str());
     rosbag::Bag bag;
     bag.open(name.str(), rosbag::bagmode::Write);
     bag.write("pcl", ros::Time::now(), _msg );
-    */
+    
     // don't listen anymore, only one reception is necessary
     pcl_subscriber_.shutdown();
   }

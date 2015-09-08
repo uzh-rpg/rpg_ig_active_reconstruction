@@ -348,7 +348,7 @@ void ViewPlanner::run()
       std::stringstream bagname;
       time_t current_time;
       time(&current_time);
-      bagname<<"/home/stewess/paper/"<<experiment_id_<<current_time<<".bag";
+      bagname<<"/home/stefan/paper/"<<experiment_id_<<current_time<<".bag";
       
       RosbagCreator rosbagOut( bagname.str() );
     
