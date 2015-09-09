@@ -272,7 +272,7 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
-      std::string stringFront = "Teapot48NewCost0_2";
+      std::string stringFront = "Teapot48NewCostFinal";
     // to make several runs
       switch(run_id)
       {
@@ -283,6 +283,8 @@ void ViewPlanner::run()
               }
               information_weights_[5] = 1;
               experiment_id_ = stringFront+"AverageEntropy";
+              // for speedup: disable occlusion calculation since not needed here
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
           case 1:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -291,6 +293,7 @@ void ViewPlanner::run()
               }
               information_weights_[6] = 1;
               experiment_id_ = stringFront+"VasquezGomezAreaFactor";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
               break;
           case 2:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -300,6 +303,7 @@ void ViewPlanner::run()
               information_weights_[5] = 30;
               information_weights_[4] = 1;
               experiment_id_ = stringFront+"Combined";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
           case 3:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -308,6 +312,7 @@ void ViewPlanner::run()
               }
               information_weights_[8] = 1;
               experiment_id_ = stringFront+"ProximityCount";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
               break;
           case 4:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -316,16 +321,16 @@ void ViewPlanner::run()
               }
               information_weights_[4] = 1;
               experiment_id_ = stringFront+"UnknownObjectVolumeIG";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
           case 5:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[5] = 20;
-              information_weights_[4] = 1;
               information_weights_[3] = 1;
               experiment_id_ = stringFront+"UnknownObjectSideFrontier";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
           case 6:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -334,6 +339,7 @@ void ViewPlanner::run()
               }
               information_weights_[1] = 1;
               experiment_id_ = stringFront+"OccupancyAwareTotalIG";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
           case 7:
               for( int w=0; w<information_weights_.size(); ++w )
@@ -342,6 +348,7 @@ void ViewPlanner::run()
               }
               information_weights_[2] = 1;
               experiment_id_ = stringFront+"TotalUnknownIG";
+              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
               break;
       }
       
