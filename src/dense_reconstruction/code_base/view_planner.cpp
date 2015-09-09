@@ -240,6 +240,8 @@ void ViewPlanner::run()
         ROS_INFO_STREAM("Iterating through view "<<i<<" of "<<views_to_consider.size()<<".");
           View nbv = view_space_.getView(views_to_consider[i]);
           bool successful_movement = moveToAndWait(nbv);
+          char ba;
+          std::cin>>ba;
           if( successful_movement )
           {
               retrieveDataAndWait();
@@ -252,8 +254,8 @@ void ViewPlanner::run()
   
   // enter loop
   unsigned int experiment_run = 0;
-  unsigned int max_iterations_per_run = 25;
-  unsigned int number_of_runs = 1;
+  unsigned int max_iterations_per_run = 20;
+  unsigned int number_of_runs = 8;
   
   for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
   {
@@ -270,7 +272,7 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
-      std::string stringFront = "BunnyICPTest";
+      std::string stringFront = "Teapot48NewCost0_5";
     // to make several runs
       switch(run_id)
       {
@@ -312,18 +314,10 @@ void ViewPlanner::run()
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[1] = 1;
-              experiment_id_ = stringFront+"OccupancyAwareTotalIG";
+              information_weights_[4] = 1;
+              experiment_id_ = stringFront+"UnknownObjectVolumeIG";
               break;
           case 5:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[2] = 1;
-              experiment_id_ = stringFront+"TotalUnknownIG";
-              break;
-          case 6:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
@@ -333,13 +327,21 @@ void ViewPlanner::run()
               information_weights_[3] = 1;
               experiment_id_ = stringFront+"UnknownObjectSideFrontier";
               break;
+          case 6:
+              for( int w=0; w<information_weights_.size(); ++w )
+              {
+                  information_weights_[w] = 0;
+              }
+              information_weights_[1] = 1;
+              experiment_id_ = stringFront+"OccupancyAwareTotalIG";
+              break;
           case 7:
               for( int w=0; w<information_weights_.size(); ++w )
               {
                   information_weights_[w] = 0;
               }
-              information_weights_[4] = 1;
-              experiment_id_ = stringFront+"UnknownObjectVolumeIG";
+              information_weights_[2] = 1;
+              experiment_id_ = stringFront+"TotalUnknownIG";
               break;
       }
       
@@ -524,7 +526,7 @@ void ViewPlanner::run()
         
         unsigned int passedCount;
         unsigned int filteredCount;
-        double desiredOccupiedPerc = 0.2;
+        double desiredOccupiedPerc = 0;
         
         unsigned int maxLowSuccessIterations = 3; // how many times the termination criteria must be successively fulfilled to actually terminate
         unsigned int terminationCount = 0;

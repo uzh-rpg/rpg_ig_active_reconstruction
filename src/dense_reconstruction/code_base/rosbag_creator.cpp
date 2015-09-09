@@ -23,7 +23,7 @@ void RosbagCreator::start()
     tfCbSub_ = n.subscribe(tfTopic_, 10, &RosbagCreator::tfCallback, this);
     octFuCbSub_ = n.subscribe(octFullTopic_, 10, &RosbagCreator::octomapFullCb, this);
     octFrCbSub_ = n.subscribe(octFreeTopic_, 10, &RosbagCreator::octomapFreeCb, this);
-    pclOctoTopicCbSub_ = n.subscribe(pclOctoTopic_, 10, &RosbagCreator::pclOctoTopicCb, this);
+    //pclOctoTopicCbSub_ = n.subscribe(pclOctoTopic_, 10, &RosbagCreator::pclOctoTopicCb, this);
 }
 
 void RosbagCreator::stop()
