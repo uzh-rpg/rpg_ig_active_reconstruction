@@ -272,7 +272,7 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
-      std::string stringFront = "Teapot48NewCost0_5";
+      std::string stringFront = "Teapot48NewCost0_2";
     // to make several runs
       switch(run_id)
       {
@@ -1125,7 +1125,15 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   ViewInformationReturn request;
   request.request.call.poses.resize(1);
   request.request.call.poses[0] = movements::toROS( _poses[0] );//movements::toROS(_poses);
-  request.request.call.metric_names = metrics_to_use_;
+  //request.request.call.metric_names = metrics_to_use_;
+  
+  std::vector<std::string> non_zero_metric;
+  for( unsigned int i=0; i<metrics_to_use_.size(); ++i )
+  {
+      if( information_weights_[i]!=0 )
+          non_zero_metric.push_back(metrics_to_use_[i]);
+  }
+  request.request.call.metric_names = non_zero_metric;
   
   request.request.call.ray_resolution_x = ray_resolution_x_;
   request.request.call.ray_resolution_y = ray_resolution_y_;
@@ -1148,7 +1156,28 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   
   if( response )
   {
-    _output = request.response.expected_information.values;
+  
+    _output.resize( metrics_to_use_.size() );
+    for( unsigned int i=0; i<metrics_to_use_.size(); ++i )
+    {
+        if( information_weights_[i]!=0 )
+        {
+            // find corresponding value
+            for( unsigned int j=0; j<non_zero_metric.size(); ++j )
+            {
+                if( non_zero_metric[j]==metrics_to_use_[i] )
+                {
+                    _output[i] =  request.response.expected_information.values[j];
+                    break;
+                }
+            }
+        }
+        else
+        {
+            _output[i] = 0;
+        }
+    }
+    //_output = request.response.expected_information.values;
   }
   
   return response;
