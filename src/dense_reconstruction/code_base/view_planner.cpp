@@ -22,6 +22,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <list>
 #include <ctime>
 #include <random>
+#include <thread> 
 
 #include "dense_reconstruction/rosbag_creator.h"
 #include "std_srvs/Empty.h"
@@ -257,7 +258,7 @@ void ViewPlanner::run()
   unsigned int max_iterations_per_run = 20;
   unsigned int number_of_runs = 8;
   
-  for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
+  for( unsigned int run_id = 5; run_id<number_of_runs; ++run_id )
   {
       ROS_INFO_STREAM("Start experiment nr "<<run_id<<".");
       
@@ -272,7 +273,7 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
-      std::string stringFront = "Teapot48NewCostFinal";
+      std::string stringFront = "Dragon48CostFinal";
     // to make several runs
       switch(run_id)
       {
@@ -357,7 +358,7 @@ void ViewPlanner::run()
       std::stringstream bagname;
       time_t current_time;
       time(&current_time);
-      bagname<<"/home/stefan/paper/"<<experiment_id_<<current_time<<".bag";
+      bagname<<"/home/stewess/paper/"<<experiment_id_<<current_time<<".bag";
       
       RosbagCreator rosbagOut( bagname.str() );
     
@@ -415,20 +416,20 @@ void ViewPlanner::run()
         
         if( observe_timing_ )
         {
-        ros::Duration passed = ros::Time::now() - temp;
-        timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
+	  ros::Duration passed = ros::Time::now() - temp;
+	  timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
         }
         
         pauseIfRequested();
         
         if( achievable_poses_count==0 )
         {
-        ROS_INFO("None of the poses in the set were achievable or the whole view space has been visited. Stopping iteration and saving data gathered so far.");
-        //pause_=true;
-        //pauseIfRequested();
-        
-        // reconstruction is done, end iteration
-        break;
+	  ROS_INFO("None of the poses in the set were achievable or the whole view space has been visited. Stopping iteration and saving data gathered so far.");
+	  //pause_=true;
+	  //pauseIfRequested();
+	  
+	  // reconstruction is done, end iteration
+	  break;
         }
         ros::spinOnce();
         // get expected informations for each
@@ -449,33 +450,70 @@ void ViewPlanner::run()
         temp = ros::Time::now();
         }
         
-        movements::PoseVector target_positions;
+        // start multithreaded ig retrieval (TODO: number of threads dependent on available processors)
+        std::thread first(&ViewPlanner::threadedIGCalculation,
+			  this,
+			  std::ref(information),
+			  std::ref(views_to_consider),
+			  std::ref(cost),
+			  0,
+			  4);
+        std::thread second(&ViewPlanner::threadedIGCalculation,
+			   this,
+			  std::ref(information),
+			  std::ref(views_to_consider),
+			  std::ref(cost),
+			  1,
+			  4);
+        std::thread third(&ViewPlanner::threadedIGCalculation,
+			  this,
+			  std::ref(information),
+			  std::ref(views_to_consider),
+			  std::ref(cost),
+			  2,
+			  4);
+        std::thread fourth(&ViewPlanner::threadedIGCalculation,
+			   this,
+			  std::ref(information),
+			  std::ref(views_to_consider),
+			  std::ref(cost),
+			  3,
+			  4);
+	
+	// wait for threads to finish
+	first.join();
+	second.join();
+	third.join();
+	fourth.join();
+        
+        // single threaded ig retrieval
+        /*movements::PoseVector target_positions;
         target_positions.resize(1);
         
         for( unsigned int i=0; i<information.size(); ++i )
         {
-        ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
-        
-        if( cost[i]==-1 )
-            continue;
-        
-        View target_view = view_space_.getView( views_to_consider[i] );
-        
-        target_positions[0] = target_view.pose();
-        
-        getViewInformation( information[i], target_positions );
-        
-        for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
-        {
-            ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
-        }
-        std::cout<<std::endl;
-        }
+	    ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
+	    
+	    if( cost[i]==-1 )
+		continue;
+	    
+	    View target_view = view_space_.getView( views_to_consider[i] );
+	    
+	    target_positions[0] = target_view.pose();
+	    
+	    getViewInformation( information[i], target_positions );
+	    
+	    for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
+	    {
+		ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
+	    }
+	    std::cout<<std::endl;
+        }*/
         
         if( observe_timing_ )
         {
-        ros::Duration passed = ros::Time::now() - temp;
-        timing_profiler.push_back( passed.toSec()/(double)information.size()  );
+	  ros::Duration passed = ros::Time::now() - temp;
+	  timing_profiler.push_back( passed.toSec()/(double)information.size()  );
         }
         
         ros::spinOnce();
@@ -491,13 +529,13 @@ void ViewPlanner::run()
 
         for( unsigned int i=0; i<view_returns.size(); ++i )
         {
-        if( cost[i]==-1 )
-            continue;
-        igs[i] = calculateReturn( cost[i], information[i] );
-        ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
-        accumulated_ig+=igs[i];
-        accumulated_cost+=cost[i];
-        ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
+	  if( cost[i]==-1 )
+	      continue;
+	  igs[i] = calculateReturn( cost[i], information[i] );
+	  ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
+	  accumulated_ig+=igs[i];
+	  accumulated_cost+=cost[i];
+	  ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
         }
         
         double cost_t = cost_weight_;
@@ -1188,6 +1226,27 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
   }
   
   return response;
+}
+
+void ViewPlanner::threadedIGCalculation(  std::vector< std::vector<double> >& igVector, std::vector<unsigned int>& viewSet, std::vector<double>& cost, unsigned int slotId, unsigned int nrOfSlots )
+{
+  ROS_INFO_STREAM("Starting IG retrieval thread "<<slotId<<".");
+  movements::PoseVector target_positions;
+  target_positions.resize(1);
+
+  // processing views that belong to slot...
+  for( unsigned int i=slotId; i<igVector.size(); i+=nrOfSlots )
+  {
+    ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<igVector.size()<<".");
+    
+    if( cost[i]==-1 )
+      continue;
+    
+    View target_view = view_space_.getView( viewSet[i] );
+    target_positions[0] = target_view.pose();
+    
+    getViewInformation( igVector[i], target_positions );
+  }
 }
 
 bool ViewPlanner::getModelInformation( std::vector<double>& _output )

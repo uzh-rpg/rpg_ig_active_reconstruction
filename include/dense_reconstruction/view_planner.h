@@ -179,6 +179,19 @@ public:
    */
   bool getViewInformation( std::vector<double>& _output, movements::PoseVector& _poses );
   
+  /** Function for threaded view information calls
+   * @param igVector Vector that is to be filled with the information gains.
+   * @param viewSet Set of corresponding view for which the ig's are to be calculated.
+   * @param cost Vector with costs.
+   * @param slotId Which slot shall be filled in this function: E.g.: slotId=2, nrOfSlots=5 -> function calculates IG's for views 2,7,12,...
+   * @param nrOfSlots How many slots there are in total
+   */
+  void threadedIGCalculation(  std::vector< std::vector<double> >& igVector, 
+			       std::vector<unsigned int>& viewSet, 
+			       std::vector<double>& cost,
+			       unsigned int slotId, 
+			       unsigned int nrOfSlots );
+  
   /**
    * retreives expected informations for the complete current model state
    * @param _output the calculated statistic values for the given metrics
