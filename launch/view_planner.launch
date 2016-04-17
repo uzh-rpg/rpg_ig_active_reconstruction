@@ -5,7 +5,7 @@
     <param name="data_folder" value="$(find dense_reconstruction)/data/view_planning/" />
     
     <!-- whether already visited views shall be considered again or not -->
-    <param name="discard_visited" value="false" />
+    <param name="discard_visited" value="true" />
     
     <!-- if true then timing values will be calculated and saved along with the other data -->
     <param name="observe_timing" value="true" />
@@ -14,13 +14,13 @@
     <param name="random_nbv" value="false" />
     
     <!-- the cost weight should be positive since it is internally counted negative -->
-    <param name="cost_weight" value="0.5" />
+    <param name="cost_weight" value="0.0" />
     <param name="information_weight" value="1.0" />
     
     <!-- If the number of occupied voxels changes less than this percentage, then the iteration aborts -->
     <param name="saturation_threshold" value="0.02" />
     
-    <param name="only_iterate_viewspace" value="false" />
+    <param name="only_iterate_viewspace" value="true" />
     
     <param name="information_metric/IgnorantTotalIG/weight" value="0.0" />
     <param name="information_metric/OccupancyAwareTotalIG/weight" value="0.0" />
@@ -43,7 +43,7 @@
     <param name="information/ray_resolution_x" value="0.1" />
     <param name="information/ray_resolution_y" value="0.1" />
     <param name="information/ray_step_size" value="1" /><!--currently deactivated-->
-    <param name="information/subwindow_width_percentage" value="0.6" /><!--0.6-->
+    <param name="information/subwindow_width_percentage" value="0.6" />
     <param name="information/subwindow_height_percentage" value="0.6" />
     <param name="information/min_ray_depth" value="0.05" />
     <param name="information/max_ray_depth" value="1.0" /><!--2-->

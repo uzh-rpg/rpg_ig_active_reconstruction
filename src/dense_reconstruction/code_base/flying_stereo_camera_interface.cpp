@@ -163,11 +163,11 @@ bool FlyingStereoCameraInterface::moveTo( View& _target_view )
   current_img_pose.orientation =  current_img_pose.orientation*cam_to_image_;
   srv_call.request.model_state.pose = movements::toROS( current_img_pose );
   
-  ros::service::call( "/gazebo/set_model_state", srv_call );
+  //ros::service::call( "/gazebo/set_model_state", srv_call );
   
   current_view_ = _target_view.index;
   
-  ros::Duration(1.0).sleep();
+  ros::Duration(2.0).sleep();
   
   return true;
 }
@@ -201,7 +201,10 @@ bool FlyingStereoCameraInterface::retrieveDataService( dense_reconstruction::Ret
   ROS_INFO("Data retrieval service called.");
   //_res.receive_info = data_retreiver_->retrieveData();
   std::stringstream pclFile;
-  pclFile<<"/home/stefan/catkin_ws/src/dense_reconstruction/data/bunny_pcl/bunny_set_"<<current_view_;//<<".bag";
+  std::string currentDataset;
+  ros::param::get("/dense_reconstruction/currentDataSet",currentDataset);
+  
+  pclFile<<"/home/stewess/autorobo_paper_views/"<<currentDataset<<"/"<<currentDataset<<"_view_"<<current_view_<<".bag";
   _res.receive_info = data_retreiver_->retrieveData( pclFile.str() );
   return true;
 }

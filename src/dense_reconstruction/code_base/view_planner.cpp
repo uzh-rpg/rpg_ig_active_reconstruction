@@ -227,6 +227,9 @@ void ViewPlanner::run()
   //int choice=0;
   if( onlyIterateViewSpace_ ) // retrieve viewspace, iterate through it retrieving 3d data
   {
+    ros::param::set("/dense_reconstruction/currentDataSet","eule");
+    
+    
       ROS_INFO_STREAM("Iterating Viewspace.");
       
       std::vector<unsigned int> views_to_consider;
@@ -241,8 +244,8 @@ void ViewPlanner::run()
         ROS_INFO_STREAM("Iterating through view "<<i<<" of "<<views_to_consider.size()<<".");
           View nbv = view_space_.getView(views_to_consider[i]);
           bool successful_movement = moveToAndWait(nbv);
-          char ba;
-          std::cin>>ba;
+          /*char ba;
+          std::cin>>ba;*/
           if( successful_movement )
           {
               retrieveDataAndWait();
@@ -258,494 +261,569 @@ void ViewPlanner::run()
   unsigned int max_iterations_per_run = 20;
   unsigned int number_of_runs = 8;
   
-  for( unsigned int run_id = 5; run_id<number_of_runs; ++run_id )
+  std::vector<std::string> modelNames = {/*"angel_in_hands","armadillo_final","bunny_mvs","centaur1_final","eule",*/"head_futuristic_hair","kissing_doves","meditating_rabbit_figurine","sitting_buddha","skull","snowmans"};
+  
+  std::string dataSetName;
+  
+  ros::Time globalStartTime = ros::Time::now();
+  
+  for( unsigned int datasetId=0; datasetId<modelNames.size(); ++datasetId )
   {
-      ROS_INFO_STREAM("Start experiment nr "<<run_id<<".");
-      
-      // reset viewspace
-      getViewSpace();
-      View nbv = view_space_.getView(0);
-      moveToAndWait(nbv);
-      // reset octomap
-      std_srvs::Empty quest;
-      ros::service::call("/octomap_dense_reconstruction/reset",quest);
-      
-      // reset data
-      planning_data_.clear();
-      
-      std::string stringFront = "Dragon48CostFinal";
-    // to make several runs
-      switch(run_id)
-      {
-          case 0:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[5] = 1;
-              experiment_id_ = stringFront+"AverageEntropy";
-              // for speedup: disable occlusion calculation since not needed here
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-          case 1:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[6] = 1;
-              experiment_id_ = stringFront+"VasquezGomezAreaFactor";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
-              break;
-          case 2:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[5] = 30;
-              information_weights_[4] = 1;
-              experiment_id_ = stringFront+"Combined";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-          case 3:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[8] = 1;
-              experiment_id_ = stringFront+"ProximityCount";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
-              break;
-          case 4:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[4] = 1;
-              experiment_id_ = stringFront+"UnknownObjectVolumeIG";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-          case 5:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[3] = 1;
-              experiment_id_ = stringFront+"UnknownObjectSideFrontier";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-          case 6:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[1] = 1;
-              experiment_id_ = stringFront+"OccupancyAwareTotalIG";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-          case 7:
-              for( int w=0; w<information_weights_.size(); ++w )
-              {
-                  information_weights_[w] = 0;
-              }
-              information_weights_[2] = 1;
-              experiment_id_ = stringFront+"TotalUnknownIG";
-              ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", false);
-              break;
-      }
-      
-      ROS_INFO_STREAM("New experiment starting... "<<experiment_id_<<"!!!");
-      
-      std::stringstream bagname;
-      time_t current_time;
-      time(&current_time);
-      bagname<<"/home/stewess/paper/"<<experiment_id_<<current_time<<".bag";
-      
-      RosbagCreator rosbagOut( bagname.str() );
+    dataSetName = modelNames[datasetId];
+    ros::param::set("/dense_reconstruction/currentDataSet",dataSetName); // needed for pcl loading from files when using precalculated datasets
     
-    ROS_INFO("Start planning");
-    unsigned int iterationCount=0;
-    do
+    ros::Time datasetBeginTime = ros::Time::now();
+    ROS_INFO_STREAM("Start experiments for model: "<<dataSetName);
+    ROS_INFO_STREAM("Elapsed time since start: "<<datasetBeginTime-globalStartTime);
+    
+    
+    for( unsigned int run_id = 0; run_id<number_of_runs; ++run_id )
     {
-        ++iterationCount;
-        
-        std::vector<double> timing_profiler;
-        ros::Time temp;
-        
-        pauseIfRequested();
-        
-        // retrieve new information
-        retrieveDataAndWait();
-        
-        // possibly build subspace of complete space
-        std::vector<unsigned int> views_to_consider;
-        determineAvailableViewSpace( views_to_consider );
-        ROS_INFO_STREAM("Nr of  views that are part of the choice: "<<views_to_consider.size() );
-        
-        
-        // get movement costs
-        ROS_INFO("Retrieve movement costs...");
-        std::vector<double> cost(views_to_consider.size());
-        std::vector<RobotPlanningInterface::MovementCost> full_cost(views_to_consider.size());
-        int achievable_poses_count = 0;
-        
-        if( observe_timing_ )
-        {
-        temp = ros::Time::now();
-        }
-        
-        for( unsigned int i=0; i<cost.size(); i++ )
-        {
-        RobotPlanningInterface::MovementCost cost_description;
-        
-        View target = view_space_.getView( views_to_consider[i] );
-        movementCost( cost_description, current_view_, target );
-        
-        if( cost_description.exception!=RobotPlanningInterface::MovementCost::NONE )
-        {
-            ROS_WARN_STREAM("Exception occured for movement cost calculation. The flag returned was '"<<cost_description.exception<<"'.");
-            view_space_.setBad( views_to_consider[i] ); // don't consider that view
-            cost[i] = -1; // no negative costs exist, that's to mark invalids
-        }
-        else
-        {
-            cost[i] = cost_description.cost;
-            full_cost[i] = cost_description;
-            ++achievable_poses_count;
-        }
-        }
-        
-        if( observe_timing_ )
-        {
-	  ros::Duration passed = ros::Time::now() - temp;
-	  timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
-        }
-        
-        pauseIfRequested();
-        
-        if( achievable_poses_count==0 )
-        {
-	  ROS_INFO("None of the poses in the set were achievable or the whole view space has been visited. Stopping iteration and saving data gathered so far.");
-	  //pause_=true;
-	  //pauseIfRequested();
+	ros::Duration elapsedTime = ros::Time::now()-globalStartTime;
+	unsigned int carriedOutRuns = datasetId*number_of_runs + run_id;
+	
+	ROS_INFO_STREAM("Start experiment nr "<<run_id<<".");
+	
+	if( carriedOutRuns!=0 )
+	{
+	  double elapsedTimeS = elapsedTime.toSec();
+	  double averageRunTimeS = elapsedTimeS/carriedOutRuns;
+	  ROS_INFO_STREAM("Average time per run: "<<averageRunTimeS<<"s.");
+	  
+	  unsigned int remainingRuns = modelNames.size()*number_of_runs - carriedOutRuns;
+	  ROS_INFO_STREAM(remainingRuns<<" runs are remaining.");
+	  double remainingTimeS = remainingRuns*averageRunTimeS;
+	  int remainingTimeMin = remainingTimeS/60;
+	  int remainingTimeSOff = remainingTimeS-remainingTimeMin*60;
+	  int remainingTimeH = remainingTimeMin/60;
+	  int remainingTimeMinOff = remainingTimeMin-remainingTimeH*60;
+	  int remainingTimeDay = remainingTimeH/24;
+	  int remainingTimeHOff = remainingTimeH-remainingTimeDay*24;
+	  
+	  ROS_WARN_STREAM("Projected time left: "<<remainingTimeDay<<"d "<<remainingTimeHOff<<"h "<<remainingTimeMinOff<<"min "<<remainingTimeSOff<<"s.");
+	  ros::param::set("dense_reconstruction/caluclationDaysLeft",remainingTimeDay);
+	  ros::param::set("dense_reconstruction/caluclationHoursLeft",remainingTimeHOff);
+	  ros::param::set("dense_reconstruction/caluclationMinLeft",remainingTimeMinOff);
+	  ros::param::set("dense_reconstruction/caluclationSecLeft",remainingTimeSOff);
+	}
+	
+	// reset viewspace
+	getViewSpace();
+	View nbv = view_space_.getView(0);
+	moveToAndWait(nbv);
+	// reset octomap
+	std_srvs::Empty quest;
+	ros::service::call("/octomap_dense_reconstruction/reset",quest);
+	
+	// reset data
+	planning_data_.clear();
+	
+	std::string stringFront = dataSetName;
+      // to make several runs
+	switch(run_id)
+	{
+	    case 0:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[5] = 1;
+		experiment_id_ = stringFront+"AverageEntropy";
+		// for speedup: disable occlusion calculation since not needed here
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 1:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[6] = 1;
+		experiment_id_ = stringFront+"VasquezGomezAreaFactor";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 2:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[5] = 30;
+		information_weights_[4] = 1;
+		experiment_id_ = stringFront+"Combined";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 3:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[8] = 1;
+		experiment_id_ = stringFront+"ProximityCount";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 4:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[4] = 1;
+		experiment_id_ = stringFront+"UnknownObjectVolumeIG";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 5:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[3] = 1;
+		experiment_id_ = stringFront+"UnknownObjectSideFrontier";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 6:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[1] = 1;
+		experiment_id_ = stringFront+"OccupancyAwareTotalIG";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	    case 7:
+		for( int w=0; w<information_weights_.size(); ++w )
+		{
+		    information_weights_[w] = 0;
+		}
+		information_weights_[2] = 1;
+		experiment_id_ = stringFront+"TotalUnknownIG";
+		ros::param::set("/octomap_dense_reconstruction/calculate_occlusion", true);
+		break;
+	}
+	
+	ROS_INFO_STREAM("New experiment starting... "<<experiment_id_<<"!!!");
+	
+	std::stringstream bagname;
+	time_t current_time;
+	time(&current_time);
+	bagname<<"//home/stewess/ar_paper_data_evaluation3/"<<dataSetName<<"/"<<experiment_id_<<current_time<<".bag";
+	
+	RosbagCreator rosbagOut( bagname.str() );
+      
+      ROS_INFO("Start planning");
+      unsigned int iterationCount=0;
+      do
+      {
+	  ++iterationCount;
+	  
+	  std::vector<double> timing_profiler;
+	  ros::Time temp;
+	  
+	  pauseIfRequested();
+	  
+	  // retrieve new information
+	  retrieveDataAndWait();
+	  
+	  // possibly build subspace of complete space
+	  std::vector<unsigned int> views_to_consider;
+	  determineAvailableViewSpace( views_to_consider );
+	  ROS_INFO_STREAM("Nr of  views that are part of the choice: "<<views_to_consider.size() );
+	  
+	  
+	  // get movement costs
+	  ROS_INFO("Retrieve movement costs...");
+	  std::vector<double> cost(views_to_consider.size());
+	  std::vector<RobotPlanningInterface::MovementCost> full_cost(views_to_consider.size());
+	  int achievable_poses_count = 0;
+	  
+	  if( observe_timing_ )
+	  {
+	  temp = ros::Time::now();
+	  }
+	  
+	  for( unsigned int i=0; i<cost.size(); i++ )
+	  {
+	  RobotPlanningInterface::MovementCost cost_description;
+	  
+	  View target = view_space_.getView( views_to_consider[i] );
+	  movementCost( cost_description, current_view_, target );
+	  
+	  if( cost_description.exception!=RobotPlanningInterface::MovementCost::NONE )
+	  {
+	      ROS_WARN_STREAM("Exception occured for movement cost calculation. The flag returned was '"<<cost_description.exception<<"'.");
+	      view_space_.setBad( views_to_consider[i] ); // don't consider that view
+	      cost[i] = -1; // no negative costs exist, that's to mark invalids
+	  }
+	  else
+	  {
+	      cost[i] = cost_description.cost;
+	      full_cost[i] = cost_description;
+	      ++achievable_poses_count;
+	  }
+	  }
+	  
+	  if( observe_timing_ )
+	  {
+	    ros::Duration passed = ros::Time::now() - temp;
+	    timing_profiler.push_back( passed.toSec()/(double)cost.size()  );
+	  }
+	  
+	  pauseIfRequested();
+	  
+	  if( achievable_poses_count==0 )
+	  {
+	    ROS_INFO("None of the poses in the set were achievable or the whole view space has been visited. Stopping iteration and saving data gathered so far.");
+	    //pause_=true;
+	    //pauseIfRequested();
+	    
+	    // reconstruction is done, end iteration
+	    break;
+	  }
+	  ros::spinOnce();
+	  // get expected informations for each
+	  ROS_INFO("Retrieve information score...");
+	  std::vector< std::vector<double> > information(views_to_consider.size());
+	  std::vector< double > currentModelMetric;
+	  
+	  getModelInformation(currentModelMetric);
+	  
+	  for( unsigned int j=0; j<currentModelMetric.size(); ++j )
+	  {
+	      ROS_INFO_STREAM(model_metrics_[j]<<" score:"<<currentModelMetric[j]);
+	  }
+	  std::cout<<std::endl;
+	  
+	  if( observe_timing_ )
+	  {
+	  temp = ros::Time::now();
+	  }
+	  
+	  // start multithreaded ig retrieval (TODO: number of threads dependent on available processors)
+	  std::thread first(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    0,
+			    8);
+	  std::thread second(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    1,
+			    8);
+	  std::thread third(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    2,
+			    8);
+	  std::thread fourth(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    3,
+			    8);
+	  std::thread fifth(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    4,
+			    8);
+	  std::thread sixth(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    5,
+			    8);
+	  std::thread seventh(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    6,
+			    8);
+	  std::thread eigth(&ViewPlanner::threadedIGCalculation,
+			    this,
+			    std::ref(information),
+			    std::ref(views_to_consider),
+			    std::ref(cost),
+			    7,
+			    8);
+	  
+	  // wait for threads to finish
+	  first.join();
+	  second.join();
+	  third.join();
+	  fourth.join();
+	  fifth.join();
+	  sixth.join();
+	  seventh.join();
+	  eigth.join();
+	  
+	  // single threaded ig retrieval
+	  /*movements::PoseVector target_positions;
+	  target_positions.resize(1);
+	  
+	  for( unsigned int i=0; i<information.size(); ++i )
+	  {
+	      ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
+	      
+	      if( cost[i]==-1 )
+		  continue;
+	      
+	      View target_view = view_space_.getView( views_to_consider[i] );
+	      
+	      target_positions[0] = target_view.pose();
+	      
+	      getViewInformation( information[i], target_positions );
+	      
+	      for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
+	      {
+		  ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
+	      }
+	      std::cout<<std::endl;
+	  }*/
+	  
+	  if( observe_timing_ )
+	  {
+	    ros::Duration passed = ros::Time::now() - temp;
+	    timing_profiler.push_back( passed.toSec()/(double)information.size()  );
+	  }
+	  
+	  ros::spinOnce();
+	  pauseIfRequested();
+	  
+	  ROS_INFO("Calculating next best view...");
+	  // calculate return for each
+	  std::vector<double> view_returns(views_to_consider.size(),0);
+	  std::vector<double> igs(views_to_consider.size(),0);
+	  
+	  double accumulated_ig = 0;
+	  double accumulated_cost = 0;
+
+	  for( unsigned int i=0; i<view_returns.size(); ++i )
+	  {
+	    if( cost[i]==-1 )
+		continue;
+	    igs[i] = calculateReturn( cost[i], information[i] );
+	    ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
+	    accumulated_ig+=igs[i];
+	    accumulated_cost+=cost[i];
+	    ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
+	  }
+	  
+	  double cost_t = cost_weight_;
+	  if( accumulated_cost==0 )
+	  {
+	      accumulated_cost=1;
+	      cost_t=0;
+	  }
+	  
+	  double inf_t = information_weight_;
+	  if( accumulated_ig==0 )
+	  {
+	      accumulated_ig=1;
+	      inf_t = 0;
+	  }
+	  
+	  for( unsigned int i=0; i<view_returns.size(); ++i )
+	  {
+	      view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
+	      ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
+	      if( std::isnan(view_returns[i]) )
+	      {
+		  ROS_WARN_STREAM("Calculation produced a NAN for a view return - Setting it to zero instead.");
+		  view_returns[i] = 0;
+	      }
+	  }
+	  ros::spinOnce();
+	  
+	  
+	  // calculate NBV
+	  
+	  std::list<unsigned int> nbv_idx_queue;
+	  
+	  unsigned int passedCount;
+	  unsigned int filteredCount;
+	  double desiredOccupiedPerc = 0.2;
+	  
+	  unsigned int maxLowSuccessIterations = 3; // how many times the termination criteria must be successively fulfilled to actually terminate
+	  unsigned int terminationCount = 0;
+
+	  if(!random_nbv_)
+	  {
+	      bool again;
+	      do
+	      {
+		  again = false;
+		  passedCount=0;
+		  filteredCount=0;
+		  
+		  nbv_idx_queue.push_front(0);
+		  
+		  for( unsigned int i=0; i<views_to_consider.size(); ++i )
+		  {
+		      if( cost[i]==-1 )
+		      continue;
+			      
+		      // skip view if it has been visited too often
+		      if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
+		      {
+			  ROS_INFO_STREAM("Skipping view that has been visited too often.");
+			  continue;
+		      }
+		      if( information[i][occplaneMetricId_]<desiredOccupiedPerc )
+		      {
+			  ++filteredCount;
+			  continue;
+		      }
+		      else
+		      {
+			  ++passedCount;
+		      }
+		      
+		      for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
+		      {	  	  
+		      if( view_returns[i] > view_returns[*it] )
+		      {
+			  nbv_idx_queue.insert(it, i );
+			  break;
+		      }
+		      else if( it==(--nbv_idx_queue.end()) )
+		      {
+			  nbv_idx_queue.insert(nbv_idx_queue.end(), i );
+			  break;
+		      }
+		      }
+		  }
+		  
+		  if(passedCount==0)
+		  {
+		      desiredOccupiedPerc -= 0.1;
+		      ROS_WARN_STREAM("No views had enough occupied voxels, reducing desired percentage. New target: "<<desiredOccupiedPerc<<"%.");
+		      if( desiredOccupiedPerc<0 )
+		      {
+			  ROS_ERROR_STREAM("Couldn't find view that passed preprocessor filter.");
+			  break;
+		      }
+		      again = true;
+		  }
+	      }while(again);
+	      
+	      ROS_INFO_STREAM("Occplane percentage filter: "<<filteredCount<<" removed, "<<passedCount<<" passed.");
+	  
+	  ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". Its utility function yielded "<<view_returns[nbv_idx_queue.front()]<<"." );
+	  }
+	  else
+	  {
+	  ROS_INFO("Choosing next view randomly...");
+	  std::random_device rd;
+	  std::mt19937 gen(rd()); //mersenne-twister random number generator with random seed
+	  std::uniform_int_distribution<unsigned int> distr( 0,views_to_consider.size() );
+	  
+	  unsigned int rand_1, rand_2;
+	  do
+	  {
+	      rand_1 = distr_(gen_);
+	      rand_2 = distr_(gen_);
+	  }while( rand_1 >=views_to_consider.size() || rand_1>=views_to_consider.size() );
+	  
+	  nbv_idx_queue.push_back( rand_1 );
+	  nbv_idx_queue.push_back( rand_2 );
+	  while( *(nbv_idx_queue.begin()) == *(++nbv_idx_queue.begin()) )
+	  {
+	      *(++nbv_idx_queue.begin()) = views_to_consider[distr(gen)];
+	  }
+	  
+	  ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". The random number was "<<rand_1<<"." );
+	  }
+	  
+	  // no valid NBV left in set of achievable poses
+	  if( nbv_idx_queue.size()==0 )
+	  {
+	  ROS_INFO("No achievable NBV left in view space that has not been visited too often. Stopping NBV procedure and saving data...");
 	  
 	  // reconstruction is done, end iteration
 	  break;
-        }
-        ros::spinOnce();
-        // get expected informations for each
-        ROS_INFO("Retrieve information score...");
-        std::vector< std::vector<double> > information(views_to_consider.size());
-        std::vector< double > currentModelMetric;
-        
-        getModelInformation(currentModelMetric);
-        
-        for( unsigned int j=0; j<currentModelMetric.size(); ++j )
-        {
-            ROS_INFO_STREAM(model_metrics_[j]<<" score:"<<currentModelMetric[j]);
-        }
-        std::cout<<std::endl;
-        
-        if( observe_timing_ )
-        {
-        temp = ros::Time::now();
-        }
-        
-        // start multithreaded ig retrieval (TODO: number of threads dependent on available processors)
-        std::thread first(&ViewPlanner::threadedIGCalculation,
-			  this,
-			  std::ref(information),
-			  std::ref(views_to_consider),
-			  std::ref(cost),
-			  0,
-			  4);
-        std::thread second(&ViewPlanner::threadedIGCalculation,
-			   this,
-			  std::ref(information),
-			  std::ref(views_to_consider),
-			  std::ref(cost),
-			  1,
-			  4);
-        std::thread third(&ViewPlanner::threadedIGCalculation,
-			  this,
-			  std::ref(information),
-			  std::ref(views_to_consider),
-			  std::ref(cost),
-			  2,
-			  4);
-        std::thread fourth(&ViewPlanner::threadedIGCalculation,
-			   this,
-			  std::ref(information),
-			  std::ref(views_to_consider),
-			  std::ref(cost),
-			  3,
-			  4);
-	
-	// wait for threads to finish
-	first.join();
-	second.join();
-	third.join();
-	fourth.join();
-        
-        // single threaded ig retrieval
-        /*movements::PoseVector target_positions;
-        target_positions.resize(1);
-        
-        for( unsigned int i=0; i<information.size(); ++i )
-        {
-	    ROS_INFO_STREAM("Retrieving information score for view candidate "<<i+1<<"/"<<information.size()<<".");
-	    
-	    if( cost[i]==-1 )
-		continue;
-	    
-	    View target_view = view_space_.getView( views_to_consider[i] );
-	    
-	    target_positions[0] = target_view.pose();
-	    
-	    getViewInformation( information[i], target_positions );
-	    
-	    for( unsigned int j=0; j<metrics_to_use_.size(); ++j )
-	    {
-		ROS_INFO_STREAM(metrics_to_use_[j]<<" score:"<<information[i][j]);
-	    }
-	    std::cout<<std::endl;
-        }*/
-        
-        if( observe_timing_ )
-        {
-	  ros::Duration passed = ros::Time::now() - temp;
-	  timing_profiler.push_back( passed.toSec()/(double)information.size()  );
-        }
-        
-        ros::spinOnce();
-        pauseIfRequested();
-        
-        ROS_INFO("Calculating next best view...");
-        // calculate return for each
-        std::vector<double> view_returns(views_to_consider.size(),0);
-        std::vector<double> igs(views_to_consider.size(),0);
-        
-        double accumulated_ig = 0;
-        double accumulated_cost = 0;
-
-        for( unsigned int i=0; i<view_returns.size(); ++i )
-        {
-	  if( cost[i]==-1 )
-	      continue;
-	  igs[i] = calculateReturn( cost[i], information[i] );
-	  ROS_INFO_STREAM("Combined IG of view candidate "<<i<<" is "<<igs[i]);
-	  accumulated_ig+=igs[i];
-	  accumulated_cost+=cost[i];
-	  ROS_INFO_STREAM("Combined cost of view candidate "<<i<<" is "<<cost[i]);
-        }
-        
-        double cost_t = cost_weight_;
-        if( accumulated_cost==0 )
-        {
-            accumulated_cost=1;
-            cost_t=0;
-        }
-        
-        double inf_t = information_weight_;
-        if( accumulated_ig==0 )
-        {
-            accumulated_ig=1;
-            inf_t = 0;
-        }
-        
-        for( unsigned int i=0; i<view_returns.size(); ++i )
-        {
-            view_returns[i] = inf_t/accumulated_ig*igs[i]-cost_t/accumulated_cost*cost[i];
-            ROS_INFO_STREAM("Utility function of view candidate "<<i<<" yields "<<view_returns[i]);
-            if( std::isnan(view_returns[i]) )
-            {
-                ROS_WARN_STREAM("Calculation produced a NAN for a view return - Setting it to zero instead.");
-                view_returns[i] = 0;
-            }
-        }
-        ros::spinOnce();
-        
-        
-        // calculate NBV
-        
-        std::list<unsigned int> nbv_idx_queue;
-        
-        unsigned int passedCount;
-        unsigned int filteredCount;
-        double desiredOccupiedPerc = 0;
-        
-        unsigned int maxLowSuccessIterations = 3; // how many times the termination criteria must be successively fulfilled to actually terminate
-        unsigned int terminationCount = 0;
-
-        if(!random_nbv_)
-        {
-            bool again;
-            do
-            {
-                again = false;
-                passedCount=0;
-                filteredCount=0;
-                
-                nbv_idx_queue.push_front(0);
-                
-                for( unsigned int i=0; i<views_to_consider.size(); ++i )
-                {
-                    if( cost[i]==-1 )
-                    continue;
-                            
-                    // skip view if it has been visited too often
-                    if( view_space_.timesVisited(views_to_consider[i])>=max_vp_visits_ )
-                    {
-                        ROS_INFO_STREAM("Skipping view that has been visited too often.");
-                        continue;
-                    }
-                    if( information[i][occplaneMetricId_]<desiredOccupiedPerc )
-                    {
-                        ++filteredCount;
-                        continue;
-                    }
-                    else
-                    {
-                        ++passedCount;
-                    }
-                    
-                    for( std::list<unsigned int>::iterator it = nbv_idx_queue.begin(); it!=nbv_idx_queue.end(); ++it )
-                    {	  	  
-                    if( view_returns[i] > view_returns[*it] )
-                    {
-                        nbv_idx_queue.insert(it, i );
-                        break;
-                    }
-                    else if( it==(--nbv_idx_queue.end()) )
-                    {
-                        nbv_idx_queue.insert(nbv_idx_queue.end(), i );
-                        break;
-                    }
-                    }
-                }
-                
-                if(passedCount==0)
-                {
-                    desiredOccupiedPerc -= 0.1;
-                    ROS_WARN_STREAM("No views had enough occupied voxels, reducing desired percentage. New target: "<<desiredOccupiedPerc<<"%.");
-                    if( desiredOccupiedPerc<0 )
-                    {
-                        ROS_ERROR_STREAM("Couldn't find view that passed preprocessor filter.");
-                        break;
-                    }
-                    again = true;
-                }
-            }while(again);
-            
-            ROS_INFO_STREAM("Occplane percentage filter: "<<filteredCount<<" removed, "<<passedCount<<" passed.");
-        
-        ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". Its utility function yielded "<<view_returns[nbv_idx_queue.front()]<<"." );
-        }
-        else
-        {
-        ROS_INFO("Choosing next view randomly...");
-        std::random_device rd;
-        std::mt19937 gen(rd()); //mersenne-twister random number generator with random seed
-        std::uniform_int_distribution<unsigned int> distr( 0,views_to_consider.size() );
-        
-        unsigned int rand_1, rand_2;
-        do
-        {
-            rand_1 = distr_(gen_);
-            rand_2 = distr_(gen_);
-        }while( rand_1 >=views_to_consider.size() || rand_1>=views_to_consider.size() );
-        
-        nbv_idx_queue.push_back( rand_1 );
-        nbv_idx_queue.push_back( rand_2 );
-        while( *(nbv_idx_queue.begin()) == *(++nbv_idx_queue.begin()) )
-        {
-            *(++nbv_idx_queue.begin()) = views_to_consider[distr(gen)];
-        }
-        
-        ROS_INFO_STREAM("Chosen view is "<<nbv_idx_queue.front()<<". The random number was "<<rand_1<<"." );
-        }
-        
-        // no valid NBV left in set of achievable poses
-        if( nbv_idx_queue.size()==0 )
-        {
-        ROS_INFO("No achievable NBV left in view space that has not been visited too often. Stopping NBV procedure and saving data...");
-        
-        // reconstruction is done, end iteration
-        break;
-        }
-        
-        ros::spinOnce();
-        
-        
-        // data storage...
-        ReturnValueInformation return_info;
-        return_info.return_value = view_returns[nbv_idx_queue.front()];
-        return_info.winning_margin = view_returns[nbv_idx_queue.front()] - view_returns[*(++nbv_idx_queue.begin())];
-        st_is::StdError return_val_errors(view_returns);
-        return_info.return_value_mean = return_val_errors.mean;
-        return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
-        
-        saveNBVData(views_to_consider[nbv_idx_queue.front()], return_info, cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], currentModelMetric, &full_cost[nbv_idx_queue.front()].additional_field_names, &full_cost[nbv_idx_queue.front()].additional_fields_values );
-        
-        if( observe_timing_ )
-        {
-        timing_.push_back(timing_profiler);
-        }
-        
-        saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, currentModelMetric, &full_cost );
-        
-        ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
-        
-        // check if termination criteria is fulfilled
-        bool termCritAck = terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], currentModelMetric);
-        if( termCritAck )
-        {
-            ++terminationCount;
-        }
-        else if(terminationCount!=0)
-        {
-            terminationCount=0;
-        }
-        
-        if( terminationCount!=maxLowSuccessIterations && iterationCount<max_iterations_per_run )
-        {
-            // move to this view
-            std::list<unsigned int>::iterator nbv_it = nbv_idx_queue.begin();
-            View nbv = view_space_.getView(views_to_consider[*nbv_it]);
-            bool successful_movement = moveToAndWait(nbv);
-            while( !successful_movement )
-            {
-                ROS_INFO("Choosing next best view instead.");
-                view_space_.setUnReachable(views_to_consider[*nbv_it]);
-                ++nbv_it;
-                if( nbv_it==nbv_idx_queue.end() ) // no more view available
-                {
-                ROS_INFO("No more views available, terminating...");
-                stop_and_print_ = true;
-                break;
-                }
-                nbv = view_space_.getView(views_to_consider[*nbv_it]);
-                successful_movement = moveToAndWait(nbv);
-            }
-            
-            // set view as visited!
-            if( successful_movement )
-                view_space_.setVisited(views_to_consider[nbv_idx_queue.front()]);
-            
-        }
-        else
-        {
-            // reconstruction is done, end iteration
-            ROS_INFO("The termination critera was fulfilled and the reconstruction is thus considered to have succeeded. The view planner will shut down.");
-            break;
-        }
-        ROS_INFO_STREAM("Finished NBV iteration nr. "<<iterationCount);
-        ros::spinOnce();
-    }while(!stop_and_print_);
-  
-    ROS_INFO("Saving data to file.");
-    saveDataToFile();
+	  }
+	  
+	  ros::spinOnce();
+	  
+	  
+	  // data storage...
+	  ReturnValueInformation return_info;
+	  return_info.return_value = view_returns[nbv_idx_queue.front()];
+	  return_info.winning_margin = view_returns[nbv_idx_queue.front()] - view_returns[*(++nbv_idx_queue.begin())];
+	  st_is::StdError return_val_errors(view_returns);
+	  return_info.return_value_mean = return_val_errors.mean;
+	  return_info.return_value_stddev = std::sqrt(return_val_errors.variance);
+	  
+	  saveNBVData(views_to_consider[nbv_idx_queue.front()], return_info, cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], currentModelMetric, &full_cost[nbv_idx_queue.front()].additional_field_names, &full_cost[nbv_idx_queue.front()].additional_fields_values );
+	  
+	  if( observe_timing_ )
+	  {
+	  timing_.push_back(timing_profiler);
+	  }
+	  
+	  saveCurrentChoiceDataToFile(views_to_consider, view_returns, cost, information, currentModelMetric, &full_cost );
+	  
+	  ROS_INFO_STREAM(planning_data_.size()<<" data points have been visited and saved so far.");
+	  
+	  // check if termination criteria is fulfilled
+	  bool termCritAck = terminationCriteriaFulfilled(view_returns[nbv_idx_queue.front()], cost[nbv_idx_queue.front()], information[nbv_idx_queue.front()], currentModelMetric);
+	  if( termCritAck )
+	  {
+	      ++terminationCount;
+	  }
+	  else if(terminationCount!=0)
+	  {
+	      terminationCount=0;
+	  }
+	  
+	  if( terminationCount!=maxLowSuccessIterations && iterationCount<max_iterations_per_run )
+	  {
+	      // move to this view
+	      std::list<unsigned int>::iterator nbv_it = nbv_idx_queue.begin();
+	      View nbv = view_space_.getView(views_to_consider[*nbv_it]);
+	      bool successful_movement = moveToAndWait(nbv);
+	      while( !successful_movement )
+	      {
+		  ROS_INFO("Choosing next best view instead.");
+		  view_space_.setUnReachable(views_to_consider[*nbv_it]);
+		  ++nbv_it;
+		  if( nbv_it==nbv_idx_queue.end() ) // no more view available
+		  {
+		  ROS_INFO("No more views available, terminating...");
+		  stop_and_print_ = true;
+		  break;
+		  }
+		  nbv = view_space_.getView(views_to_consider[*nbv_it]);
+		  successful_movement = moveToAndWait(nbv);
+	      }
+	      
+	      // set view as visited!
+	      if( successful_movement )
+		  view_space_.setVisited(views_to_consider[nbv_idx_queue.front()]);
+	      
+	  }
+	  else
+	  {
+	      // reconstruction is done, end iteration
+	      ROS_INFO("The termination critera was fulfilled and the reconstruction is thus considered to have succeeded. The view planner will shut down.");
+	      break;
+	  }
+	  ROS_INFO_STREAM("Finished NBV iteration nr. "<<iterationCount);
+	  ros::spinOnce();
+      }while(!stop_and_print_);
     
-    rosbagOut.stop();
+      ROS_INFO("Saving data to file.");
+      saveDataToFile();
+      
+      rosbagOut.stop();
+    }
   }
 }
 
@@ -1178,6 +1256,7 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
       if( information_weights_[i]!=0 )
           non_zero_metric.push_back(metrics_to_use_[i]);
   }
+  non_zero_metric.push_back("OccupiedPercentage");
   request.request.call.metric_names = non_zero_metric;
   
   request.request.call.ray_resolution_x = ray_resolution_x_;
@@ -1222,6 +1301,7 @@ bool ViewPlanner::getViewInformation( std::vector<double>& _output, movements::P
             _output[i] = 0;
         }
     }
+    _output[occplaneMetricId_] = request.response.expected_information.values[occplaneMetricId_];
     //_output = request.response.expected_information.values;
   }
   

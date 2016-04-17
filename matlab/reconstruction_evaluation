@@ -1,5 +1,0 @@
-clear all;
-close all;
-
-A = importdata('../data/view_planning/flying_stereo_cam_data/information_score_tests/AverageEndPointUncertainty/planning_data1427694255.data',' ',1);
-averageendpointuncertainty = namedstructure(A);
