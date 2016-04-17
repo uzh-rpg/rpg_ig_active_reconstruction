@@ -17,7 +17,6 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 #include "movements/geometry_pose.h"
 #include "movements/combined_relative_movement.h"
 #include "movements/combined_kinematic_movement_description.h"
-#include <boost/foreach.hpp>
 
 namespace movements
 {
@@ -29,7 +28,7 @@ CombinedRelativeMovement::CombinedRelativeMovement()
 movements::Pose CombinedRelativeMovement::applyToBasePose( movements::Pose& _base )
 {
   movements::Pose end_pose = _base;
-  BOOST_FOREACH( auto rel_movement, relative_movement_queue_ )
+  for( auto& rel_movement: relative_movement_queue_ )
   {
     end_pose+=rel_movement;
   }
@@ -74,7 +73,7 @@ CombinedKinematicMovementDescription CombinedRelativeMovement::operator+( Combin
 
 CombinedRelativeMovement& CombinedRelativeMovement::operator+=( CombinedRelativeMovement const& _to_add )
 {
-  BOOST_FOREACH( auto rel_movement, _to_add.relative_movement_queue_ )
+  for( auto& rel_movement: _to_add.relative_movement_queue_ )
   {
     relative_movement_queue_.push_back( rel_movement );
   }

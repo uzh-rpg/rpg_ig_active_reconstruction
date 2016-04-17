@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   octomap_server
   octomap_msgs
   gazebo_msgs
+  movements
 )
 
 ## System dependencies are found with CMake's conventions
@@ -25,11 +26,6 @@ find_package(Boost REQUIRED COMPONENTS system ) #accumulators bind ref)
 find_package(PCL REQUIRED QUIET COMPONENTS common sample_consensus io segmentation filters)
 
 find_package(octomap REQUIRED)
-
-#list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-list(APPEND USER_LIBRARIES movements)
-add_subdirectory(lib)
 
 find_package(Eigen REQUIRED)
 
@@ -74,7 +70,6 @@ include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  ${movements_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${OCTOMAP_INCLUDE_DIRS}
 )
@@ -97,7 +92,6 @@ add_executable(flying_stereo_camera_interface
   src/dense_reconstruction/ros_nodes/flying_stereo_camera_interface_node.cpp
   src/dense_reconstruction/code_base/flying_stereo_camera_interface.cpp
   src/utils/ros_eigen.cpp
-  ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
   ${DENSE_RECONSTRUCTION_STEREO_CAM_SRC}
 )
@@ -115,7 +109,6 @@ add_dependencies(flying_stereo_camera_interface
 
 add_executable(dense_reconstruction_control
   src/dense_reconstruction/ros_nodes/dense_reconstruction_control.cpp
-  ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
 )
 
@@ -132,7 +125,6 @@ add_dependencies(dense_reconstruction_control
 add_executable(view_planner
   src/dense_reconstruction/ros_nodes/view_planner_node.cpp
   src/utils/ros_eigen.cpp
-  ${movement_sources}
   ${DENSE_RECONSTRUCTION_BASE_SRC}
 )
 
@@ -149,7 +141,6 @@ add_dependencies(view_planner
 
 add_executable(tf_linker
   src/dense_reconstruction/ros_nodes/tf_linker.cpp
-  ${movement_sources}
 )
 
 target_link_libraries(tf_linker

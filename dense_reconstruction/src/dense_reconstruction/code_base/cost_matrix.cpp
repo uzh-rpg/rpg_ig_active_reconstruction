@@ -15,7 +15,6 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "dense_reconstruction/cost_matrix.h"
-#include "dense_reconstruction/robot_planning_interface.h"
 
 
 namespace dense_reconstruction

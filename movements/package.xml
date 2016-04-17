@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>movements</name>
-  <version>1.0.0</version>
+  <version>0.0.0</version>
   <description>Library for representing relative movements in space</description>
 
   <maintainer email="islerstefan@bluewin.ch">Stefan Isler</maintainer>
