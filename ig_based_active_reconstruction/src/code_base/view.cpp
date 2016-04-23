@@ -14,7 +14,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ig_based_active_reconstruction/view.h"
+#include "ig_based_active_reconstruction/view.hpp"
 #include <movements/ros_movements.h>
 
 namespace ig_based_active_reconstruction

@@ -14,7 +14,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ig_based_active_reconstruction/view_space.h"
+#include "ig_based_active_reconstruction/view_space.hpp"
 #include "boost/foreach.hpp"
 #include <fstream>
 #include "ros/ros.h"

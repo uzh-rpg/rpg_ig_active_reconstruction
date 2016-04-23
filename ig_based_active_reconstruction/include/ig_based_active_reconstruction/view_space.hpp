@@ -18,7 +18,7 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #define IG_BASED_ACTIVE_RECONSTRUCTION_VIEW_SPACE_H_
 
 #include <Eigen/StdVector>
-#include "ig_based_active_reconstruction/view.h"
+#include "ig_based_active_reconstruction/view.hpp"
 #include "ig_based_active_reconstruction_msgs/ViewSpaceMsg.h"
 
 namespace ig_based_active_reconstruction
