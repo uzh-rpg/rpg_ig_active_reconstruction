@@ -15,52 +15,46 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 */
 
 #include "ig_based_active_reconstruction/view.hpp"
-#include <movements/ros_movements.h>
+
+#include <limits>
+#include <iostream>
 
 namespace ig_based_active_reconstruction
 {
+  
+namespace views
+{
+
+View::IdType View::runningIndex_ = 0;
 
 View::View():
+  index_(runningIndex_++),
   is_reachable_(true),
   is_bad_(false),
   visited_(0)
 {
-  
+  if( runningIndex_==std::numeric_limits<IdType>::max() )
+    std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
 }
 
-View::View( std::string source_frame ):
-source_frame_(source_frame),
-  is_reachable_(true),
-  is_bad_(false),
-  visited_(0)
+View::View( std::string source_frame )
+  : index_(runningIndex_++)
+  , source_frame_(source_frame)
+  , is_reachable_(true)
+  , is_bad_(false)
+  , visited_(0)
+{
+  if( runningIndex_==std::numeric_limits<IdType>::max() )
+    std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
+}
+
+View::View( IdType id )
+  : index_(id)
+  , is_reachable_(true)
+  , is_bad_(false)
+  , visited_(0)
 {
   
-}
-
-View::View( ig_based_active_reconstruction_msgs::ViewMsg& msg )
-{
-  pose_ = movements::fromROS(msg.pose);
-  source_frame_ = msg.source_frame;
-  is_reachable_ = msg.is_reachable;
-  is_bad_ = msg.is_bad;
-  visited_ = msg.visited;
-  additional_fields_names_ = msg.associated_names;
-  additional_fields_values_ = msg.associated_values;
-  index = msg.index;
-}
-
-ig_based_active_reconstruction_msgs::ViewMsg View::toMsg()
-{
-  ig_based_active_reconstruction_msgs::ViewMsg msg;
-  msg.pose = movements::toROS(pose_);
-  msg.source_frame = source_frame_;
-  msg.is_bad = is_bad_;
-  msg.visited = visited_;
-  msg.is_reachable = is_reachable_;
-  msg.associated_names = additional_fields_names_;
-  msg.associated_values = additional_fields_values_;
-  msg.index = index;
-  return msg;
 }
 
 movements::Pose& View::pose()
@@ -88,15 +82,31 @@ bool& View::bad()
   return is_bad_;
 }
 
-boost::shared_ptr<ig_based_active_reconstruction::View::ViewInfo>& View::associatedData()
+View::IdType View::index() const
+{
+  return index_;
+}
+
+std::vector<std::string>& View::additionalFieldsNames()
+{
+  return additional_fields_names_;
+}
+
+std::vector<double>& View::additionalFieldsValues()
+{
+  return additional_fields_values_;
+}
+
+boost::shared_ptr<ig_based_active_reconstruction::views::View::ViewInfo>& View::associatedData()
 {
   return associated_data_;
 }
 
+}
 
 }
 
-std::ostream& operator<<(std::ostream& _out, ig_based_active_reconstruction::View& view )
+std::ostream& operator<<(std::ostream& _out, ig_based_active_reconstruction::views::View& view )
 {
   _out<<"Pose:\n";
   _out<<"  position: \n";

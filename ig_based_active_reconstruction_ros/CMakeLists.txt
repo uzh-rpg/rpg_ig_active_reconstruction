@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ig_based_active_reconstruction)
+project(ig_based_active_reconstruction_ros)
 
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  ig_based_active_reconstruction_msgs
+  ig_based_active_reconstruction
   movements
 )
 
@@ -12,6 +15,9 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
+    roscpp
+    ig_based_active_reconstruction_msgs
+    ig_based_active_reconstruction
     movements
 )
 

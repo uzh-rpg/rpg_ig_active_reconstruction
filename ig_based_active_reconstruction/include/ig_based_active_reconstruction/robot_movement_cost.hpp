@@ -16,8 +16,6 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 
 #pragma once
 
-#include "ig_based_active_reconstruction_msgs/MovementCostMsg.h"
-
 namespace ig_based_active_reconstruction
 {
   
@@ -44,14 +42,7 @@ namespace robot
     
     MovementCost():exception(Exception::NONE){};
     
-    /*! converts the cost to a message
-    */
-    ig_based_active_reconstruction_msgs::MovementCostMsg toMsg();
     
-    /*!
-    * loads from msg
-    */
-    void fromMsg( ig_based_active_reconstruction_msgs::MovementCostMsg& _msg );
     
   public:
     double cost; // !keeping it simple

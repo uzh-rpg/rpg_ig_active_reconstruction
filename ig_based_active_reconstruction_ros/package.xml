@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>ig_based_active_reconstruction</name>
+  <name>ig_based_active_reconstruction_ros</name>
   <version>0.0.0</version>
-  <description>Package defining common interfaces and providing common tools for active 3D reconstruction as defined in the paper
+  <description>ROS nodes and classes for active 3D reconstruction. It uses the interfaces as defined in the paper
     
    "An Information Gain Formulation for Active Volumetric 3D Reconstruction"
    by S. Isler, R. Sabzevari, J. Delmerico and Davide Scaramuzza
@@ -16,8 +16,14 @@
 
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>ig_based_active_reconstruction_msgs</build_depend>
+  <build_depend>ig_based_active_reconstruction</build_depend>
   <build_depend>movements</build_depend>
   
+  <run_depend>roscpp</run_depend>
+  <run_depend>ig_based_active_reconstruction_msgs</run_depend>
+  <run_depend>ig_based_active_reconstruction</run_depend>
   <run_depend>movements</run_depend>
 
 

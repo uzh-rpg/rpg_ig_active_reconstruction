@@ -14,32 +14,23 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ig_based_active_reconstruction/robot_movement_cost.hpp"
+#pragma once
+
+
+#include "ig_based_active_reconstruction_msgs/ViewSpaceMsg.h"
+#include "ig_based_active_reconstruction/view_space.hpp"
 
 namespace ig_based_active_reconstruction
 {
   
-namespace robot
+namespace views
 {
+  /** Creates a view space msg with the content of the view space
+   */
+  ig_based_active_reconstruction_msgs::ViewSpaceMsg viewSpaceToMsg( ViewSpace& view_space );
   
-  ig_based_active_reconstruction_msgs::MovementCostMsg MovementCost::toMsg()
-  {
-    ig_based_active_reconstruction_msgs::MovementCostMsg msg;
-    msg.cost = cost;
-    msg.exception = static_cast<uint32_t>(exception);
-    msg.additional_fields_names = additional_field_names;
-    msg.additional_fields_values = additional_fields_values;
-    return msg;
-  }
-
-  void MovementCost::fromMsg( ig_based_active_reconstruction_msgs::MovementCostMsg& _msg )
-  {
-    cost = _msg.cost;
-    exception = Exception(_msg.exception);
-    additional_field_names = _msg.additional_fields_names;
-    additional_fields_values = _msg.additional_fields_values;
-  }
-  
+  /** Construct view space from message */
+  ViewSpace viewSpaceFromMsg( ig_based_active_reconstruction_msgs::ViewSpaceMsg& msg );
 }
 
 }

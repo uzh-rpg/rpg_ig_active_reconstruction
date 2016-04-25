@@ -17,33 +17,16 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #include "ig_based_active_reconstruction/view_space.hpp"
 #include "boost/foreach.hpp"
 #include <fstream>
-#include "ros/ros.h"
 
 namespace ig_based_active_reconstruction
+{
+  
+namespace views
 {
 
 ViewSpace::ViewSpace()
 {
   
-}
-
-void ViewSpace::fromMsg( const ig_based_active_reconstruction_msgs::ViewSpaceMsg& _msg )
-{
-  view_space_.clear();
-  BOOST_FOREACH( auto view_msg, _msg.views )
-  {
-    view_space_.push_back( View(view_msg) );
-  }
-}
-
-ig_based_active_reconstruction_msgs::ViewSpaceMsg ViewSpace::toMsg()
-{
-  ig_based_active_reconstruction_msgs::ViewSpaceMsg msg;
-  BOOST_FOREACH( auto view, view_space_ )
-  {
-    msg.views.push_back( view.toMsg() );
-  }
-  return msg;
 }
 
 std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
@@ -124,7 +107,7 @@ void ViewSpace::setReachable( unsigned int _index )
 
 void ViewSpace::push_back( View _new_vp )
 {
-  _new_vp.index = view_space_.size();
+  //_new_vp.index = view_space_.size();
   view_space_.push_back(_new_vp);
 }
 
@@ -214,12 +197,23 @@ void ViewSpace::loadFromFile( std::string _filename )
     if(!success)
       return;
     
-    new_pose.index = i;
     new_pose.bad() = false;
     new_pose.reachable() = true;
     new_pose.timesVisited() = 0;
     view_space_.push_back(new_pose);
   }
+}
+
+ViewSpace::Iterator ViewSpace::begin()
+{
+  return view_space_.begin();
+}
+
+ViewSpace::Iterator ViewSpace::end()
+{
+  return view_space_.end();
+}
+
 }
 
 }

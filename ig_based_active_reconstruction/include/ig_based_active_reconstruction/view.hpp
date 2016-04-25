@@ -18,9 +18,11 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #define IG_BASED_ACTIVE_RECONSTRUCTION_VIEW_H_
 
 #include "movements/core"
-#include "ig_based_active_reconstruction_msgs/ViewMsg.h"
 
 namespace ig_based_active_reconstruction
+{
+  
+namespace views
 {
 
 /*! Represents one possible view in space with associated information.
@@ -29,6 +31,8 @@ class View
 {
 public:
   class ViewInfo;
+  
+  typedef uint64_t IdType;
   
 public:
   /*! Empty constructor
@@ -39,13 +43,9 @@ public:
    */
   View( std::string source_frame );
   
-  /*! Constructs the view from a message.
+  /*! Constructor with given id.
    */
-  View( ig_based_active_reconstruction_msgs::ViewMsg& msg );
-  
-  /*! Converts the view to a message.
-   */
-  ig_based_active_reconstruction_msgs::ViewMsg toMsg();
+  View( IdType id );
   
   /*! grants access to the pose */
   movements::Pose& pose();
@@ -67,13 +67,27 @@ public:
   /*! get the associated data */
   boost::shared_ptr<ViewInfo>& associatedData();
   
-  unsigned int index; //! to use if the views are indexed
+  /*! Returns the index of the view.
+   */
+  IdType index() const;
+  
+  /*! Returns names of additional fields
+   */
+  std::vector<std::string>& additionalFieldsNames();
+  
+  /*! Returns values of additional fields.
+   */
+  std::vector<double>& additionalFieldsValues();
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
 private:
+  
+  IdType index_; //! Unique view index, increased by one each time a new view is created.
+  static IdType runningIndex_; //! The index of the next newly created view.
+  
   movements::Pose pose_; //! the pose...
-  std::string source_frame_; //! pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a poit in the pose frame into one in the source frame
+  std::string source_frame_; //! pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a point in the pose frame into one in the source frame
   boost::shared_ptr<ViewInfo> associated_data_; //! interface that gives possibility for a robot to store robot specific data that is associated with the pose, e.g. for the Youbot some IK calculations can be made beforehand but the robot needs to know which data implements a given view
   std::vector<std::string> additional_fields_names_;
   std::vector<double> additional_fields_values_;
@@ -92,9 +106,11 @@ public:
   virtual std::string type()=0;
 };
 
+}
+
 } 
 
-std::ostream& operator<<(std::ostream& _out, ig_based_active_reconstruction::View& _view );
+std::ostream& operator<<(std::ostream& _out, ig_based_active_reconstruction::views::View& _view );
 
 
 #endif

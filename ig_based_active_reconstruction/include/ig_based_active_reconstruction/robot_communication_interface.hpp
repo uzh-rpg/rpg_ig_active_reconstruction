@@ -45,13 +45,7 @@ public:
   virtual ~CommunicationInterface(){};
   
   /*! returns the current view */
-  virtual View getCurrentView()=0;
-  
-  /*! Returns the view space that is available for planning (the idea is that it consists exclusively of poses that are considered to be reachable aforehand by the robot, considering its restraints
-   * @param _space pointer to the ViewSpace object that should be filled
-   * @return false if it failed or the robot does not provide such a service.
-   */
-  virtual bool getPlanningSpace( ViewSpace* _space )=0;
+  virtual views::View getCurrentView()=0;
   
   /*! Commands robot to retrieve new data.
    * @return information about what happened (data received, receival failed )
@@ -62,7 +56,7 @@ public:
    * @param _target_view the next view
    * @return cost to move to that view
    */
-  virtual MovementCost movementCost( View& _target_view )=0;
+  virtual MovementCost movementCost( views::View& _target_view )=0;
   
   /*! returns the cost to move from start view to target view
    * @param _start_view the start view
@@ -70,13 +64,13 @@ public:
    * @param _fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
    * @return cost for the movement
    */
-  virtual MovementCost movementCost( View& _start_view, View& _target_view, bool _fill_additional_information  )=0;
+  virtual MovementCost movementCost( views::View& _start_view, views::View& _target_view, bool _fill_additional_information  )=0;
   
   /*! Tells the robot to get the camera to a new view
    * @param _target_view where to move to
    * @return false if the operation failed
    */
-  virtual bool moveTo( View& _target_view )=0;
+  virtual bool moveTo( views::View& _target_view )=0;
 };
 
 }

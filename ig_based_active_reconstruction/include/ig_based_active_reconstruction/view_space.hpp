@@ -19,9 +19,11 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 
 #include <Eigen/StdVector>
 #include "ig_based_active_reconstruction/view.hpp"
-#include "ig_based_active_reconstruction_msgs/ViewSpaceMsg.h"
 
 namespace ig_based_active_reconstruction
+{
+  
+namespace views
 {
 
 /** container for possible camera orientations (views)
@@ -30,16 +32,12 @@ namespace ig_based_active_reconstruction
 class ViewSpace
 {
 public:
+  typedef std::vector<View, Eigen::aligned_allocator<View> >::iterator Iterator;
+  
+public:
   
   ViewSpace();
-  
-  /** set view space from message, overwrites all previous data */
-  void fromMsg( const ig_based_active_reconstruction_msgs::ViewSpaceMsg& _msg );
-  
-  /** creates a view space msg with the content of the view space
-   */
-  ig_based_active_reconstruction_msgs::ViewSpaceMsg toMsg();
-  
+    
   /** returns all view points in the view space as a vector 
    */
   std::vector<View, Eigen::aligned_allocator<View> > getViewSpace();
@@ -100,9 +98,19 @@ public:
    */
   void loadFromFile( std::string _filename );
   
+  /*! Providing means to iterate over view space
+   */
+  Iterator begin();
+  
+  /*! Providing means to iterate over view space
+   */
+  Iterator end();
+  
 private:
   std::vector<View, Eigen::aligned_allocator<View> > view_space_;
 };
+
+}
 
 }
 
