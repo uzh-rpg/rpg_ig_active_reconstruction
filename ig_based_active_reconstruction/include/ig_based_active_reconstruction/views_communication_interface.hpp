@@ -34,6 +34,13 @@ namespace views
       NONE_AVAILABLE
     };
     
+    enum struct ViewSpaceUpdateResult
+    {
+      SUCCEEDED,
+      FAILED,
+      NOT_AVAILABLE
+    };
+    
   public:
   
     /*! Returns the view space that is available for planning.
@@ -45,24 +52,24 @@ namespace views
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.
      */
-    virtual void addViews( std::vector<View>& new_views )=0;
+    virtual ViewSpaceUpdateResult addViews( std::vector<View>& new_views )=0;
     
     /*! Adds a single new view to the viewspace.
      * @param new_view New view to add to the viewspace.
      */
-    virtual void addView( View new_view )=0;
+    virtual ViewSpaceUpdateResult addView( View new_view )=0;
     
     /*! Delete a set of views from the viewspace, using their id.
      * @param view_ids Vector with the id's of the views
      * @return True if all views were successfully deleted.
      */
-    virtual void deleteViews( std::vector<View::IdType>& view_ids )=0;
+    virtual ViewSpaceUpdateResult deleteViews( std::vector<View::IdType>& view_ids )=0;
     
     /*! Delete a single view from the viewspace, using its id.
      * @param view_id Id of the view that shall be deleted.
      * @return True if the view was found and deleted.
      */
-    virtual void deleteView( View::IdType view_id )=0;
+    virtual ViewSpaceUpdateResult deleteView( View::IdType view_id )=0;
   };
   
 }

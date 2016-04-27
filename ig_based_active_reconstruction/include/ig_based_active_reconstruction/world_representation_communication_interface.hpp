@@ -32,7 +32,7 @@ namespace world_representation
   public:
     /*! Returned status for a specific ig metric calculation
      */
-    enum struct IgRetrievalStatus
+    enum struct ResultInformation
     {
       SUCCEEDED, //! IG was successfully calculated.
       FAILED, //! IG could not be calculated, an error occured.
@@ -43,7 +43,7 @@ namespace world_representation
      */
     struct IgRetrievalResult
     {
-      IgRetrievalStatus status; //! Status.
+      ResultInformation status; //! Status.
       double predicted_gain; //! Calculated information gain if the call succeeded, undefined otherwise.
     };
     
@@ -82,6 +82,29 @@ namespace world_representation
       double occupied_passthrough_threshold; //! If the occupancy likelihood of the end point of a ray is lower than this threshold, the ray is continued until either an endpoint is found that has a higher occupancy likelihood or the maximal ray depth is reached. Default: 0.0
     };
     
+    /*! Result of a metric calculation call.
+     */
+    struct TreeMetricRetrievalResult
+    {
+      ResultInformation status; //! Status.
+      double value; //! Calculated information gain if the call succeeded, undefined otherwise.
+    };
+    
+    /*! Command to retrieve tree metrics
+     */
+    struct TreeMetricRetrievalCommand
+    {
+      std::vector<std::string> metric_names; //! Vector with the names of all metrics that shall be calculated.
+    };
+    
+    /*! Struct representing metric information.
+     */
+    struct MetricInfo
+    {
+      std::string name; //! Name that uniquely identifies the metric.
+      uint32_t id; //! Id that uniquely identifies the metric.
+    };
+    
   public:
     virtual ~CommunicationInterface(){};
     
@@ -89,7 +112,22 @@ namespace world_representation
      * @param command Specifies which information gains have to be calculated and for which pose along with further parameters that define how the ig('s) will be collected.
      * @param output_ig (Output) Vector with the results of the information gain calculation. The indices correspond to the indices of the names in the metric_names array within the passed command.
      */
-    virtual IgRetrievalStatus getViewInformationGain(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
+    virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
+    
+    /*! Calculates a set of evaluation metrics on the complete tree.
+     * @param command Specifies which metrics shall be calculated.
+     */
+    virtual ResultInformation computeTreeMetric(TreeMetricRetrievalCommand& command, std::vector<TreeMetricRetrievalResult>& output)=0;
+    
+    /*! Returns all available information gain metrics.
+     * @param available_ig_metrics (output) Set of available metrics.
+     */
+    virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )=0;
+    
+    /*! Returns all available tree metrics.
+     * @param available_tree_metrics (output) Set of available tree metrics.
+     */
+    virtual void availableTreeMetrics( std::vector<MetricInfo>& available_tree_metrics )=0;
   };
   
   

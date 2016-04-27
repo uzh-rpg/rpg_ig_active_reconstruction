@@ -19,6 +19,10 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #include <limits>
 #include <iostream>
 
+#include "ig_based_active_reconstruction/octomap_ig_tree_world_representation.hpp"
+#include "ig_based_active_reconstruction/octomap_ray_occlusion_calculator.hpp"
+#include "ig_based_active_reconstruction/octomap_std_pcl_input.hpp"
+
 namespace ig_based_active_reconstruction
 {
   
@@ -35,6 +39,14 @@ View::View():
 {
   if( runningIndex_==std::numeric_limits<IdType>::max() )
     std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
+  
+  using namespace world_representation::octomap;
+  IgTree::Config config;
+  IgTreeWorldRepresentation tree( config );
+  tree.setOcclusionCalculator<RayOcclusionCalculator>(0.3);
+  auto std_input = tree.getInputObj<StdPclInput>();
+  
+  TODO // TODO
 }
 
 View::View( std::string source_frame )
