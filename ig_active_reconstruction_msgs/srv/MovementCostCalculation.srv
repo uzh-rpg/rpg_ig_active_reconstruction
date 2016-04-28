@@ -1,0 +1,7 @@
+ig_active_reconstruction_msgs/ViewMsg start_view
+ig_active_reconstruction_msgs/ViewMsg target_view
+
+# defines whether additional information shall be included in the response or not
+bool additional_information
+---
+ig_active_reconstruction_msgs/MovementCostMsg movement_cost

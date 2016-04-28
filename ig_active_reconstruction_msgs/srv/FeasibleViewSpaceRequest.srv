@@ -1,0 +1,5 @@
+# time for which the feasible view space shall be found (not used yet)
+time time_stamp
+---
+# view space with feasible camera views
+ig_active_reconstruction_msgs/ViewSpaceMsg view_space

@@ -1,0 +1,3 @@
+ig_active_reconstruction_msgs/ViewMsg target_view
+---
+bool success
