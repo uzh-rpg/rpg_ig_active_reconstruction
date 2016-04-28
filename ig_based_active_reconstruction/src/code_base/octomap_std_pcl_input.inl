@@ -35,20 +35,22 @@ namespace octomap
   : use_bounding_box(false)
   , bounding_box_min_point_m( std::numeric_limits<double>::min(), std::numeric_limits<double>::min(), std::numeric_limits<double>::min() )
   , bounding_box_max_point_m( std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max() )
+  , max_sensor_range_m(-1)
   {
     
   }
   
   TEMPT
   CSCOPE::StdPclInput( Config config )
-  : octree_(nullptr)
+  : link_()
   , config_(config)
+  , occlusion_calculator_(nullptr)
   {
     
   }
   
   TEMPT
-  void CSCOPE::push( const Eigen::Matrix4d& sensor_to_world, POINTCLOUD_TYPE& pc )
+  void CSCOPE::push( const Eigen::Transform<double,3,Eigen::Affine>& sensor_to_world, POINTCLOUD_TYPE& pc )
   {
     pcl::transformPointCloud(pc, pc, sensor_to_world);
     
@@ -77,14 +79,128 @@ namespace octomap
       pass_y.filter(*pc_cpy);
     }
     
-    // insert points into octree
-    TODO // TODO
+    // insert points into octree through raycasting
+    Eigen::Vector3d sensor_position = sensor_to_world.translation();
+    
+    using ::octomap::point3d;
+    using ::octomap::KeySet;
+    using ::octomap::KeyRay;
+    using ::octomap::OcTreeKey;
+    
+    point3d sensor_origin(sensor_position(0),sensor_position(1),sensor_position(2));
+    
+    
+    // build sets of free and occupied voxels
+    KeySet free_cells, occupied_cells;
+    KeyRay key_ray_temp;
+    
+    typename POINTCLOUD_TYPE::const_iterator it, end;
+    for(it = pc_cpy->begin(), end = pc_cpy->end(); it != end; ++it)
+    {
+      point3d point(it->x, it->y, it->z);
+      // maxrange check
+      point3d curr_ray = point - sensor_origin;
+      
+      
+      if ((config_.max_sensor_range_m< 0.0) || (curr_ray.norm() <= (config_.max_sensor_range_m+0.000001)) )
+      {
+	// free cells
+	if(link_.octree->computeRayKeys(sensor_origin, point, key_ray_temp))
+	{
+	  free_cells.insert(key_ray_temp.begin(), key_ray_temp.end());
+	}
+	// occupied endpoint
+	OcTreeKey key;
+	if(link_.octree->coordToKeyChecked(point, key))
+	{
+	  occupied_cells.insert(key);
+	}
+      }
+      else
+      {
+	// ray longer than max range
+	point3d new_end = sensor_origin + curr_ray.normalized() * config_.max_sensor_range_m;
+	if (link_.octree->computeRayKeys(sensor_origin, new_end, key_ray_temp))
+	{
+	  free_cells.insert(key_ray_temp.begin(), key_ray_temp.end());
+	}
+      }
+    }
+    
+    // update occupancy likelihoods
+    
+    // mark free cells only if not seen occupied in this cloud - attention: voxels may already exist even though no actual measurement has yet been received at their position (e.g. if their occlusion distance was calculated) - need to check hasMeasurement()!
+    for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ++it)
+    {
+      if( occupied_cells.find(*it) == occupied_cells.end() )
+      {
+	typename TREE_TYPE::NodeType* voxel = link_.octree->search(*it);
+	
+	if( voxel==nullptr )
+	{
+	  voxel = link_.octree->updateNode(*it, false);
+	  voxel->updateHasMeasurement(true);
+	}
+	else
+	{
+	  if( !voxel->hasMeasurement() )
+	  {
+	    float logOddsFirstMiss = ::octomap::logodds( link_.octree->config().miss_probability );
+	    voxel->setLogOdds(logOddsFirstMiss);
+	    voxel->updateHasMeasurement(true);
+	  }
+	  else
+	  {
+	    link_.octree->updateNode(*it, false);
+	  }
+	}
+      }
+    }
+    
+    // now mark all occupied cells:
+    for (KeySet::iterator it = occupied_cells.begin(), end=free_cells.end(); it!= end; ++it)
+    {
+      typename TREE_TYPE::NodeType* voxel = link_.octree->search(*it);
+      
+      if( voxel==nullptr )
+      {
+	voxel = link_.octree->updateNode(*it, true);
+	voxel->updateHasMeasurement(true);
+      }
+      else
+      {
+	if( !voxel->hasMeasurement() )
+	{
+	  float logOddsFirstHit = ::octomap::logodds( link_.octree->config().hit_probability );
+	  voxel->setLogOdds(logOddsFirstHit);
+	  voxel->updateHasMeasurement(true);
+	}
+	else
+	{
+	  link_.octree->updateNode(*it, true);
+	}
+      }
+    }
+  }
+  
+  TEMPT
+  void CSCOPE::setLink( typename WorldRepresentation<TREE_TYPE>::Link& link )
+  {
+    link_.octree = link.octree;
   }
   
   TEMPT
   void CSCOPE::setOctree( std::shared_ptr<TREE_TYPE> octree )
   {
-    octree_ = octree;
+    link_.octree = octree;
+  }
+  
+  TEMPT
+  template< template<typename,typename> class OCCLUSION_CALC_TYPE, class ... Types >
+  void CSCOPE::setOcclusionCalculator( Types ... args )
+  {
+    occlusion_calculator_ = std::make_shared< OCCLUSION_CALC_TYPE<TREE_TYPE,POINTCLOUD_TYPE> >( args... );
+    occlusion_calculator_->setLink(link_);
   }
 }
 

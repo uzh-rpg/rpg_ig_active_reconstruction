@@ -68,6 +68,10 @@ namespace octomap
 
     std::string getTreeType() const;
     
+    /*! Returns the current configuration.
+     */
+    const Config& config() const;
+    
   protected:
     /*! Sets octree options based on current configuration
      */

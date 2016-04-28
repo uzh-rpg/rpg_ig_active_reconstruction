@@ -22,8 +22,6 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "ig_based_active_reconstruction/octomap_occlusion_calculator.hpp"
-
 namespace ig_based_active_reconstruction
 {
   
@@ -32,58 +30,59 @@ namespace world_representation
 
 namespace octomap
 {
-  
-  template<class TREE_TYPE, class POINTCLOUD_TYPE = pcl::PointCloud<pcl::PointXYZ> >
+  /*! Templated wrapper class around the octree object. Currently it mainly provides some convenience functionality
+   * to get different interface classes to work with the octree without having to respecify the correct
+   * template parameters each time. Also give the possibility to possibly add more functionality in the future.
+   */
+  template<class TREE_TYPE>
   class WorldRepresentation
   {
   public:
-    typedef POINTCLOUD_TYPE PclPointCloud;
+    /*! The link structure is used to link objects with the octomap world representation.
+     */
+    struct Link
+    {
+      std::shared_ptr<TREE_TYPE> octree;
+    };
     
   public:
-    WorldRepresentation( typename TREE_TYPE::Config config );
+    WorldRepresentation( typename TREE_TYPE::Config config = typename TREE_TYPE::Config() );
     
     virtual ~WorldRepresentation();
     
-    /*! Sets the occlusion calculator that should be used. It is expected to derive from OcclusionCalculator
-     * and to take two template arguments: TREE_TYPE and POINTCLOUD_TYPE.
+    /*! Returns a shared pointer to an object on which a setLink() was called, with a link object linking to the world representation. 
+     * The type of the object is the first template parameter of the function. It must be a templated type where the first template argument is
+     * the TREE_TYPE. It is automatically templated on the TREE_TYPE used within the world representation. If the linked object expects
+     * other template arguments apart from the tree type, those can be appended as further function template parameters. Whatever inputs necessary
+     * as constructor argument for the object type can be passed as arguments to the function.
      * 
-     * Usage of the function is similar to std::make_shared, but you can omit the two template arguments.
-     * E.g. setOcclusionCalculator<WhateverOcclusionCalculator>(0.1,"test",4) will internally create an object
-     * by calling std::make_shared<WhateverOcclusionCalculator<TREE_TYPE,PclPointCloud> >(0.1,"test",4).
-     * The template arguments of the occlusion calculator can thus be omitted and are derived directly from
-     * the WorldRepresentation object on which you are using it.
+     * Example:
+     * ******************************************
+     * StdPclInput is a class to feed pcl pointclouds into the octomap octree to which it is linked. It is templated on octree and pointcloud types and takes a 
+     * StdPclInput::Config object as optional constructor argument.
      * 
-     * @param args Whichever arguments the occlusion calculator expects. (variadic template)
-     */
-    template< template<typename,typename> class OCCLUSION_CALC_TYPE, class ... Types >
-    void setOcclusionCalculator( Types ... args );
-    
-    /*! Returns a pointer to an input object, setting its expected TREE_TYPE and POINTCLOUD_TYPE
-     * template arguments automatically and calling setOctree() on it.
+     * Given an already existing "config" object it could be created through:
+     * auto std_input = std::make_shared< StdPclInput<IgTree,pcl::PointCloud<pcl::PointXYZ>> >(config);
      * 
-     * Usage is the same as for setOcclusionCalculator
+     * and then linked to a WorldRepresentation<IgTree> "world" through:
+     * WorldRepresentation<IgTree>::Link link = world.getLink();
+     * std_input.setLink(link);
      * 
+     * This can be shortcut with this function, while at the same time automatically deducing the TREE_TYPE (IgTree in the example) of the world representation
+     * to which the StdPclInput is to be linked. The following call is equivalent to the above three commands:
+     * auto std_input = world.getLinkedObj<StdPclInput, pcl::PointCloud<pcl::PointXYZ> >(config);
+     *
+     * @tparam INPUT_OBJ_TYPE Class type of the object for which a shared_ptr shall be created. Must be templated on at least one argument, where the first one must be the tree type.
+     * @tparam TEMPLATE_ARGS (variadic) Further optional template arguments of the INPUT_OBJ_TYPE class succeeding the tree type
+     * @tparam CONSTRUCTOR_ARGS (variadic) These do not have to be specified but will be deduced by optionally provided function arguments args
      * @param args Whichever arguments the input object type expects. (variadic template)
+     * @return Shared pointer to a newly instantiated object of type INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS...>, instantiated with args passed to the constructor. Also its setLink()-function is called.
      */
-    template< template<typename,typename> class INPUT_OBJ_TYPE, class ... Types >
-    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,POINTCLOUD_TYPE> > getInputObj( Types ... args );
-    
-    /*! Calculates occlusions for the given input.
-     * @param origin Origin of the sensor, position from which pointcloud was obtained.
-     * @param pcl The pointcloud
-     */
-    void computeOcclusions( const Eigen::Vector3d& origin, const PclPointCloud& pcl );
-    
-    /*! Returns if occlusions have been calculated, i.e. if calculateOcclusions() has been called at least once.
-     * If not, the class assumes that this is not the case.
-     */
-    bool knowsOcclusions();
+    template< template<typename,typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
+    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > getLinkedObj( CONSTRUCTOR_ARGS ... args );
     
   protected:
     std::shared_ptr<TREE_TYPE> octree_; //! Octomap tree instance.
-    bool calculated_occlusions_; //! Whether occlusions have been calculated or not.
-    
-    std::shared_ptr< OcclusionCalculator<TREE_TYPE,PclPointCloud> > occlusion_calculator_; //! Calculates occlusions
   };
   
 }

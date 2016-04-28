@@ -44,12 +44,16 @@ namespace octomap
      */
     virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl );
     
+    /*! Links to a WorldRepresentation object, among others sets the octree to the one encapsulated in the world representation.
+     */
+    virtual void setLink( typename WorldRepresentation<TREE_TYPE>::Link& link );
+    
     /*! Sets the octree in which occlusions will be marked.
      */
     virtual void setOctree( std::shared_ptr<TREE_TYPE> octree );
     
   protected:
-    std::shared_ptr<TREE_TYPE> octree_; //! Octomap tree instance.
+    typename WorldRepresentation<TREE_TYPE>::Link link_; //! WorldRepresentation link
     double occlusion_update_dist_m_; //! Max distance behind points along ray for which an occlusion will be calculated [m].
   };
   

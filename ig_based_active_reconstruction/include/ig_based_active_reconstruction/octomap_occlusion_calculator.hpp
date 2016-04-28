@@ -20,6 +20,8 @@ along with ig_based_active_reconstruction. If not, see <http://www.gnu.org/licen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "ig_based_active_reconstruction/octomap_world_representation.hpp"
+
 namespace ig_based_active_reconstruction
 {
   
@@ -28,7 +30,7 @@ namespace world_representation
 
 namespace octomap
 {
-  /*! Abstract base class: Calculates occlusion distances 
+  /*! Abstract base class: Calculates occlusion distance updates.
    */
   template<class TREE_TYPE, class POINTCLOUD_TYPE>
   class OcclusionCalculator
@@ -42,6 +44,10 @@ namespace octomap
      * @param pcl The pointcloud
      */
     virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )=0;
+    
+    /*! Links to a WorldRepresentation object, among others sets the octree to the one encapsulated in the world representation.
+     */
+    virtual void setLink( typename WorldRepresentation<TREE_TYPE>::Link& link )=0;
     
     /*! Sets the octree in which occlusions will be marked.
      */

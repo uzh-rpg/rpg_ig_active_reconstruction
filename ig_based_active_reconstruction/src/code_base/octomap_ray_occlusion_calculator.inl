@@ -29,7 +29,7 @@ namespace octomap
 {
   TEMPT
   CSCOPE::RayOcclusionCalculator( double occlusion_update_dist_m )
-  : octree_(nullptr)
+  : link_()
   , occlusion_update_dist_m_(occlusion_update_dist_m)
   {
     
@@ -38,6 +38,9 @@ namespace octomap
   TEMPT
   void CSCOPE::insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )
   {
+    if( link_.octree==nullptr )
+      return;
+    
     using ::octomap::point3d;
     using ::octomap::KeyRay;
     
@@ -51,7 +54,7 @@ namespace octomap
       point3d curr_ray = point - sensor_origin;
       
       point3d new_end = point + curr_ray.normalized() * occlusion_update_dist_m_;
-      if (octree_->computeRayKeys(point, new_end, ray))
+      if (link_.octree->computeRayKeys(point, new_end, ray))
       {
 	  KeyRay::iterator occ = ray.begin(); // first point is the occupied one - skip it!
 	  KeyRay::iterator end = ray.end();
@@ -60,7 +63,7 @@ namespace octomap
 	  {
 	      for( unsigned int i=0; occ!=end; ++i, ++occ )
 	      {
-		  typename TREE_TYPE::NodeType* voxel = octree_->search(*occ);
+		  typename TREE_TYPE::NodeType* voxel = link_.octree->search(*occ);
 				  
 		  if( voxel!=NULL )
 		  {
@@ -75,7 +78,7 @@ namespace octomap
 		  }
 		  else
 		  {
-		      voxel = octree_->updateNode(*occ, false, 0.1); //random distance
+		      voxel = link_.octree->updateNode(*occ, false, 0.1); //random distance
 		      // the occupancy probability will be ignored during an actual update with the following call:
 		      voxel->updateHasMeasurement(false);
 		      voxel->updateOccDist( i );
@@ -87,9 +90,15 @@ namespace octomap
   }
   
   TEMPT
+  void CSCOPE::setLink( typename WorldRepresentation<TREE_TYPE>::Link& link )
+  {
+    link_.octree = link.octree;
+  }
+  
+  TEMPT
   void CSCOPE::setOctree( std::shared_ptr<TREE_TYPE> octree )
   {
-    octree_ = octree;
+    link_.octree = octree;
   }
 }
 

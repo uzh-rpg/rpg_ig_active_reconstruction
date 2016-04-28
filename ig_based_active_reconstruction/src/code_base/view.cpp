@@ -41,12 +41,10 @@ View::View():
     std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
   
   using namespace world_representation::octomap;
-  IgTree::Config config;
-  IgTreeWorldRepresentation tree( config );
-  tree.setOcclusionCalculator<RayOcclusionCalculator>(0.3);
-  auto std_input = tree.getInputObj<StdPclInput>();
-  
-  TODO // TODO
+  IgTreeWorldRepresentation tree;
+  auto std_input = tree.getLinkedObj<StdPclInput,pcl::PointCloud<pcl::PointXYZ> >();
+  std_input->setOcclusionCalculator<RayOcclusionCalculator>(0.3);
+  TODO // TODO  
 }
 
 View::View( std::string source_frame )

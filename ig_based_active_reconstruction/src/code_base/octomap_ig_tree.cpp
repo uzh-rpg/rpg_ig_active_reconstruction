@@ -56,6 +56,11 @@ namespace octomap
     return new IgTree(config_);
   }
   
+  const IgTree::Config& IgTree::config() const
+  {
+    return config_;
+  }
+  
   void IgTree::updateOctreeConfig()
   {
     setOccupancyThres(config_.occupancy_threshold);
