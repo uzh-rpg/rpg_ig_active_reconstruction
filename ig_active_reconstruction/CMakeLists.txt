@@ -29,6 +29,7 @@ include_directories(include
 
 file(GLOB ${PROJECT_NAME}_CODE_BASE
   "src/code_base/*.cpp"
+  "src/code_base/ig/*.cpp"
 )
 
 add_library(${PROJECT_NAME} STATIC

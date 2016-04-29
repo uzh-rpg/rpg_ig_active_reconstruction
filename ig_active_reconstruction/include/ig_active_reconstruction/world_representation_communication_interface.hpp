@@ -68,7 +68,8 @@ namespace world_representation
       
     public:      
       movements::PoseVector path; //! Describes the path for which the information gain shall be calculated. Note that in the current octomap-based implementation provided with the framework this is not yet implemented: Only the first pose will be considered and no casts into the future attempted.
-      std::vector<std::string> metric_names; //! Vector with the names of all metrics that shall be calculated.
+      std::vector<std::string> metric_names; //! Vector with the names of all metrics that shall be calculated. Only considered if metric_ids is empty.
+      std::vector<unsigned int> metric_ids; //! Vector with the ids of all metrics that shall be calculated. Takes precedence over metric_names.
       
       double ray_resolution_x; //! How many rays are cast per pixel on the image's x-axis to obtain the information. [rays/px] Default: 1.0
       double ray_resolution_y; //! How many rays are cast per pixel on the image's y-axis to obtain the information. [rays/px] Default: 1.0
@@ -84,15 +85,15 @@ namespace world_representation
     
     /*! Result of a metric calculation call.
      */
-    struct TreeMetricRetrievalResult
+    struct MapMetricRetrievalResult
     {
       ResultInformation status; //! Status.
       double value; //! Calculated information gain if the call succeeded, undefined otherwise.
     };
     
-    /*! Command to retrieve tree metrics
+    /*! Command to retrieve map metrics
      */
-    struct TreeMetricRetrievalCommand
+    struct MapMetricRetrievalCommand
     {
       std::vector<std::string> metric_names; //! Vector with the names of all metrics that shall be calculated.
     };
@@ -114,20 +115,20 @@ namespace world_representation
      */
     virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
     
-    /*! Calculates a set of evaluation metrics on the complete tree.
+    /*! Calculates a set of evaluation metrics on the complete map.
      * @param command Specifies which metrics shall be calculated.
      */
-    virtual ResultInformation computeTreeMetric(TreeMetricRetrievalCommand& command, std::vector<TreeMetricRetrievalResult>& output)=0;
+    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output)=0;
     
     /*! Returns all available information gain metrics.
      * @param available_ig_metrics (output) Set of available metrics.
      */
     virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )=0;
     
-    /*! Returns all available tree metrics.
-     * @param available_tree_metrics (output) Set of available tree metrics.
+    /*! Returns all available map metrics.
+     * @param available_map_metrics (output) Set of available map metrics.
      */
-    virtual void availableTreeMetrics( std::vector<MetricInfo>& available_tree_metrics )=0;
+    virtual void availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )=0;
   };
   
   
