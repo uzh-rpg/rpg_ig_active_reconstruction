@@ -33,10 +33,10 @@ namespace multikit
     {
       unsigned int id;
       std::string name;
-      std::function< std::shared_ptr<TYPE>()> create;
+      std::function< std::shared_ptr<TYPE>() > create;
     };
     
-    typedef std::vector<Entry>::iterator Iterator;
+    typedef typename std::vector<Entry>::iterator Iterator;
     
   public:
     /*! Function to register object creation functions.
@@ -44,7 +44,7 @@ namespace multikit
       * @param ig_creator Function that returns a pointer to a new object of the corresponding type.
       * @return The unique id of the object type.
       */
-    unsigned int register( std::string ig_name, std::function< std::shared_ptr<TYPE>()> ig_creator );
+    unsigned int add( std::string ig_name, std::function< std::shared_ptr<TYPE>() > ig_creator );
     
     /*! Function to create a new object of a specific type through its name.
       * If more than one object type registered themselves with the same name, the lastly registered one overwrites its predecessors.
@@ -79,7 +79,7 @@ namespace multikit
     Iterator end();
   private:
     std::vector<Entry> entries_; //! All entries... The id corresponds directly to the position in the vector.
-    std::unordered_map<unsigned int, Entry*> name_map_; //! For faster access if called by name...
+    std::unordered_map<std::string, Entry*> name_map_; //! For faster access if called by name...
   };
 }
 

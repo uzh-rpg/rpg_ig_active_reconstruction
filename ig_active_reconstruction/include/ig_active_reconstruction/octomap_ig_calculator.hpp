@@ -19,6 +19,10 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "ig_active_reconstruction/world_representation_communication_interface.hpp"
 #include "ig_active_reconstruction/octomap_world_representation.hpp"
 
+#include "ig_active_reconstruction/factory.hpp"
+#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction/octomap_map_metric.hpp"
+
 namespace ig_active_reconstruction
 {
   
@@ -27,11 +31,16 @@ namespace world_representation
   
 namespace octomap
 {  
-  /*! Abstract base class: Provides information gain calculation for octomap-based probabilistic volumetric world representation, implementing the frameworks communication interface.
+  /*! Abstract base class: Provides information gain calculation for octomap-based probabilistic volumetric world representation, implementing the frameworks communication interface. Additionally it includes a factory where the desired information gain and 
+   * map metric methods can be registered.
    */
   template<class TREE_TYPE>
-  class IgCalculator: public CommunicationInterface
+  class IgCalculator: public CommunicationInterface, public WorldRepresentation<TREE_TYPE>::LinkedObject
   {
+  public:
+    typedef multikit::Factory< InformationGain<TREE_TYPE> > IgFactory;
+    typedef multikit::Factory< MapMetric<TREE_TYPE> > MmFactory;
+    
   public:
     virtual ~IgCalculator(){};
     
@@ -39,7 +48,7 @@ namespace octomap
      * Informatoin gain metrics will then be calculated on the linked world.
      * @param world the WorldRepresentation that is to be linked to the IgCalculator.
      */
-    virtual void linkWorld( WorldRepresentation<TREE_TYPE>& world )=0;
+    virtual void linkWorld( WorldRepresentation<TREE_TYPE>& world ){};
     
   // Interface implementation
   public:
@@ -47,26 +56,42 @@ namespace octomap
      * @param command Specifies which information gains have to be calculated and for which pose along with further parameters that define how the ig('s) will be collected.
      * @param output_ig (Output) Vector with the results of the information gain calculation. The indices correspond to the indices of the names in the metric_names array within the passed command.
      */
-    virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
+    virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig){};
     
-    /*! Calculates a set of evaluation metrics on the complete tree.
+    /*! Calculates a set of evaluation metrics on the complete map.
      * @param command Specifies which metrics shall be calculated.
      */
-    virtual ResultInformation computeTreeMetric(TreeMetricRetrievalCommand& command, std::vector<TreeMetricRetrievalResult>& output)=0;
+    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output){};
     
     /*! Returns all available information gain metrics.
      * @param available_ig_metrics (output) Set of available metrics.
      */
-    virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )=0;
+    virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics ){};
     
-    /*! Returns all available tree metrics.
-     * @param available_tree_metrics (output) Set of available tree metrics.
+    /*! Returns all available map metrics.
+     * @param available_map_metrics (output) Set of available map metrics.
      */
-    virtual void availableTreeMetrics( std::vector<MetricInfo>& available_tree_metrics )=0;
+    virtual void availableMapMetrics( std::vector<MetricInfo>& available_map_metrics ){};
     
+    /*! Registers an information gains with optional constructor parameters that will then be available for
+     * calculations.
+     * 
+     * Internally the object is created and stored in a "factory" and returned if needed.
+     * @tparam IG_METRIC_TYPE Type of the information gain that is to be created. It must be templated on the TREE_TYPE, which will be automatically matched to the one of the IgCalculator object.
+     * @param args (variadic) Constructor arguments to the created IG_METRIC_TYPE, used for custom configuration.
+     * @return The identifier for the object type within the factory.
+     */
+    template<template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS>
+    unsigned int registerInformationGain( IG_CONSTRUCTOR_ARGS ... args );
+    
+  protected:
+    IgFactory ig_factory_; //! Information gain factory.
+    MmFactory mm_factory_; //! Map metric factory.
   };
 }
 
 }
 
 }
+
+#include "../src/code_base/octomap_ig_calculator.inl"

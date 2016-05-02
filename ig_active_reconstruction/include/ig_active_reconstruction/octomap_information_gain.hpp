@@ -16,8 +16,6 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/factory.hpp"
-
 namespace ig_active_reconstruction
 {
   
@@ -27,6 +25,7 @@ namespace world_representation
 namespace octomap
 {  
   /*! Defines the interface for information gain calculators as well as providing a factory.
+   * Additionally it features a Utils class which provides functionality like occupancy and entropy calculation.
    * 
    * Information gain classes are called while casting rays from a sensor position through the octomap.
    * Before a new ray is cast, makeReadyForNewRay() is called, then includeRayMeasurement(...) is called
@@ -39,22 +38,66 @@ namespace octomap
   {
   public:
     typedef double GainType;
-    
-    /*! Factory class where information gain types must be registered and can afterwards
-     * be retrieved through their unique id or name.
+        
+    /*! Helper class for common calculation in information gain metrics.
      */
-    typedef multikit::Factory<InformationGain> Factory;
+    class Utils
+    {
+    public:
+      /*! Configuration of the Utils class, featuring default.
+       */
+      struct Config
+      {
+      public:
+	Config();
+	
+      public:
+	double p_unknown_prior_;//! Prior occupancy likelihood for unknown voxels. Default: 0.5.
+	double p_unknown_upper_bound_; //! Upper bound for voxels to still be considered uncertain. Default: 0.8.
+	double p_unknown_lower_bound_; //! Lower bound for voxels to still be considered uncertain. Default: 0.2.
+	unsigned int voxels_in_void_ray_; //! How many voxels are considered to be part of a void ray. Default: 100.
+      } config;
+      
+    public:
+      
+      /*! Returns the entropy for a voxel.
+       */
+      double entropy( typename TREE_TYPE::NodeType* voxel );
+      
+      /*! Calculates the entropy [nat] for a given likelihood.
+       */
+      double entropy( double likelihood );
+      
+      /*! Returns the occupancy probability of the passed voxel.
+       */
+      double pOccupancy( typename TREE_TYPE::NodeType* voxel );
+      
+      /*! Returns true if the likelihood lies within the unknown bounds.
+       */
+      bool isUnknown( typename TREE_TYPE::NodeType* voxel);
+      
+      /*! Returns true if the likelihood lies within the unknown bounds.
+       */
+      bool isUnknown( double likelihood);
+      
+      /*! Returns true if the voxel is considered occupied.
+       */
+      bool isOccupied( typename TREE_TYPE::NodeType* voxel);
+      
+      /*! Returns true if the likelihood lies above the occupied threshold.
+       */
+      bool isOccupied( double likelihood);
+      
+      /*! Returns true if the voxel is considered free.
+       */
+      bool isFree( typename TREE_TYPE::NodeType* voxel);
+      
+      /*! Returns true if the likelihood lies below the occupied threshold.
+       */
+      bool isFree( double likelihood);
+    };
     
   public:
-    /*! Returns the factory object.
-     */
-    static Factory& factory();
-    
-  public:
-    /*! Links the octree on which information gains will be calculated.
-     * @param octree Pointer to the octree.
-     */
-    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree )=0;
     
     /*! Returns the name of the method.
      */
@@ -67,6 +110,11 @@ namespace octomap
     /*! Clears all ray-specific data, next data will be considered part of new ray.
      */
     virtual void makeReadyForNewRay()=0;
+    
+    /*! Tells the metric that the current computation has ended and any next call will refer to a new
+     * one - resets all internal data, but not any "external" configuration.
+     */
+    virtual void reset()=0;
     
     /*! Includes a measurement on the ray.
      * @param node Octomap node traversed by the ray.
@@ -85,7 +133,7 @@ namespace octomap
     
     /*! Returns the number of traversed voxels
      */
-    virtual unsigned int voxelCount()=0;
+    virtual uint64_t voxelCount()=0;
     
     
   };

@@ -14,9 +14,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
-
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#define TEMPT template<class TREE_TYPE>
+#define CSCOPE IgCalculator<TREE_TYPE>
 
 namespace ig_active_reconstruction
 {
@@ -25,14 +24,25 @@ namespace world_representation
 {
   
 namespace octomap
-{  
-  template<class TREE_TYPE>
-  IgnorantTotalIg: public InformationGain<TREE_TYPE>
+{ 
+  
+  TEMPT
+  template< template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS >
+  unsigned int CSCOPE::registerInformationGain( IG_CONSTRUCTOR_ARGS ... args )
   {
-    So how do I register a templated object - after all the registration code would not be instantiated...
-  };
+    std::shared_ptr< InformationGain<TREE_TYPE> > new_type = std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(args...);
+    std::string name = new_type->type();
+    
+    std::function< std::shared_ptr< InformationGain<TREE_TYPE> >() > creator = [&new_type](){ return new_type; };
+    
+    return ig_factory_.add(name,creator);
+  }
+  
 }
 
 }
 
 }
+
+#undef CSCOPE
+#undef TEMPT

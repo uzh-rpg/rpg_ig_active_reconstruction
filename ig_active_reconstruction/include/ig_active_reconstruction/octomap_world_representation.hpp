@@ -91,8 +91,13 @@ namespace octomap
      * @param args Whichever arguments the input object type expects. (variadic template)
      * @return Shared pointer to a newly instantiated object of type INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS...>, instantiated with args passed to the constructor. Also its setLink()-function is called.
      */
-    template< template<typename,typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
+    template< template<typename, typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
     std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > getLinkedObj( CONSTRUCTOR_ARGS ... args );
+    
+    /*! Function overload TODO: Can't the above template function be adapted for class that only take on template argument?!
+     */
+    template< template<typename> class INPUT_OBJ_TYPE, class ... CONSTRUCTOR_ARGS >
+    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > getLinkedObj( CONSTRUCTOR_ARGS ... args );
     
   protected:
     std::shared_ptr<TREE_TYPE> octree_; //! Octomap tree instance.

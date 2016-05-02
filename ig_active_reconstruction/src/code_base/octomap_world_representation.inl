@@ -40,10 +40,23 @@ namespace octomap
   }
   
   TEMPT
-  template< template<typename,typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
+  template< template<typename, typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
   std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
   {
     std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > ptr = std::make_shared< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> >( args... );
+    
+    Link new_link;
+    new_link.octree = octree_;
+    ptr->setLink(new_link);
+    
+    return ptr;
+  }
+  
+  TEMPT
+  template< template<typename> class INPUT_OBJ_TYPE, class ... CONSTRUCTOR_ARGS >
+  std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
+  {
+    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > ptr = std::make_shared< INPUT_OBJ_TYPE<TREE_TYPE> >( args... );
     
     Link new_link;
     new_link.octree = octree_;

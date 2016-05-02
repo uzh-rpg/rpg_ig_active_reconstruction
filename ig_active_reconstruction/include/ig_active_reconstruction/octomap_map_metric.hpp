@@ -16,8 +16,6 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/factory.hpp"
-
 namespace ig_active_reconstruction
 {
   
@@ -37,15 +35,6 @@ namespace octomap
   public:
     typedef double Result;
     
-    /*! Factory class where map metric types must be registered and can afterwards
-     * be retrieved through their unique id or name.
-     */
-    typedef multikit::Factory<MapMetric> Factory;
-    
-  public:
-    /*! Returns the factory object.
-     */
-    static Factory& factory();
     
   public:
     /*! Returns the name of the method.

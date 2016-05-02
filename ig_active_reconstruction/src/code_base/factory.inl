@@ -28,7 +28,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 namespace multikit
 {
   
-  unsigned int CSCOPE::register( std::string ig_name, std::function< std::shared_ptr<TYPE>()> ig_creator )
+  TEMPT
+  unsigned int CSCOPE::add( std::string ig_name, std::function< std::shared_ptr<TYPE>()> ig_creator )
   {
     Entry new_entry;
     new_entry.id = entries_.size();
@@ -97,13 +98,13 @@ namespace multikit
   }
   
   TEMPT
-  CSCOPE::Iterator CSCOPE::begin()
+  typename CSCOPE::Iterator CSCOPE::begin()
   {
     return entries_.begin();
   }
   
   TEMPT
-  CSCOPE::Iterator CSCOPE::end()
+  typename CSCOPE::Iterator CSCOPE::end()
   {
     return entries_.end();
   }

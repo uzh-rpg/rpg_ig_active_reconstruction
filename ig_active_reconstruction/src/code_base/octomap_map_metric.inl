@@ -23,15 +23,11 @@ namespace world_representation
 namespace octomap
 {  
   
-  template<class TREE_TYPE>
-  MapMetric<TREE_TYPE>& MapMetric<TREE_TYPE>::factory()
-  {
-    static Factory the_factory;
-    return the_factory;
-  };
-  
 }
 
 }
 
 }
+
+#undef CSCOPE
+#undef TEMPT
