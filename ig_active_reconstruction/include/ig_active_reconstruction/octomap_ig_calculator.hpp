@@ -44,39 +44,36 @@ namespace octomap
   public:
     virtual ~IgCalculator(){};
     
-    /*! Links an octomap::WorldRepresentation with the IgCalculator. 
-     * Informatoin gain metrics will then be calculated on the linked world.
-     * @param world the WorldRepresentation that is to be linked to the IgCalculator.
-     */
-    virtual void linkWorld( WorldRepresentation<TREE_TYPE>& world ){};
-    
   // Interface implementation
   public:
     /*! Calculates a set of information gains for a given view.
      * @param command Specifies which information gains have to be calculated and for which pose along with further parameters that define how the ig('s) will be collected.
      * @param output_ig (Output) Vector with the results of the information gain calculation. The indices correspond to the indices of the names in the metric_names array within the passed command.
      */
-    virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig){};
+    virtual ResultInformation computeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
     
     /*! Calculates a set of evaluation metrics on the complete map.
      * @param command Specifies which metrics shall be calculated.
      */
-    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output){};
+    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output)=0;
     
     /*! Returns all available information gain metrics.
      * @param available_ig_metrics (output) Set of available metrics.
      */
-    virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics ){};
+    virtual void availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )=0;
     
     /*! Returns all available map metrics.
      * @param available_map_metrics (output) Set of available map metrics.
      */
-    virtual void availableMapMetrics( std::vector<MetricInfo>& available_map_metrics ){};
+    virtual void availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )=0;
     
     /*! Registers an information gains with optional constructor parameters that will then be available for
      * calculations.
      * 
-     * Internally the object is created and stored in a "factory" and returned if needed.
+     * In order to allow multithreaded calculations, constructor and
+     * arguments are saved and a new object is instantiated each time a
+     * metric is to be calculated for a new view.
+     * 
      * @tparam IG_METRIC_TYPE Type of the information gain that is to be created. It must be templated on the TREE_TYPE, which will be automatically matched to the one of the IgCalculator object.
      * @param args (variadic) Constructor arguments to the created IG_METRIC_TYPE, used for custom configuration.
      * @return The identifier for the object type within the factory.

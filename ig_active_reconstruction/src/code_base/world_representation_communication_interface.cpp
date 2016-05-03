@@ -27,10 +27,7 @@ namespace world_representation
   CommunicationInterface::IgRetrievalCommand::IgRetrievalCommand()
   : ray_resolution_x(1.0)
   , ray_resolution_y(1.0)
-  , ray_step_size(1)
-  , min_ray_depth(0.0)
   , max_ray_depth(10.0)
-  , occupied_passthrough_threshold(0.0)
   {
     ray_window.min_x_perc = 0.0;
     ray_window.max_x_perc = 1.0;

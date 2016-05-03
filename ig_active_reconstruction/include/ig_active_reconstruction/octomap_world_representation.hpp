@@ -94,7 +94,7 @@ namespace octomap
     template< template<typename, typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
     std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > getLinkedObj( CONSTRUCTOR_ARGS ... args );
     
-    /*! Function overload TODO: Can't the above template function be adapted for class that only take on template argument?!
+    /*! Function overload TODO: Can't the above template function be adapted for class that only takes one template argument?! -> apparently might be a compiler bug
      */
     template< template<typename> class INPUT_OBJ_TYPE, class ... CONSTRUCTOR_ARGS >
     std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > getLinkedObj( CONSTRUCTOR_ARGS ... args );

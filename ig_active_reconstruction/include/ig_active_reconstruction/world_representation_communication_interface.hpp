@@ -73,14 +73,10 @@ namespace world_representation
       
       double ray_resolution_x; //! How many rays are cast per pixel on the image's x-axis to obtain the information. [rays/px] Default: 1.0
       double ray_resolution_y; //! How many rays are cast per pixel on the image's y-axis to obtain the information. [rays/px] Default: 1.0
-      uint32_t ray_step_size; //! Each i-th voxel on the ray will be included for calculation (if set to zero, 1 will be used instead as default). Default: 1
       
       SubWindow ray_window; //! Defines a subwindow of the image on which the rays shall be cast. Defaults to the complete window. Default: [0.0, 1.0] for both x- and y-coordinate windows, ie the complete image.
       
-      double min_ray_depth; //! Minimal ray depth to start ig computation. [World representation units, usually m] Default: 0
       double max_ray_depth; //! Maximal ray depth for the ig computation. [World representation units, usually m] Default: 10.0
-      
-      double occupied_passthrough_threshold; //! If the occupancy likelihood of the end point of a ray is lower than this threshold, the ray is continued until either an endpoint is found that has a higher occupancy likelihood or the maximal ray depth is reached. Default: 0.0
     };
     
     /*! Result of a metric calculation call.
@@ -113,7 +109,7 @@ namespace world_representation
      * @param command Specifies which information gains have to be calculated and for which pose along with further parameters that define how the ig('s) will be collected.
      * @param output_ig (Output) Vector with the results of the information gain calculation. The indices correspond to the indices of the names in the metric_names array within the passed command.
      */
-    virtual ResultInformation ComputeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
+    virtual ResultInformation computeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
     
     /*! Calculates a set of evaluation metrics on the complete map.
      * @param command Specifies which metrics shall be calculated.

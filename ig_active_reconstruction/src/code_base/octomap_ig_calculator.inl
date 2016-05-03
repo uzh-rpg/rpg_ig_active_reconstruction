@@ -30,10 +30,12 @@ namespace octomap
   template< template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS >
   unsigned int CSCOPE::registerInformationGain( IG_CONSTRUCTOR_ARGS ... args )
   {
-    std::shared_ptr< InformationGain<TREE_TYPE> > new_type = std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(args...);
-    std::string name = new_type->type();
+    // gcc has a bug when capturing variadic arguments... need to use workaround...
     
-    std::function< std::shared_ptr< InformationGain<TREE_TYPE> >() > creator = [&new_type](){ return new_type; };
+    std::shared_ptr< InformationGain<TREE_TYPE> > prototype = std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(args...);
+    std::string name = prototype->type();
+    
+    std::function< std::shared_ptr< InformationGain<TREE_TYPE> >() > creator = std::bind(std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >,args...);
     
     return ig_factory_.add(name,creator);
   }
