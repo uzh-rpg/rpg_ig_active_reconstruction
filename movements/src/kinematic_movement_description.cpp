@@ -14,6 +14,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with movements. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdexcept>
+
 #include "movements/geometry_pose.h"
 #include "movements/kinematic_movement_description.h"
 #include "movements/combined_kinematic_movement_description.h"
