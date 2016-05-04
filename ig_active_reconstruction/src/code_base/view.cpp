@@ -30,6 +30,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "ig_active_reconstruction/ig/proximity_count.hpp"
 #include "ig_active_reconstruction/ig/vasquez_gomez_area_factor.hpp"
 #include "ig_active_reconstruction/ig/average_entropy.hpp"
+#include "ig_active_reconstruction/views_simple_view_space_module.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -63,6 +64,10 @@ View::View():
   ig_calculator->registerInformationGain<ProximityCountIg>();
   ig_calculator->registerInformationGain<VasquezGomezAreaFactorIg>();
   ig_calculator->registerInformationGain<AverageEntropyIg>();
+  
+  SimpleViewSpaceModule viewspace("blah");
+  viewspace.loadFromFile("thetest");
+  viewspace.saveToFile("hahaha");
 }
 
 View::View( std::string source_frame )

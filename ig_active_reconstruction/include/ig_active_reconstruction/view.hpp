@@ -43,7 +43,7 @@ public:
    */
   View( std::string source_frame );
   
-  /*! Constructor with given id.
+  /*! Constructor with given id. (This is for communication purposes, if the view already exists and should keep its id).
    */
   View( IdType id );
   

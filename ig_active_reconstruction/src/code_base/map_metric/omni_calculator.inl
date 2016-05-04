@@ -15,32 +15,19 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
-#include "ig_active_reconstruction/world_representation_communication_interface.hpp"
-
-
 namespace ig_active_reconstruction
 {
   
 namespace world_representation
 {
   
-  CommunicationInterface::IgRetrievalConfig::IgRetrievalConfig()
-  : ray_resolution_x(1.0)
-  , ray_resolution_y(1.0)
-  , max_ray_depth(10.0)
-  {
-    ray_window.min_x_perc = 0.0;
-    ray_window.max_x_perc = 1.0;
-    ray_window.min_y_perc = 0.0;
-    ray_window.max_y_perc = 1.0;
-  }
+namespace octomap
+{  
   
-  CommunicationInterface::IgRetrievalCommand::IgRetrievalCommand()
-  : config()
-  {
-  }
+  
   
 }
 
+}
 
 }

@@ -15,8 +15,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "ig_active_reconstruction/view_space.hpp"
-#include "boost/foreach.hpp"
 #include <fstream>
+#include <stdexcept>
 
 namespace ig_active_reconstruction
 {
@@ -34,81 +34,134 @@ std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
   return view_space_;
 }
 
-void ViewSpace::getGoodViewSpace( std::vector<unsigned int>& _out, bool _ignore_visited )
+void ViewSpace::getGoodViewSpace( IdSet& out, bool ignore_visited )
 {
-  for( unsigned int i=0; i<view_space_.size(); ++i )
+  for( View& view: view_space_ )
   {
-    if( view_space_[i].reachable() && (view_space_[i].timesVisited()==0||!_ignore_visited) && !view_space_[i].bad() )
+    if( view.reachable() && (view.timesVisited()==0||!ignore_visited) && !view.bad() )
     {
-      _out.push_back(i);
+      out.push_back(view.index());
     }
   }
 }
 
-View ViewSpace::getView( unsigned int _index )
+View ViewSpace::getView( View::IdType index )
 {
-  if( _index>=view_space_.size() )
+  try
   {
-    throw std::invalid_argument("ViewSpace::getView: the given index is out of range");
+    return *(views_index_map_.at(index));
   }
-  return view_space_[_index];
-}
-
-unsigned int ViewSpace::timesVisited( unsigned int _index )
-{
-  if( _index<view_space_.size() )
+  catch(...)
   {
-    return view_space_[_index].timesVisited();
-  }
-  return 0;
-}
-
-void ViewSpace::setBad( unsigned int _index )
-{
-  if( _index<view_space_.size() )
-  {
-    view_space_[_index].bad()=true;
+    throw std::out_of_range("ViewSpace::getView: the given index is out of range");
   }
 }
 
-void ViewSpace::setGood( unsigned int _index )
+bool ViewSpace::deleteView( View::IdType index )
 {
-  if( _index<view_space_.size() )
+  decltype(view_space_)::iterator it = view_space_.begin();
+  decltype(view_space_)::iterator end = view_space_.end();
+  
+  for( ; it!=end; ++it )
   {
-    view_space_[_index].bad()=false;
+    if( it->index()==index )
+    {
+      view_space_.erase(it);
+      recalculateIndexMap();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ViewSpace::deleteViews( std::vector<View::IdType>& index_set )
+{
+  bool found = true;
+  for( View::IdType& id: index_set )
+  {
+    found = found && deleteView(id);
+  }
+  
+  return found;
+}
+
+unsigned int ViewSpace::timesVisited( View::IdType index )
+{
+  try
+  {
+    return views_index_map_.at(index)->timesVisited();
+  }
+  catch(...)
+  {
+    return 0;
   }
 }
 
-void ViewSpace::setVisited( unsigned int _index )
+void ViewSpace::setBad( View::IdType index )
 {
-  if( _index<view_space_.size() )
+  try
   {
-    int count = view_space_[_index].timesVisited()+1;
-    view_space_[_index].timesVisited() = count;
+    views_index_map_.at(index)->bad()=true;
+  }
+  catch(...)
+  {
+    return;
   }
 }
 
-void ViewSpace::setUnReachable( unsigned int _index )
+void ViewSpace::setGood( View::IdType index )
 {
-  if( _index<view_space_.size() )
+  try
   {
-    view_space_[_index].reachable()=false;
+    views_index_map_.at(index)->bad()=false;
+  }
+  catch(...)
+  {
+    return;
   }
 }
 
-void ViewSpace::setReachable( unsigned int _index )
+void ViewSpace::setVisited( View::IdType index )
 {
-  if( _index<view_space_.size() )
+  try
   {
-    view_space_[_index].reachable()=true;
+    views_index_map_.at(index)->timesVisited() += 1;
+  }
+  catch(...)
+  {
+    return;
+  }
+}
+
+void ViewSpace::setUnReachable( View::IdType index )
+{
+  try
+  {
+    views_index_map_.at(index)->reachable() = false;
+  }
+  catch(...)
+  {
+    return;
+  }
+}
+
+void ViewSpace::setReachable( View::IdType index )
+{
+  try
+  {
+    views_index_map_.at(index)->reachable() = true;
+  }
+  catch(...)
+  {
+    return;
   }
 }
 
 
-void ViewSpace::push_back( View _new_vp )
+void ViewSpace::push_back( View new_vp )
 {
-  //_new_vp.index = view_space_.size();
-  view_space_.push_back(_new_vp);
+  view_space_.push_back(new_vp);
+  views_index_map_[new_vp.index()] = &view_space_.back();
 }
 
 View ViewSpace::getAClosestNeighbour( View& _view )
@@ -121,7 +174,7 @@ View ViewSpace::getAClosestNeighbour( View& _view )
   Eigen::Vector3d dist_vec = probe - closest.pose().position;
   double distance = dist_vec.norm();
   
-  BOOST_FOREACH( auto view, view_space_ )
+  for( auto& view: view_space_ )
   {
     dist_vec = probe - view.pose().position;
     double norm = dist_vec.norm();
@@ -141,7 +194,7 @@ unsigned int ViewSpace::size()
 
 void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space )
 {
-  BOOST_FOREACH( auto view, view_space_ )
+  for( auto& view: view_space_ )
   {
     Eigen::Vector3d dist_vec = view.pose().position - _reference_view.pose().position;
     if( dist_vec.norm()<=_distance )
@@ -200,7 +253,9 @@ void ViewSpace::loadFromFile( std::string _filename )
     new_pose.bad() = false;
     new_pose.reachable() = true;
     new_pose.timesVisited() = 0;
+    
     view_space_.push_back(new_pose);
+    views_index_map_[new_pose.index()] = &view_space_.back();
   }
 }
 
@@ -212,6 +267,21 @@ ViewSpace::Iterator ViewSpace::begin()
 ViewSpace::Iterator ViewSpace::end()
 {
   return view_space_.end();
+}
+
+bool ViewSpace::empty() const
+{
+  return view_space_.empty();
+}
+
+void ViewSpace::recalculateIndexMap()
+{
+  views_index_map_.clear();
+  
+  for( View& view: view_space_ )
+  {
+    views_index_map_[view.index()] = &view;
+  }
 }
 
 }

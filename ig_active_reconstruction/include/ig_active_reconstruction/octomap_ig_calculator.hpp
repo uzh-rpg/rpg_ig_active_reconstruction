@@ -50,12 +50,12 @@ namespace octomap
      * @param command Specifies which information gains have to be calculated and for which pose along with further parameters that define how the ig('s) will be collected.
      * @param output_ig (Output) Vector with the results of the information gain calculation. The indices correspond to the indices of the names in the metric_names array within the passed command.
      */
-    virtual ResultInformation computeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)=0;
+    virtual ResultInformation computeViewIg(IgRetrievalCommand& command, ViewIgRetrievalResult& output_ig)=0;
     
     /*! Calculates a set of evaluation metrics on the complete map.
      * @param command Specifies which metrics shall be calculated.
      */
-    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output)=0;
+    virtual ResultInformation computeMapMetric(MapMetricRetrievalCommand& command, MapMetricRetrievalResultSet& output)=0;
     
     /*! Returns all available information gain metrics.
      * @param available_ig_metrics (output) Set of available metrics.

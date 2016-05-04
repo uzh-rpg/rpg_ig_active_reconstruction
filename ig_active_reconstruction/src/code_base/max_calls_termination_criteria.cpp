@@ -14,33 +14,31 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#include "ig_active_reconstruction/world_representation_communication_interface.hpp"
+#include "ig_active_reconstruction/max_calls_termination_criteria.hpp"
 
 
 namespace ig_active_reconstruction
 {
   
-namespace world_representation
-{
-  
-  CommunicationInterface::IgRetrievalConfig::IgRetrievalConfig()
-  : ray_resolution_x(1.0)
-  , ray_resolution_y(1.0)
-  , max_ray_depth(10.0)
+  MaxCallsTerminationCriteria::MaxCallsTerminationCriteria( unsigned int max_calls )
+  : max_calls_(max_calls)
+  , call_count_(0)
   {
-    ray_window.min_x_perc = 0.0;
-    ray_window.max_x_perc = 1.0;
-    ray_window.min_y_perc = 0.0;
-    ray_window.max_y_perc = 1.0;
+    
   }
   
-  CommunicationInterface::IgRetrievalCommand::IgRetrievalCommand()
-  : config()
+  void MaxCallsTerminationCriteria::reset()
   {
+    call_count_ = 0;
   }
   
-}
-
-
+  bool MaxCallsTerminationCriteria::isDone()
+  {
+    if( (call_count_+1)==max_calls_)
+      return true;
+    
+    ++call_count_;
+    return false;
+  }
+  
 }

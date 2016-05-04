@@ -48,7 +48,7 @@ namespace octomap
   }
   
   TEMPT
-  typename CSCOPE::ResultInformation CSCOPE::computeViewIg(IgRetrievalCommand& command, std::vector<IgRetrievalResult>& output_ig)
+  typename CSCOPE::ResultInformation CSCOPE::computeViewIg(IgRetrievalCommand& command, ViewIgRetrievalResult& output_ig)
   {
     output_ig.clear();
     
@@ -67,12 +67,12 @@ namespace octomap
     
     // compute rays
     PinholeCamRayCaster::ResolutionSettings ray_caster_config;
-    ray_caster_config.ray_resolution_x = command.ray_resolution_x;
-    ray_caster_config.ray_resolution_y = command.ray_resolution_y;
-    ray_caster_config.min_x_perc = command.ray_window.min_x_perc;
-    ray_caster_config.min_y_perc = command.ray_window.min_y_perc;
-    ray_caster_config.max_x_perc = command.ray_window.max_x_perc;
-    ray_caster_config.max_y_perc = command.ray_window.max_y_perc;
+    ray_caster_config.ray_resolution_x = command.config.ray_resolution_x;
+    ray_caster_config.ray_resolution_y = command.config.ray_resolution_y;
+    ray_caster_config.min_x_perc = command.config.ray_window.min_x_perc;
+    ray_caster_config.min_y_perc = command.config.ray_window.min_y_perc;
+    ray_caster_config.max_x_perc = command.config.ray_window.max_x_perc;
+    ray_caster_config.max_y_perc = command.config.ray_window.max_y_perc;
     
     ray_caster_.setResolution(ray_caster_config);
     std::shared_ptr<RayCaster::RaySet> ray_set = ray_caster_.getRaySet(command.path[0]);
@@ -109,7 +109,7 @@ namespace octomap
     
     // cast rays
     RayCastSettings ray_cast_settings;
-    ray_cast_settings.max_ray_depth = command.max_ray_depth;
+    ray_cast_settings.max_ray_depth = command.config.max_ray_depth;
     
     for( RayCaster::Ray& ray: *ray_set )
     {
@@ -133,7 +133,7 @@ namespace octomap
   }
   
   TEMPT
-  typename CSCOPE::ResultInformation CSCOPE::computeMapMetric(MapMetricRetrievalCommand& command, std::vector<MapMetricRetrievalResult>& output)
+  typename CSCOPE::ResultInformation CSCOPE::computeMapMetric(MapMetricRetrievalCommand& command, MapMetricRetrievalResultSet& output)
   {
     
   }

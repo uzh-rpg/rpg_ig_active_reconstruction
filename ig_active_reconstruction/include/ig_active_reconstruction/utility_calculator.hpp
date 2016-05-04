@@ -14,33 +14,25 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
 
-#include "ig_active_reconstruction/world_representation_communication_interface.hpp"
-
+#include "ig_active_reconstruction/view_space.hpp"
 
 namespace ig_active_reconstruction
 {
   
-namespace world_representation
-{
+  /*! Interface definition for utility function calculators.
+   */
+  class UtilityCalculator
+  {    
+  public:
+    virtual ~UtilityCalculator(){};
+    
+    /*! Returns the view id of the best view within the given subset of the viewspace.
+     * @param id_set Id-subset of views that shall be considered.
+     * @param viewspace The complete viewspace object
+     */
+    virtual views::View::IdType getNbv( views::ViewSpace::IdSet& id_set, std::shared_ptr<views::ViewSpace> viewspace )=0;    
+  };
   
-  CommunicationInterface::IgRetrievalConfig::IgRetrievalConfig()
-  : ray_resolution_x(1.0)
-  , ray_resolution_y(1.0)
-  , max_ray_depth(10.0)
-  {
-    ray_window.min_x_perc = 0.0;
-    ray_window.max_x_perc = 1.0;
-    ray_window.min_y_perc = 0.0;
-    ray_window.max_y_perc = 1.0;
-  }
-  
-  CommunicationInterface::IgRetrievalCommand::IgRetrievalCommand()
-  : config()
-  {
-  }
-  
-}
-
-
 }

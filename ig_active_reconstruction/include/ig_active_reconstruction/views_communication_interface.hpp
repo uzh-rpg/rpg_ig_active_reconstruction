@@ -16,6 +16,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "ig_active_reconstruction/view_space.hpp"
+
 namespace ig_active_reconstruction
 {
   
@@ -47,7 +49,7 @@ namespace views
       * @param _space pointer to the ViewSpace object that should be filled
       * @return false if it failed or the robot does not provide such a service.
       */
-    virtual ViewSpaceStatus getPlanningSpace( views::ViewSpace* _space )=0;
+    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* _space )=0;
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.

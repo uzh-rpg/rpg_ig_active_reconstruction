@@ -14,9 +14,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-
-#include "ig_active_reconstruction/world_representation_communication_interface.hpp"
-
+#pragma once
 
 namespace ig_active_reconstruction
 {
@@ -24,23 +22,22 @@ namespace ig_active_reconstruction
 namespace world_representation
 {
   
-  CommunicationInterface::IgRetrievalConfig::IgRetrievalConfig()
-  : ray_resolution_x(1.0)
-  , ray_resolution_y(1.0)
-  , max_ray_depth(10.0)
-  {
-    ray_window.min_x_perc = 0.0;
-    ray_window.max_x_perc = 1.0;
-    ray_window.min_y_perc = 0.0;
-    ray_window.max_y_perc = 1.0;
-  }
+namespace octomap
+{  
   
-  CommunicationInterface::IgRetrievalCommand::IgRetrievalCommand()
-  : config()
+  /*! Class that calculates a whole set of tree metrics simultaneously.
+   * 
+   * TODO: refactoring...
+   */
+  template<class TREE_TYPE>
+  class OmniCalculator
   {
-  }
+  };
   
 }
 
+}
 
 }
+
+#include "../src/code_base/map_metric/omni_calculator.hpp"
