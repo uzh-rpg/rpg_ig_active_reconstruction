@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package>
+  <name>flying_gazebo_stereo_cam</name>
+  <description>A simple model for a static flying stereo camera in gazebo</description>
+  
+  <version>0.0.0</version>
+  
+  <maintainer email="islerstefan@bluewin.ch">Stefan Isler</maintainer>
+  <author>Stefan Isler</author>
+  <license>LGPL, BSD</license>
+  
+  
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>cmake_modules</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend >urdf</build_depend>
+  <build_depend >ig_active_reconstruction</build_depend>
+  <build_depend >ig_active_reconstruction_msgs</build_depend>
+  <build_depend >movements</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend >urdf</run_depend>
+  <run_depend >ig_active_reconstruction</run_depend>
+  <run_depend >ig_active_reconstruction_msgs</run_depend>
+  <run_depend >movements</run_depend>
+
+</package>
+
+

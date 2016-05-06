@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot name="flying_stereo_cam" xmlns:xacro="http://www.ros.org/wiki/xacro">
+        
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
+  <xacro:property name="cameraSize" value="0.05"/>
+  <xacro:property name="cameraMass" value="0.1"/>
+  
+  <xacro:include filename="$(find flying_stereo_cam)/flying_stereo_cam.gazebo" />
+  <xacro:include filename="$(find flying_stereo_cam)/materials.xacro" />
+  <xacro:include filename="$(find flying_stereo_cam)/macros.xacro" />
+  
+  
+  
+  <link name="base" />
+    
+    <joint name="base_fix" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="base"/>
+      <child link="camera" />
+    </joint>
+
+    <link name="camera">
+      <collision>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+	  <box size="${cameraSize*2} ${cameraSize} ${cameraSize}"/>
+	</geometry>
+      </collision>
+
+      <visual>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+	  <box size="${cameraSize*2} ${cameraSize} ${cameraSize}"/>
+	</geometry>
+	<material name="Black"/>
+      </visual>
+
+      <inertial>
+	<mass value="${cameraMass}" />
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<box_inertia m="${cameraMass*2}" x="${cameraSize}" y="${cameraSize}" z="${cameraSize}" />
+      </inertial>
+    </link>
+
+    <joint name="cameramount2" type="fixed">
+      <!-- camera pointing forward or sideways -->
+      <!--<origin xyz="-0.04 0 0" rpy="0 ${-M_PI/2.0} 0" />--><origin xyz="0 -0.10 0" rpy="0 0 0" />
+      <parent link="camera"/>
+      <child link="camera2" />
+    </joint>
+
+    <link name="camera2">
+      <collision>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+	  <box size="${cameraSize*2*0} ${cameraSize*0} ${cameraSize*0}"/>
+	</geometry>
+      </collision>
+
+      <visual>
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<geometry>
+	  <box size="${cameraSize*2} ${cameraSize} ${cameraSize}"/>
+	</geometry>
+	<material name="Black"/>
+      </visual>
+
+      <inertial>
+	<mass value="${cameraMass}" />
+	<origin xyz="0 0 0" rpy="0 0 0"/>
+	<box_inertia m="${cameraMass*2}" x="${cameraSize}" y="${cameraSize}" z="${cameraSize}" />
+      </inertial>
+    </link>
+  
+</robot>
+
