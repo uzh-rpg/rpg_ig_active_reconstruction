@@ -17,6 +17,8 @@ along with movements. If not, see <http://www.gnu.org/licenses/>.
 #include "movements/circular_ground_path.h"
 #include <angles/angles.h>
 
+#include <stdexcept>
+
 namespace movements
 {
 
