@@ -37,8 +37,8 @@ public:
    */
   enum struct ReceptionInfo
   { 
-    SUCCEEDED, 
-    FAILED
+    SUCCEEDED=0, 
+    FAILED=1
   };
   
 public:  
@@ -53,24 +53,24 @@ public:
   virtual ReceptionInfo retrieveData()=0;
   
   /*! Returns the cost to move from the current view to the indicated view
-   * @param _target_view the next view
+   * @param target_view the next view
    * @return cost to move to that view
    */
-  virtual MovementCost movementCost( views::View& _target_view )=0;
+  virtual MovementCost movementCost( views::View& target_view )=0;
   
   /*! returns the cost to move from start view to target view
-   * @param _start_view the start view
-   * @param _target_view the target view
-   * @param _fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
+   * @param start_view the start view
+   * @param target_view the target view
+   * @param fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
    * @return cost for the movement
    */
-  virtual MovementCost movementCost( views::View& _start_view, views::View& _target_view, bool _fill_additional_information  )=0;
+  virtual MovementCost movementCost( views::View& _start_view, views::View& target_view, bool fill_additional_information  )=0;
   
   /*! Tells the robot to get the camera to a new view
-   * @param _target_view where to move to
+   * @param target_view where to move to
    * @return false if the operation failed
    */
-  virtual bool moveTo( views::View& _target_view )=0;
+  virtual bool moveTo( views::View& target_view )=0;
 };
 
 }

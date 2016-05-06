@@ -35,7 +35,8 @@ namespace robot
       INFINITE_COST, 
       INVALID_STATE, 
       INVALID_TARGET_STATE, 
-      INVALID_START_STATE
+      INVALID_START_STATE,
+      RECEPTION_FAILED
     };
     
   public:

@@ -8,8 +8,10 @@ find_package(catkin REQUIRED COMPONENTS
 )
 add_message_files(
   FILES
-  ViewInformation.msg
-  ViewInformationRequest.msg
+  SubWindow.msg
+  InformationGain.msg
+  InformationGainRetrievalConfig.msg
+  InformationGainRetrievalCommand.msg
   ViewMsg.msg
   ViewSpaceMsg.msg
   MovementCostMsg.msg
@@ -19,9 +21,9 @@ add_service_files(
   FILES
   PoseSetter.srv
   IsOk.srv
-  ViewInformationReturn.srv
+  InformationGainCalculation.srv
   PlanningSpaceInitializationInfoMsg.srv
-  FeasibleViewSpaceRequest.srv
+  ViewSpaceRequest.srv
   ViewRequest.srv
   RetrieveData.srv
   MovementCostCalculation.srv
@@ -29,6 +31,10 @@ add_service_files(
   SaveViewSpace.srv
   SetScale.srv
   Booleans.srv
+  DeleteViews.srv
+  ViewSpaceUpdate.srv
+  StringList.srv
+  MapMetricCalculation.srv
 )
 
 generate_messages(

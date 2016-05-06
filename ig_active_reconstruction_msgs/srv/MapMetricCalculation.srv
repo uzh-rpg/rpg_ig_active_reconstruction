@@ -1,0 +1,5 @@
+# Vector with the names of all metrics that shall be calculated.
+string[] metric_names
+---
+# Corresponding calculated values
+float64[] values

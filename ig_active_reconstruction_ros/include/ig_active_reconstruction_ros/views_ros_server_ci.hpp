@@ -16,7 +16,12 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "ros/ros.h"
 #include "ig_active_reconstruction/views_communication_interface.hpp"
+
+#include "ig_active_reconstruction_msgs/DeleteViews.h"
+#include "ig_active_reconstruction_msgs/ViewSpaceRequest.h"
+#include "ig_active_reconstruction_msgs/ViewSpaceUpdate.h"
 
 namespace ig_active_reconstruction
 {
@@ -24,42 +29,16 @@ namespace ig_active_reconstruction
 namespace views
 {
   
-  /*! Simple view space module: Views can be added and deleted and the viewspace can be loaded or saved to file,
-   * but no other dynamic functionality is provided.
+  /*! ROS server implementation of a views::CommunicationInterface. Receives ROS service calls and forwards them to the linked interface.
    */
-  class SimpleViewSpaceModule: public CommunicationInterface
+  class RosServerCI: public CommunicationInterface
   {
   public:
-    /*! Constructor, optionally directly loads the viewspace from file.
-     * @param file_source Path to the file.
+    /*! Constructor
+     * @param nh ROS node handle defines the namespace in which ROS communication will be carried out.
+     * @param linked_interface (optional) directly add the interface that is linked internally (to which requests are forwarded.
      */
-    SimpleViewSpaceModule( std::string file_source = "" );
-    
-    virtual ~SimpleViewSpaceModule(){};
-    
-    /*! Loads the viewspace from file
-     * 
-     * Format (first number of views in the file, then each view represented by its position and a quaternion for its orientation):
-     * Nr_of_views
-     * pos_1.x pos_1.y pos_1.z orientation_1.x orientation_1.y orientation_1.z orientation_1.w
-     * pos_2.x pos_2.y pos_2.z orientation_2.x orientation_2.y orientation_2.z orientation_2.w
-     * (...)
-     * 
-     * @param path Path to the file.
-     */
-    void loadFromFile( std::string path );
-    
-    /*! Saves the current viewspace to file (view position and orientation only, no additional information)
-     * 
-     * Format (first number of views in the file, then each view represented by its position and a quaternion for its orientation):
-     * Nr_of_views
-     * pos_1.x pos_1.y pos_1.z orientation_1.x orientation_1.y orientation_1.z orientation_1.w
-     * pos_2.x pos_2.y pos_2.z orientation_2.x orientation_2.y orientation_2.z orientation_2.w
-     * (...)
-     * 
-     * @param path Path to the file.
-     */
-    void saveToFile( std::string filename );
+    RosServerCI( ros::NodeHandle nh, std::shared_ptr<CommunicationInterface> linked_interface = nullptr );
   
     /*! Returns the view space that is available for planning.
       * @param _space pointer to the ViewSpace object that should be filled
@@ -93,10 +72,23 @@ namespace views
      */
     virtual ViewSpaceUpdateResult deleteView( View::IdType view_id );
     
-  public:
-    ViewSpace viewspace_; //! The internal viewspace.
+  protected:
+    bool viewspaceService( ig_active_reconstruction_msgs::ViewSpaceRequest::Request& req, ig_active_reconstruction_msgs::ViewSpaceRequest::Response& res );
     
+    bool viewsAdderService( ig_active_reconstruction_msgs::ViewSpaceUpdate::Request& req, ig_active_reconstruction_msgs::ViewSpaceUpdate::Response& res );
+    
+    bool viewsDeleterService( ig_active_reconstruction_msgs::DeleteViews::Request& req, ig_active_reconstruction_msgs::DeleteViews::Response& res );
+    
+  protected:
+    ros::NodeHandle nh_;
+    
+    std::shared_ptr<CommunicationInterface> linked_interface_; //! Linked interface.
+    
+    ros::ServiceServer viewspace_service_;
+    ros::ServiceServer views_adder_service_;
+    ros::ServiceServer views_deleter_service_;
   };
+  
 }
 
 }

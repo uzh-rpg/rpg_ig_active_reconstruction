@@ -1,0 +1,4 @@
+float64 min_x_perc
+float64 max_x_perc
+float64 min_y_perc
+float64 max_y_perc

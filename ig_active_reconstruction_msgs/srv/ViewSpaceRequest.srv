@@ -1,0 +1,4 @@
+---
+# view space with feasible camera views
+int32 viewspace_status
+ig_active_reconstruction_msgs/ViewSpaceMsg viewspace

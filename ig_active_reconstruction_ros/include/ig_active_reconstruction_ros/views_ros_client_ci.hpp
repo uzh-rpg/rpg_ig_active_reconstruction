@@ -16,7 +16,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/view_space.hpp"
+#include "ros/ros.h"
+#include "ig_active_reconstruction/views_communication_interface.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -24,59 +25,54 @@ namespace ig_active_reconstruction
 namespace views
 {
   
-  /*! Abstract interface definition to exchange information about the viewspace.
+  /*! ROS client implementation of a views::CommunicationInterface. Forwards calls over the ROS network via Server calls.
    */
-  class CommunicationInterface
+  class RosClientCI: public CommunicationInterface
   {
   public:
-    enum struct ViewSpaceStatus
-    {
-      OK,
-      BAD,
-      NONE_AVAILABLE
-    };
-    
-    enum struct ViewSpaceUpdateResult
-    {
-      SUCCEEDED=0,
-      FAILED,
-      NOT_AVAILABLE
-    };
-    
-  public:
-    virtual ~CommunicationInterface(){};
+    /*! Constructor
+     * @param nh ROS node handle defines the namespace in which ROS communication will be carried out.
+     */
+    RosClientCI( ros::NodeHandle nh );
   
     /*! Returns the view space that is available for planning.
       * @param _space pointer to the ViewSpace object that should be filled
       * @return false if it failed or the robot does not provide such a service.
       */
-    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* _space )=0;
+    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* _space );
     
     /*! Returns a pointer to the internal viewspace
      */
-    virtual void getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status)=0;
+    virtual void getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status);
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.
      */
-    virtual ViewSpaceUpdateResult addViews( std::vector<View>& new_views )=0;
+    virtual ViewSpaceUpdateResult addViews( std::vector<View>& new_views );
     
     /*! Adds a single new view to the viewspace.
      * @param new_view New view to add to the viewspace.
      */
-    virtual ViewSpaceUpdateResult addView( View new_view )=0;
+    virtual ViewSpaceUpdateResult addView( View new_view );
     
     /*! Delete a set of views from the viewspace, using their id.
      * @param view_ids Vector with the id's of the views
      * @return True if all views were successfully deleted.
      */
-    virtual ViewSpaceUpdateResult deleteViews( std::vector<View::IdType>& view_ids )=0;
+    virtual ViewSpaceUpdateResult deleteViews( std::vector<View::IdType>& view_ids );
     
     /*! Delete a single view from the viewspace, using its id.
      * @param view_id Id of the view that shall be deleted.
      * @return True if the view was found and deleted.
      */
-    virtual ViewSpaceUpdateResult deleteView( View::IdType view_id )=0;
+    virtual ViewSpaceUpdateResult deleteView( View::IdType view_id );
+    
+  protected:
+    ros::NodeHandle nh_;
+    
+    ros::ServiceClient planning_space_receiver_;
+    ros::ServiceClient views_adder_;
+    ros::ServiceClient views_deleter_;
   };
   
 }

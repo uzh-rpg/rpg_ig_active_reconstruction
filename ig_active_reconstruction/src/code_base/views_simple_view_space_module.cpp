@@ -53,6 +53,18 @@ namespace views
     
   }
   
+  void SimpleViewSpaceModule::getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status)
+  {
+    viewspace = &viewspace_;
+    
+    if( !viewspace_.empty() )
+      status = ViewSpaceStatus::OK;
+    else
+      status = ViewSpaceStatus::NONE_AVAILABLE;
+      
+    return;
+  }
+  
   SimpleViewSpaceModule::ViewSpaceUpdateResult SimpleViewSpaceModule::addViews( std::vector<View>& new_views )
   {
     for( View& view: new_views )

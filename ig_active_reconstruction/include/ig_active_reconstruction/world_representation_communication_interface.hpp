@@ -92,7 +92,7 @@ namespace world_representation
     public:      
       movements::PoseVector path; //! Describes the path for which the information gain shall be calculated. Note that in the current octomap-based implementation provided with the framework this is not yet implemented: Only the first pose will be considered and no casts into the future attempted.
       std::vector<std::string> metric_names; //! Vector with the names of all metrics that shall be calculated. Only considered if metric_ids is empty.
-      std::vector<unsigned int> metric_ids; //! Vector with the ids of all metrics that shall be calculated. Takes precedence over metric_names.    };
+      std::vector<unsigned int> metric_ids; //! Vector with the ids of all metrics that shall be calculated. Takes precedence over metric_names.
       IgRetrievalConfig config;
     };
     
