@@ -1,3 +1,4 @@
 ig_active_reconstruction_msgs/InformationGainRetrievalCommand command
 ---
-ig_active_reconstruction_msgs/InformationGain expected_information
+# array of information gain result, corresponding to the order of the metrics given in command
+ig_active_reconstruction_msgs/InformationGain[] expected_information

@@ -28,7 +28,7 @@ namespace world_representation
 
   /*! ROS client implementation of a world_representation::CommunicationInterface. Forwards calls over the ROS network via Server calls.
    */
-  class RosClientCI:CommunicationInterface
+  class RosClientCI: public CommunicationInterface
   {
   public:
     /*! Constructor
@@ -65,7 +65,7 @@ namespace world_representation
     ros::ServiceClient view_ig_computation_;
     ros::ServiceClient map_metric_computation_;
     ros::ServiceClient available_ig_receiver_;
-    ros::ServiceClient availalbe_mm_receiver_;
+    ros::ServiceClient available_mm_receiver_;
   };
   
   

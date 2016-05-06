@@ -2,4 +2,4 @@
 string[] metric_names
 ---
 # Corresponding calculated values
-float64[] values
+ig_active_reconstruction_msgs/InformationGain[] results

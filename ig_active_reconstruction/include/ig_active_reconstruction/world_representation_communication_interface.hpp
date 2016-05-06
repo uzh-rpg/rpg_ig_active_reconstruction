@@ -34,7 +34,7 @@ namespace world_representation
      */
     enum struct ResultInformation
     {
-      SUCCEEDED, //! IG was successfully calculated.
+      SUCCEEDED=0, //! IG was successfully calculated.
       FAILED, //! IG could not be calculated, an error occured.
       UNKNOWN_METRIC //! The IG name was unknown and hence the IG could not be calculated
     };

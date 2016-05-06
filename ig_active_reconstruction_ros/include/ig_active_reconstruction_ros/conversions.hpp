@@ -17,16 +17,18 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "ig_active_reconstruction_msgs/MovementCostMsg.h"
-#include "ig_active_reconstruction/robot_movement_cost.hpp"
-
 #include "ig_active_reconstruction_msgs/ViewMsg.h"
-#include "ig_active_reconstruction/view.hpp"
-
+#include "ig_active_reconstruction_msgs/InformationGainRetrievalCommand.h"
 #include "ig_active_reconstruction_msgs/ViewSpaceMsg.h"
+#include "ig_active_reconstruction_msgs/InformationGain.h"
+
+#include "ig_active_reconstruction/robot_movement_cost.hpp"
+#include "ig_active_reconstruction/view.hpp"
 #include "ig_active_reconstruction/view_space.hpp"
 
 #include "ig_active_reconstruction/robot_communication_interface.hpp"
 #include "ig_active_reconstruction/views_communication_interface.hpp"
+#include "ig_active_reconstruction/world_representation_communication_interface.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -69,6 +71,15 @@ namespace ros_conversions
     
     views::CommunicationInterface::ViewSpaceUpdateResult viewSpaceUpdateResultFromMsg(int& msg);
     int viewSpaceUpdateResultToMsg(views::CommunicationInterface::ViewSpaceUpdateResult& res);
+    
+    world_representation::CommunicationInterface::IgRetrievalConfig igRetrievalConfigFromMsg(ig_active_reconstruction_msgs::InformationGainRetrievalConfig& config);
+    ig_active_reconstruction_msgs::InformationGainRetrievalConfig igRetrievalConfigToMsg(world_representation::CommunicationInterface::IgRetrievalConfig& config);
+    world_representation::CommunicationInterface::IgRetrievalCommand igRetrievalCommandFromMsg(ig_active_reconstruction_msgs::InformationGainRetrievalCommand& command_msg);
+    ig_active_reconstruction_msgs::InformationGainRetrievalCommand igRetrievalCommandToMsg(world_representation::CommunicationInterface::IgRetrievalCommand& command);
+    world_representation::CommunicationInterface::ResultInformation resultInformationFromMsg(int& msg);
+    int resultInformationToMsg(world_representation::CommunicationInterface::ResultInformation& msg);
+    world_representation::CommunicationInterface::IgRetrievalResult igRetrievalResultFromMsg(ig_active_reconstruction_msgs::InformationGain& msg);
+    ig_active_reconstruction_msgs::InformationGain igRetrievalResultToMsg(world_representation::CommunicationInterface::IgRetrievalResult& msg);
 }
 
 }

@@ -36,7 +36,105 @@ namespace world_representation
     view_ig_computation_ = nh.serviceClient<ig_active_reconstruction_msgs::InformationGainCalculation>("world/information_gain");
     map_metric_computation_ = nh.serviceClient<ig_active_reconstruction_msgs::MapMetricCalculation>("world/map_metric");
     available_ig_receiver_ = nh.serviceClient<ig_active_reconstruction_msgs::StringList>("world/ig_list");
-    availalbe_mm_receiver_ = nh.serviceClient<ig_active_reconstruction_msgs::StringList>("world/mm_list");
+    available_mm_receiver_ = nh.serviceClient<ig_active_reconstruction_msgs::StringList>("world/mm_list");
+  }
+  
+  RosClientCI::ResultInformation RosClientCI::computeViewIg(IgRetrievalCommand& command, ViewIgResult& output_ig)
+  {
+    ig_active_reconstruction_msgs::InformationGainCalculation call;
+    call.request.command = ros_conversions::igRetrievalCommandToMsg(command);
+    bool response = view_ig_computation_.call(call);
+    
+    if(!response)
+    {
+      unsigned int number_of_metrics = (!command.metric_ids.empty())?command.metric_ids.size():command.metric_names.size();
+      IgRetrievalResult failed;
+      failed.status = ResultInformation::FAILED;
+      failed.predicted_gain = 0;
+      
+      for(unsigned int i=0; i<number_of_metrics; ++i )
+      {
+	output_ig.push_back(failed);
+      }
+      return ResultInformation::FAILED;
+    }
+    else
+    {
+      for(ig_active_reconstruction_msgs::InformationGain& ig: call.response.expected_information)
+      {
+	IgRetrievalResult result = ros_conversions::igRetrievalResultFromMsg(ig);
+	output_ig.push_back(result);
+      }
+      return ResultInformation::SUCCEEDED;
+    }
+  }
+  
+  RosClientCI::ResultInformation RosClientCI::computeMapMetric(MapMetricRetrievalCommand& command, MapMetricRetrievalResultSet& output)
+  {
+    ig_active_reconstruction_msgs::MapMetricCalculation call;
+    
+    for(std::string& name: command.metric_names)
+    {
+      call.request.metric_names.push_back(name);
+    }
+    bool response = map_metric_computation_.call(call);
+    
+    if(!response)
+    {
+      MapMetricRetrievalResult failed;
+      failed.status = ResultInformation::FAILED;
+      failed.value = 0;
+      for(unsigned int i=0; i<command.metric_names.size(); ++i)
+      {
+	output.push_back(failed);
+      }
+      return ResultInformation::FAILED;
+    }
+    else
+    {
+      for(ig_active_reconstruction_msgs::InformationGain& map_metric: call.response.results)
+      {
+	MapMetricRetrievalResult result;
+	result.status = ros_conversions::resultInformationFromMsg(map_metric.status);
+	result.value = map_metric.predicted_gain;
+	output.push_back(result);
+      }
+      return ResultInformation::SUCCEEDED;
+    }
+  }
+  
+  void RosClientCI::availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )
+  {
+    ig_active_reconstruction_msgs::StringList call;
+    bool response = available_ig_receiver_.call(call);
+    
+    if(!response)
+      return;
+    
+    for(unsigned int i=0; i<call.response.names.size(); ++i)
+    {
+      MetricInfo new_metric;
+      new_metric.name = call.response.names[i];
+      new_metric.id = call.response.ids[i];
+      available_ig_metrics.push_back(new_metric);
+    }
+  }
+  
+  void RosClientCI::availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )
+  {
+    ig_active_reconstruction_msgs::StringList call;
+    bool response = available_mm_receiver_.call(call);
+    
+    if(!response)
+      return;
+    
+    for(unsigned int i=0; i<call.response.names.size(); ++i)
+    {
+      MetricInfo new_metric;
+      new_metric.name = call.response.names[i];
+      new_metric.id = call.response.ids[i];
+      available_map_metrics.push_back(new_metric);
+    }
   }
   
 }
