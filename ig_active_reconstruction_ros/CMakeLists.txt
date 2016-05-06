@@ -40,3 +40,16 @@ target_link_libraries(${PROJECT_NAME}
 add_dependencies(${PROJECT_NAME} STATIC
  ${catkin_EXPORTED_TARGETS}
 )
+
+# Executables...........................................................
+
+add_executable(basic_view_planner
+  src/ros_nodes/basic_view_planner.cpp
+  ${${PROJECT_NAME}_CODE_BASE}
+)
+target_link_libraries(basic_view_planner
+   ${catkin_LIBRARIES}
+)
+add_dependencies(basic_view_planner
+ ${catkin_EXPORTED_TARGETS}
+)

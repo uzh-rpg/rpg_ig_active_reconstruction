@@ -8,8 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
   movements
 )
 
-find_package(PCL REQUIRED COMPONENTS common)
+find_package(PCL REQUIRED)
 find_package(Eigen REQUIRED)
+find_package(octomap REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -19,12 +20,14 @@ catkin_package(
   DEPENDS
     PCL
     Eigen
+    octomap
 )
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${OCTOMAP_INCLUDE_DIRS}
 )
 
 file(GLOB ${PROJECT_NAME}_CODE_BASE
@@ -39,6 +42,7 @@ add_library(${PROJECT_NAME} STATIC
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
+   ${OCTOMAP_LIBRARIES}
 )
 
 add_dependencies(${PROJECT_NAME} STATIC

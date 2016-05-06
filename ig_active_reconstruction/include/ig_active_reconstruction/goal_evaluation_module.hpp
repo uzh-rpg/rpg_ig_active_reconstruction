@@ -24,7 +24,7 @@ namespace ig_active_reconstruction
   class GoalEvaluationModule
   {
   public:
-    virtual ~GoalEvaluationModule();
+    virtual ~GoalEvaluationModule(){};
     
     /*! Resets the goal evaluation module.
      */

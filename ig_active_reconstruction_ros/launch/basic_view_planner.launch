@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="ig_active_reconstruction_ros" type="basic_view_planner" name="basic_view_planner" clear_params="true" output="screen" launch-prefix="gdb -ex run --args">
+    
+    <param name="discard_visited" value="true" />
+    <param name="max_visits" value="-1" />
+    <param name="cost_weight" value="1" />
+    <param name="max_calls" value="20" />
+    
+  </node>
+</launch>
