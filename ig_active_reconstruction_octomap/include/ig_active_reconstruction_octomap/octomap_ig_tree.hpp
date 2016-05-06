@@ -18,7 +18,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <octomap/OccupancyOcTreeBase.h>
 
-#include "ig_active_reconstruction/octomap_ig_tree_node.hpp"
+#include "ig_active_reconstruction_octomap/octomap_ig_tree_node.hpp"
 
 namespace ig_active_reconstruction
 {

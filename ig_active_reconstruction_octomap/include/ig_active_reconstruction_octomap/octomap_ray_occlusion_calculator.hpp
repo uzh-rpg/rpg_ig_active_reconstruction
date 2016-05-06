@@ -16,11 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <pcl/common/projection_matrix.h>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-
-#include "ig_active_reconstruction/octomap_world_representation.hpp"
+#include "ig_active_reconstruction_octomap/octomap_occlusion_calculator.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -30,24 +26,30 @@ namespace world_representation
 
 namespace octomap
 {
-  /*! Abstract base class: Calculates occlusion distance updates.
+  /*! Calculates occlusion distances for a given distance along rays behind points.
    */
   template<class TREE_TYPE, class POINTCLOUD_TYPE>
-  class OcclusionCalculator: public WorldRepresentation<TREE_TYPE>::LinkedObject
+  class RayOcclusionCalculator: public OcclusionCalculator<TREE_TYPE,POINTCLOUD_TYPE>
   {
   public:
-    virtual ~OcclusionCalculator(){};
+    /*! Constructor
+     * @param occlusion_update_dist_m Max distance behind points along ray for which an occlusion will be calculated [m].
+     */
+    RayOcclusionCalculator( double occlusion_update_dist_m );
     
     /*! Calculates occlusion distances for the given input
      * and sets the respective values within the octree
      * @param origin Origin of the sensor, position from which pointcloud was obtained.
      * @param pcl The pointcloud
      */
-    virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )=0;
+    virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl );
     
     /*! Sets the octree in which occlusions will be marked.
      */
-    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree )=0;
+    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree );
+    
+  protected:
+    double occlusion_update_dist_m_; //! Max distance behind points along ray for which an occlusion will be calculated [m].
   };
   
 }
@@ -55,3 +57,5 @@ namespace octomap
 }
 
 }
+
+#include "../src/code_base/octomap_ray_occlusion_calculator.inl"

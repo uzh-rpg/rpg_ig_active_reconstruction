@@ -20,7 +20,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "ig_active_reconstruction/octomap_pcl_input.hpp"
+#include "ig_active_reconstruction_octomap/octomap_pcl_input.hpp"
 
 namespace ig_active_reconstruction
 {

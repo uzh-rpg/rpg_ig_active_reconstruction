@@ -16,7 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
 
 namespace ig_active_reconstruction
 {

@@ -16,7 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -26,13 +26,11 @@ namespace world_representation
   
 namespace octomap
 {  
-  /*! Templated class that implements the "occlusion aware information gain" as presented in the
+  /*! Templated class that implements the average entropy information gain metric based on the definition by S. Kriegel et al. (compare to "Efficient next-best-scan planning for autonomous 3d surface reconstruction of unknown objects."), as used in the
    * ICRA paper "An Information Gain Formulation for Active Volumetric 3D Reconstruction".
-   * It quantiﬁes the expected visible uncertainty by weighting the entropy within each voxel by its visibility
-   * likelihood.
    */
   template<class TREE_TYPE>
-  class OcclusionAwareIg: public InformationGain<TREE_TYPE>
+  class AverageEntropyIg: public InformationGain<TREE_TYPE>
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
@@ -42,7 +40,7 @@ namespace octomap
     
     /*! Constructor
      */
-    OcclusionAwareIg( Utils utils = Utils() );
+    AverageEntropyIg( Utils utils = Utils() );
     
     /*! Returns the name of the method.
      */
@@ -76,7 +74,7 @@ namespace octomap
      */
     virtual void informAboutVoidRay();
     
-    /*! Returns the number of traversed voxels
+    /*! Returns the number of processed voxels
      */
     virtual uint64_t voxelCount();
     
@@ -89,9 +87,12 @@ namespace octomap
     
   private:
     Utils utils_; //! Providing configuration and often used tools.
-    GainType ig_; //! Current information gain result.
-    double p_vis_; //! Running visibility likelihood along a ray. (Representing the visibility likelihood of the next voxel.)
-    uint64_t voxel_count_; //! Counts the total number of considered voxels during the current run.
+    uint64_t voxel_count_; //! Total processed voxels.
+    double total_ig_;
+    
+    uint64_t current_ray_voxels_; //! Voxels on current ray.    
+    double current_ray_entropy_;
+    
   };
 }
 
@@ -99,4 +100,4 @@ namespace octomap
 
 }
 
-#include "../src/code_base/ig/occlusion_aware.inl"
+#include "../src/code_base/ig/average_entropy.inl"

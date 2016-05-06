@@ -16,7 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -26,12 +26,13 @@ namespace world_representation
   
 namespace octomap
 {  
-  /*! Templated class that implements the "proximity count information gain" as presented in the
+  /*! Templated class that implements the "rear side entropy information gain" as presented in the
    * ICRA paper "An Information Gain Formulation for Active Volumetric 3D Reconstruction".
-   * This is a volumetric information definition that is the higher the closer an unobserved voxel lies to already observed surfaces.
+   * It quantiﬁes the expected visible uncertainty by weighting the entropy within each voxel by its visibility
+   * likelihood and restricts the area that is considered to such on the rear side of already observed surfaces.
    */
   template<class TREE_TYPE>
-  class ProximityCountIg: public InformationGain<TREE_TYPE>
+  class RearSideEntropyIg: public InformationGain<TREE_TYPE>
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
@@ -41,7 +42,7 @@ namespace octomap
     
     /*! Constructor
      */
-    ProximityCountIg( Utils utils = Utils() );
+    RearSideEntropyIg( Utils utils = Utils() );
     
     /*! Returns the name of the method.
      */
@@ -91,6 +92,11 @@ namespace octomap
     GainType ig_; //! Current information gain result.
     uint64_t voxel_count_; //! Voxels integrated for the information gain calculation.
     
+    GainType current_ray_ig_; //! Information gain on current ray.
+    uint64_t current_ray_voxel_count_; //! Number of voxels integrated for calculation.
+    
+    double p_vis_; //! Visibility likelihood for next voxel.
+    bool previous_voxel_unknown_; //! Whether or not the previous voxel was unknown.
   };
 }
 
@@ -98,4 +104,4 @@ namespace octomap
 
 }
 
-#include "../src/code_base/ig/proximity_count.inl"
+#include "../src/code_base/ig/rear_side_entropy.inl"

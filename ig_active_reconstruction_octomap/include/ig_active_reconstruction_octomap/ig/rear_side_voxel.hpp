@@ -16,7 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -26,11 +26,12 @@ namespace world_representation
   
 namespace octomap
 {  
-  /*! Templated class that implements the average entropy information gain metric based on the definition by S. Kriegel et al. (compare to "Efficient next-best-scan planning for autonomous 3d surface reconstruction of unknown objects."), as used in the
+  /*! Templated class that implements the "rear side voxel information gain" as presented in the
    * ICRA paper "An Information Gain Formulation for Active Volumetric 3D Reconstruction".
+   * It counts how many rays are incident on the rear side of a previously observed surface.
    */
   template<class TREE_TYPE>
-  class AverageEntropyIg: public InformationGain<TREE_TYPE>
+  class RearSideVoxelIg: public InformationGain<TREE_TYPE>
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
@@ -40,7 +41,7 @@ namespace octomap
     
     /*! Constructor
      */
-    AverageEntropyIg( Utils utils = Utils() );
+    RearSideVoxelIg( Utils utils = Utils() );
     
     /*! Returns the name of the method.
      */
@@ -87,12 +88,8 @@ namespace octomap
     
   private:
     Utils utils_; //! Providing configuration and often used tools.
-    uint64_t voxel_count_; //! Total processed voxels.
-    double total_ig_;
-    
-    uint64_t current_ray_voxels_; //! Voxels on current ray.    
-    double current_ray_entropy_;
-    
+    GainType rear_side_voxel_count_; //! Current information gain result.
+    bool previous_voxel_unknown_;
   };
 }
 
@@ -100,4 +97,4 @@ namespace octomap
 
 }
 
-#include "../src/code_base/ig/average_entropy.inl"
+#include "../src/code_base/ig/rear_side_voxel.inl"

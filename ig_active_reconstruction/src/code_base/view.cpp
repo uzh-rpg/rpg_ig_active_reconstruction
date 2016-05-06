@@ -19,7 +19,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <limits>
 #include <iostream>
 
-#include "ig_active_reconstruction/octomap_ig_tree_world_representation.hpp"
+/*#include "ig_active_reconstruction/octomap_ig_tree_world_representation.hpp"
 #include "ig_active_reconstruction/octomap_ray_occlusion_calculator.hpp"
 #include "ig_active_reconstruction/octomap_std_pcl_input.hpp"
 #include "ig_active_reconstruction/octomap_basic_ray_ig_calculator.hpp"
@@ -30,7 +30,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "ig_active_reconstruction/ig/proximity_count.hpp"
 #include "ig_active_reconstruction/ig/vasquez_gomez_area_factor.hpp"
 #include "ig_active_reconstruction/ig/average_entropy.hpp"
-#include "ig_active_reconstruction/views_simple_view_space_module.hpp"
+#include "ig_active_reconstruction/views_simple_view_space_module.hpp"*/
 
 namespace ig_active_reconstruction
 {
@@ -49,7 +49,7 @@ View::View():
   if( runningIndex_==std::numeric_limits<IdType>::max() )
     std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
   
-  using namespace world_representation::octomap;
+  /*using namespace world_representation::octomap;
   
   IgTreeWorldRepresentation tree;
   
@@ -67,7 +67,7 @@ View::View():
   
   SimpleViewSpaceModule viewspace("blah");
   viewspace.loadFromFile("thetest");
-  viewspace.saveToFile("hahaha");
+  viewspace.saveToFile("hahaha");*/
 }
 
 View::View( std::string source_frame )

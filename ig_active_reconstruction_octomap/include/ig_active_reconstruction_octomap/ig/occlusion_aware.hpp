@@ -16,7 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -26,12 +26,13 @@ namespace world_representation
   
 namespace octomap
 {  
-  /*! Templated class that implements the "rear side voxel information gain" as presented in the
+  /*! Templated class that implements the "occlusion aware information gain" as presented in the
    * ICRA paper "An Information Gain Formulation for Active Volumetric 3D Reconstruction".
-   * It counts how many rays are incident on the rear side of a previously observed surface.
+   * It quantiﬁes the expected visible uncertainty by weighting the entropy within each voxel by its visibility
+   * likelihood.
    */
   template<class TREE_TYPE>
-  class RearSideVoxelIg: public InformationGain<TREE_TYPE>
+  class OcclusionAwareIg: public InformationGain<TREE_TYPE>
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
@@ -41,7 +42,7 @@ namespace octomap
     
     /*! Constructor
      */
-    RearSideVoxelIg( Utils utils = Utils() );
+    OcclusionAwareIg( Utils utils = Utils() );
     
     /*! Returns the name of the method.
      */
@@ -75,7 +76,7 @@ namespace octomap
      */
     virtual void informAboutVoidRay();
     
-    /*! Returns the number of processed voxels
+    /*! Returns the number of traversed voxels
      */
     virtual uint64_t voxelCount();
     
@@ -88,8 +89,9 @@ namespace octomap
     
   private:
     Utils utils_; //! Providing configuration and often used tools.
-    GainType rear_side_voxel_count_; //! Current information gain result.
-    bool previous_voxel_unknown_;
+    GainType ig_; //! Current information gain result.
+    double p_vis_; //! Running visibility likelihood along a ray. (Representing the visibility likelihood of the next voxel.)
+    uint64_t voxel_count_; //! Counts the total number of considered voxels during the current run.
   };
 }
 
@@ -97,4 +99,4 @@ namespace octomap
 
 }
 
-#include "../src/code_base/ig/rear_side_voxel.inl"
+#include "../src/code_base/ig/occlusion_aware.inl"

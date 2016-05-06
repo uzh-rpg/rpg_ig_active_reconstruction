@@ -17,7 +17,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 
-#include "ig_active_reconstruction/octomap_ig_calculator.hpp"
+#include "ig_active_reconstruction_octomap/octomap_ig_calculator.hpp"
 #include "ig_active_reconstruction/world_representation_pinhole_cam_raycaster.hpp"
 
 namespace ig_active_reconstruction

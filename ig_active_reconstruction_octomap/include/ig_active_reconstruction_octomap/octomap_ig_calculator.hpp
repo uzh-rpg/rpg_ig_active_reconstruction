@@ -17,11 +17,11 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 #include "ig_active_reconstruction/world_representation_communication_interface.hpp"
-#include "ig_active_reconstruction/octomap_world_representation.hpp"
+#include "ig_active_reconstruction_octomap/octomap_world_representation.hpp"
 
-#include "ig_active_reconstruction/factory.hpp"
-#include "ig_active_reconstruction/octomap_information_gain.hpp"
-#include "ig_active_reconstruction/octomap_map_metric.hpp"
+#include "ig_active_reconstruction_octomap/factory.hpp"
+#include "ig_active_reconstruction_octomap/octomap_information_gain.hpp"
+#include "ig_active_reconstruction_octomap/octomap_map_metric.hpp"
 
 namespace ig_active_reconstruction
 {
