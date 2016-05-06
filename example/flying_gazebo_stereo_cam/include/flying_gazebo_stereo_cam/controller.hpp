@@ -18,6 +18,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Eigen/Core>
 #include <thread>
+#include <mutex>
 #include <movements/core>
 #include <tf/transform_broadcaster.h>
 
@@ -44,6 +45,11 @@ namespace flying_gazebo_stereo_cam
     */
     virtual bool moveTo( movements::Pose new_pose );
     
+    /*! Returns the current camera pose.
+     * @throws std::runtime_error If reception failed.
+     */
+    virtual movements::Pose currentPose();
+    
     /*! Starts a TF publisher in another thread.
      * @param camera_frame_name Name of the camera coordinate frame to be published.
      * @param world_frame_name Name of the world coordinate frame to be published.
@@ -54,12 +60,18 @@ namespace flying_gazebo_stereo_cam
      */
     virtual void stopTfPublisher();
     
+  protected:
+    /*! Tf publishing thread.
+     */
+    virtual void keepPublishing(std::string camera_frame_name, std::string world_frame_name);
+    
   private:
     std::string cam_model_name_;
     bool has_moved_;
     
     bool keepPublishing_; //! Thread runs as long as this is true
     std::thread publisher_;
+    std::mutex protector_;
     
     movements::Pose current_pose_; //! Current pose, undefined until first moveTo call was issued.
     Eigen::Quaterniond cam_to_image_; //! Transformation from camera model to image frame.
