@@ -64,6 +64,10 @@ public:
    */
   bool& bad();
   
+  /*! Whether this view is part of a viewspace or not.
+   */
+  bool& nonViewSpace();
+  
   /*! get the associated data */
   boost::shared_ptr<ViewInfo>& associatedData();
   
@@ -83,17 +87,18 @@ public:
   
 private:
   
-  IdType index_; //! Unique view index, increased by one each time a new view is created.
+  IdType index_; //! Unique view index per process, increased by one each time a new view is created.
   static IdType runningIndex_; //! The index of the next newly created view.
   
   movements::Pose pose_; //! the pose...
-  std::string source_frame_; //! pose is relative to this frame (as specified in tf), that is the transform that could be used to transform a point in the pose frame into one in the source frame
+  std::string source_frame_; //! pose is relative to this frame, that is the transform that could be used to transform a point in the pose frame into one in the source frame
   boost::shared_ptr<ViewInfo> associated_data_; //! interface that gives possibility for a robot to store robot specific data that is associated with the pose, e.g. for the Youbot some IK calculations can be made beforehand but the robot needs to know which data implements a given view
   std::vector<std::string> additional_fields_names_;
   std::vector<double> additional_fields_values_;
   bool is_reachable_; //! whether the view is reachable or not
   bool is_bad_; //! marks a bad view for whatever reason (e.g. data reception failed here or the like)
   unsigned int visited_; //! how many times this view has been visited
+  bool non_viewspace_; //! True if this view is not part of a viewspace.
 };
 
 /*! Interface for robot specific information that is associated with a given view */

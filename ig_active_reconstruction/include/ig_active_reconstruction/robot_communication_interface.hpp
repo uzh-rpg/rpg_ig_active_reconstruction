@@ -64,7 +64,7 @@ public:
    * @param fill_additional_information if true then the different parts of the cost will be included in the additional fields as well
    * @return cost for the movement
    */
-  virtual MovementCost movementCost( views::View& _start_view, views::View& target_view, bool fill_additional_information  )=0;
+  virtual MovementCost movementCost( views::View& start_view, views::View& target_view, bool fill_additional_information  )=0;
   
   /*! Tells the robot to get the camera to a new view
    * @param target_view where to move to

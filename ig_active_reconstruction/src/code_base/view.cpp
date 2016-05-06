@@ -75,6 +75,7 @@ View::View( std::string source_frame )
   , source_frame_(source_frame)
   , is_reachable_(true)
   , is_bad_(false)
+  , non_viewspace_(false)
   , visited_(0)
 {
   if( runningIndex_==std::numeric_limits<IdType>::max() )
@@ -85,6 +86,7 @@ View::View( IdType id )
   : index_(id)
   , is_reachable_(true)
   , is_bad_(false)
+  , non_viewspace_(false)
   , visited_(0)
 {
   
@@ -113,6 +115,11 @@ unsigned int& View::timesVisited()
 bool& View::bad()
 {
   return is_bad_;
+}
+
+bool& View::nonViewSpace()
+{
+  return non_viewspace_;
 }
 
 View::IdType View::index() const
