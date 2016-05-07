@@ -35,6 +35,8 @@ namespace octomap
   class BasicRayIgCalculator: public IgCalculator<TREE_TYPE>
   {
   public:
+    typedef boost::shared_ptr< BasicRayIgCalculator<TREE_TYPE> > Ptr;
+    
     typedef typename IgCalculator<TREE_TYPE>::ResultInformation ResultInformation;
     typedef typename IgCalculator<TREE_TYPE>::IgRetrievalCommand IgRetrievalCommand;
     typedef typename IgCalculator<TREE_TYPE>::IgRetrievalResult IgRetrievalResult;
@@ -43,6 +45,8 @@ namespace octomap
     typedef typename IgCalculator<TREE_TYPE>::MetricInfo MetricInfo;
     typedef typename IgCalculator<TREE_TYPE>::ViewIgRetrievalResult ViewIgRetrievalResult;
     typedef typename IgCalculator<TREE_TYPE>::MapMetricRetrievalResultSet MapMetricRetrievalResultSet;
+    typedef typename IgCalculator<TREE_TYPE>::IgFactory IgFactory;
+    typedef typename IgCalculator<TREE_TYPE>::MmFactory MmFactory;
     
     struct Config
     {
@@ -105,7 +109,7 @@ namespace octomap
      * @param ig_set Set of information gains to be calculated.
      * @param setting Additional ray casting settings.
      */
-    void calculateIgsOnRay( RayCaster::Ray& ray, std::vector< std::shared_ptr< InformationGain<TREE_TYPE> > >& ig_set, RayCastSettings& setting );
+    void calculateIgsOnRay( RayCaster::Ray& ray, std::vector< boost::shared_ptr< InformationGain<TREE_TYPE> > >& ig_set, RayCastSettings& setting );
     
   protected:
     Config config_; //! Configuration...

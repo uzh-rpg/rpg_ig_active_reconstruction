@@ -18,6 +18,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #define CSCOPE BasicRayIgCalculator<TREE_TYPE>
 
 #include <octomap/octomap_types.h>
+#include <boost/foreach.hpp>
 
 namespace ig_active_reconstruction
 {
@@ -75,19 +76,19 @@ namespace octomap
     ray_caster_config.max_y_perc = command.config.ray_window.max_y_perc;
     
     ray_caster_.setResolution(ray_caster_config);
-    std::shared_ptr<RayCaster::RaySet> ray_set = ray_caster_.getRaySet(command.path[0]);
+    boost::shared_ptr<RayCaster::RaySet> ray_set = ray_caster_.getRaySet(command.path[0]);
     
     // build ig metric set
-    std::vector< std::shared_ptr< InformationGain<TREE_TYPE> > > ig_set;
+    std::vector< boost::shared_ptr< InformationGain<TREE_TYPE> > > ig_set;
     if( !command.metric_ids.empty() )
     {
       IgRetrievalResult res;
       res.predicted_gain = 0;
       
-      for( unsigned int& id: command.metric_ids)
+      BOOST_FOREACH( unsigned int& id, command.metric_ids )
       {
-	auto ig_metric = this->ig_factory_.get(id);
-	if( ig_metric==nullptr )
+	typename IgFactory::TypePtr ig_metric = this->ig_factory_.get(id);
+	if( ig_metric==NULL )
 	{
 	  res.status = ResultInformation::UNKNOWN_METRIC;
 	}
@@ -101,7 +102,7 @@ namespace octomap
     }
     else
     {
-      for( std::string& name: command.metric_names )
+      BOOST_FOREACH( std::string& name, command.metric_names)
       {
 	ig_set.push_back( this->ig_factory_.get(name) );
       }
@@ -111,9 +112,11 @@ namespace octomap
     RayCastSettings ray_cast_settings;
     ray_cast_settings.max_ray_depth = command.config.max_ray_depth;
     
-    for( RayCaster::Ray& ray: *ray_set )
+    for(unsigned int i=0;i<ray_set->size();++i)
     {
-      for( auto& ig: ig_set )
+      RayCaster::Ray& ray = (*ray_set)[i];
+      
+      BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
       {
 	ig->makeReadyForNewRay();
       }
@@ -121,8 +124,8 @@ namespace octomap
     }
     
     // retrieve information gains and build output
-    typename std::vector< std::shared_ptr< InformationGain<TREE_TYPE> > >::iterator ig_it = ig_set.begin();
-    for( IgRetrievalResult& res: output_ig )
+    typename std::vector< boost::shared_ptr< InformationGain<TREE_TYPE> > >::iterator ig_it = ig_set.begin();
+    BOOST_FOREACH( IgRetrievalResult& res, output_ig )
     {
       if( res.status == ResultInformation::SUCCEEDED )
       {
@@ -141,8 +144,12 @@ namespace octomap
   TEMPT
   void CSCOPE::availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )
   {
-    for( typename decltype(this->ig_factory_)::Entry& entry: this->ig_factory_ )
+    typename IgFactory::Iterator it, end;
+    
+    for( it = this->ig_factory_.begin(), end = this->ig_factory_.end(); it!=end; ++it )
     {
+      typename IgFactory::Entry& entry = *it;
+      
       MetricInfo ig_metric;
       ig_metric.name = entry.name;
       ig_metric.id = entry.id;
@@ -154,8 +161,11 @@ namespace octomap
   TEMPT
   void CSCOPE::availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )
   {
-    for( typename decltype(this->mm_factory_)::Entry& entry: this->mm_factory_ )
+    typename MmFactory::Iterator it, end;
+    for( it = this->mm_factory_.begin(), end = this->mm_factory_.end(); it!=end; ++it )
     {
+      typename MmFactory::Entry& entry = *it;
+      
       MetricInfo mm_metric;
       mm_metric.name = entry.name;
       mm_metric.id = entry.id;
@@ -165,7 +175,7 @@ namespace octomap
   }
   
   TEMPT
-  void CSCOPE::calculateIgsOnRay( RayCaster::Ray& ray, std::vector< std::shared_ptr< InformationGain<TREE_TYPE> > >& ig_set, RayCastSettings& setting )
+  void CSCOPE::calculateIgsOnRay( RayCaster::Ray& ray, std::vector< boost::shared_ptr< InformationGain<TREE_TYPE> > >& ig_set, RayCastSettings& setting )
   {
     using ::octomap::point3d;
     using ::octomap::KeyRay;
@@ -194,7 +204,7 @@ namespace octomap
 	point3d coord = this->link_.octree->keyToCoord(*it);
 	typename TREE_TYPE::NodeType* traversedVoxel = this->link_.octree->search(*it);
 	
-	for( auto& ig: ig_set )
+	BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
 	{
 	  ig->includeRayMeasurement( traversedVoxel );
 	}
@@ -205,7 +215,7 @@ namespace octomap
       {
 	typename TREE_TYPE::NodeType* traversedVoxel = this->link_.octree->search(end_key);
 	
-	for( auto& ig: ig_set )
+	BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
 	{
 	  ig->includeEndPointMeasurement( traversedVoxel );
 	}
@@ -213,7 +223,7 @@ namespace octomap
     }
     else
     {
-      for( auto& ig: ig_set )
+      BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
       {
 	ig->informAboutVoidRay();
       }

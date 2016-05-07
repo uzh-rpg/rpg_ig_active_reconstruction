@@ -38,6 +38,7 @@ namespace octomap
   {
   public:
     typedef double GainType;
+    typedef boost::shared_ptr< InformationGain<TREE_TYPE> > Ptr;
         
     /*! Helper class for common calculation in information gain metrics.
      */

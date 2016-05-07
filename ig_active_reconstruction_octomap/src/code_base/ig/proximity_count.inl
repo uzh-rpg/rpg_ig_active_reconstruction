@@ -91,7 +91,7 @@ namespace octomap
   TEMPT
   void CSCOPE::includeMeasurement( typename TREE_TYPE::NodeType* node )
   {
-    if( node!=nullptr )
+    if( node!=NULL )
     {
       double dist = node->occDist();
       if( !node->hasMeasurement() && dist>0 )

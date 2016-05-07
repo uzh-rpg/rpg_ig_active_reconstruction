@@ -29,7 +29,7 @@ namespace multikit
 {
   
   TEMPT
-  unsigned int CSCOPE::add( std::string ig_name, std::function< std::shared_ptr<TYPE>()> ig_creator )
+  unsigned int CSCOPE::add( std::string ig_name, boost::function< boost::shared_ptr<TYPE>()> ig_creator )
   {
     Entry new_entry;
     new_entry.id = entries_.size();
@@ -43,7 +43,7 @@ namespace multikit
   }
   
   TEMPT
-  std::shared_ptr<TYPE> CSCOPE::get(std::string name)
+  boost::shared_ptr<TYPE> CSCOPE::get(std::string name)
   {
     try
     {
@@ -52,16 +52,16 @@ namespace multikit
     }
     catch(std::out_of_range&)
     {
-      return std::shared_ptr<TYPE>(nullptr);
+      return boost::shared_ptr<TYPE>();
     }
   }
   
   TEMPT
-  std::shared_ptr<TYPE> CSCOPE::get(unsigned int id)
+  boost::shared_ptr<TYPE> CSCOPE::get(unsigned int id)
   {
     if( id>=entries_.size() )
     {
-      return std::shared_ptr<TYPE>(nullptr);
+      return boost::shared_ptr<TYPE>();
     }
     return entries_[id].create();
   }

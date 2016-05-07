@@ -134,7 +134,7 @@ namespace octomap
       {
 	typename TREE_TYPE::NodeType* voxel = this->link_.octree->search(*it);
 	
-	if( voxel==nullptr )
+	if( voxel==NULL )
 	{
 	  voxel = this->link_.octree->updateNode(*it, false);
 	  voxel->updateHasMeasurement(true);
@@ -160,7 +160,7 @@ namespace octomap
     {
       typename TREE_TYPE::NodeType* voxel = this->link_.octree->search(*it);
       
-      if( voxel==nullptr )
+      if( voxel==NULL )
       {
 	voxel = this->link_.octree->updateNode(*it, true);
 	voxel->updateHasMeasurement(true);

@@ -30,13 +30,25 @@ namespace world_representation
   class CommunicationInterface
   {
   public:
-    /*! Returned status for a specific ig metric calculation
+    /*! Returned status for a specific ig metric calculation, to be treated as scoped enum.
+     * Scoped enum variant for cpp03...
      */
-    enum struct ResultInformation
+    struct ResultInformation
     {
-      SUCCEEDED=0, //! IG was successfully calculated.
-      FAILED, //! IG could not be calculated, an error occured.
-      UNKNOWN_METRIC //! The IG name was unknown and hence the IG could not be calculated
+    public:
+      enum Enum
+      {
+	SUCCEEDED=0, //! IG was successfully calculated.
+	FAILED, //! IG could not be calculated, an error occured.
+	UNKNOWN_METRIC //! The IG name was unknown and hence the IG could not be calculated
+      }res;
+    public:
+      ResultInformation(){};
+      ResultInformation(Enum a_type):res(a_type){};
+      operator int(){return (int)res;};
+      ResultInformation& operator=(const Enum atype){res=atype; return *this;};
+      bool operator==(const Enum comp)const{return res==comp;};
+      bool operator!=(const Enum comp)const{return res!=comp;};
     };
     
     /*! Result of an information gain calculation call.

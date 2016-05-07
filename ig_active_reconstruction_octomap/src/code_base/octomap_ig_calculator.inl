@@ -17,6 +17,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #define TEMPT template<class TREE_TYPE>
 #define CSCOPE IgCalculator<TREE_TYPE>
 
+#include <boost/function.hpp>
+
 namespace ig_active_reconstruction
 {
   
@@ -26,18 +28,38 @@ namespace world_representation
 namespace octomap
 { 
   
-  TEMPT
+  /*TEMPT // postponed for compilation with cpp11
   template< template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS >
   unsigned int CSCOPE::registerInformationGain( IG_CONSTRUCTOR_ARGS ... args )
   {
     // gcc has a bug when capturing variadic arguments... need to use workaround...
     
-    std::shared_ptr< InformationGain<TREE_TYPE> > prototype = std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(args...);
+    boost::shared_ptr< InformationGain<TREE_TYPE> > prototype = boost::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(args...);
     std::string name = prototype->type();
     
-    std::function< std::shared_ptr< InformationGain<TREE_TYPE> >() > creator = std::bind(std::make_shared< IG_METRIC_TYPE<TREE_TYPE> >,args...);
+    std::function< boost::shared_ptr< InformationGain<TREE_TYPE> >() > creator = std::bind(boost::make_shared< IG_METRIC_TYPE<TREE_TYPE> >,args...);
     
     return ig_factory_.add(name,creator);
+  }*/
+  
+  TEMPT
+  template<template<typename> class IG_METRIC_TYPE>
+  unsigned int CSCOPE::registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils )
+  {
+    boost::shared_ptr< InformationGain<TREE_TYPE> > prototype = boost::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(utils);
+    std::string name = prototype->type();
+    
+    boost::function< boost::shared_ptr< InformationGain<TREE_TYPE> >() > creator;    
+    creator = boost::bind(&IgCalculator<TREE_TYPE>::makeShared<IG_METRIC_TYPE>, this, utils);
+    
+    return ig_factory_.add(name,creator);
+  }
+  
+  TEMPT
+  template<template<typename> class IG_METRIC_TYPE>
+  boost::shared_ptr< InformationGain<TREE_TYPE> > CSCOPE::makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils)
+  {
+    return boost::shared_ptr< InformationGain<TREE_TYPE> >( new IG_METRIC_TYPE<TREE_TYPE>(utils) );
   }
   
 }

@@ -28,7 +28,7 @@ namespace octomap
   
   TEMPT
   CSCOPE::WorldRepresentation( typename TREE_TYPE::Config config )
-  : octree_( std::make_shared<TREE_TYPE>(config) )
+  : octree_( boost::make_shared<TREE_TYPE>(config) )
   {
     
   }
@@ -39,11 +39,37 @@ namespace octomap
     
   }
   
-  TEMPT
+  /*TEMPT // cpp11 version
   template< template<typename, typename ...> class INPUT_OBJ_TYPE, class ... TEMPLATE_ARGS, class ... CONSTRUCTOR_ARGS >
-  std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
+  boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
   {
-    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > ptr = std::make_shared< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> >( args... );
+    boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> > ptr = boost::make_shared< INPUT_OBJ_TYPE<TREE_TYPE,TEMPLATE_ARGS ...> >( args... );
+    
+    Link new_link;
+    new_link.octree = octree_;
+    ptr->setLink(new_link);
+    
+    return ptr;
+  }
+  
+  TEMPT // cpp11 version
+  template< template<typename> class INPUT_OBJ_TYPE, class ... CONSTRUCTOR_ARGS >
+  boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
+  {
+    boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > ptr = boost::make_shared< INPUT_OBJ_TYPE<TREE_TYPE> >( args... );
+    
+    Link new_link;
+    new_link.octree = octree_;
+    ptr->setLink(new_link);
+    
+    return ptr;
+  }*/
+  
+  TEMPT
+  template< template<typename> class INPUT_OBJ_TYPE>
+  boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > CSCOPE::getLinkedObj( typename INPUT_OBJ_TYPE<TREE_TYPE>::Config config )
+  {
+    boost::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > ptr = boost::make_shared< INPUT_OBJ_TYPE<TREE_TYPE> >( config );
     
     Link new_link;
     new_link.octree = octree_;
@@ -53,10 +79,10 @@ namespace octomap
   }
   
   TEMPT
-  template< template<typename> class INPUT_OBJ_TYPE, class ... CONSTRUCTOR_ARGS >
-  std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > CSCOPE::getLinkedObj( CONSTRUCTOR_ARGS ... args )
+  template< template<typename> class INPUT_OBJ_TYPE>
+  boost::shared_ptr< typename INPUT_OBJ_TYPE<TREE_TYPE>::Type > CSCOPE::getLinkedObj( typename INPUT_OBJ_TYPE<TREE_TYPE>::Type::Config config )
   {
-    std::shared_ptr< INPUT_OBJ_TYPE<TREE_TYPE> > ptr = std::make_shared< INPUT_OBJ_TYPE<TREE_TYPE> >( args... );
+    boost::shared_ptr< typename INPUT_OBJ_TYPE<TREE_TYPE>::Type > ptr = boost::make_shared< typename INPUT_OBJ_TYPE<TREE_TYPE>::Type >( config );
     
     Link new_link;
     new_link.octree = octree_;

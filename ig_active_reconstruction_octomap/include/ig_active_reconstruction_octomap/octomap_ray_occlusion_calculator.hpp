@@ -32,10 +32,20 @@ namespace octomap
   class RayOcclusionCalculator: public OcclusionCalculator<TREE_TYPE,POINTCLOUD_TYPE>
   {
   public:
+    struct Options
+    {
+    public:
+      Options( double occlusion_update_dist_m ): occlusion_update_dist_m(occlusion_update_dist_m){};
+      
+    public:
+      double occlusion_update_dist_m; //! Max distance behind points along ray for which an occlusion will be calculated [m].
+    };
+    
+  public:
     /*! Constructor
-     * @param occlusion_update_dist_m Max distance behind points along ray for which an occlusion will be calculated [m].
+     * @param occlusion_update_dist_m 
      */
-    RayOcclusionCalculator( double occlusion_update_dist_m );
+    RayOcclusionCalculator( Options options );
     
     /*! Calculates occlusion distances for the given input
      * and sets the respective values within the octree
@@ -46,7 +56,7 @@ namespace octomap
     
     /*! Sets the octree in which occlusions will be marked.
      */
-    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree );
+    virtual void setOctree( boost::shared_ptr<TREE_TYPE> octree );
     
   protected:
     double occlusion_update_dist_m_; //! Max distance behind points along ray for which an occlusion will be calculated [m].

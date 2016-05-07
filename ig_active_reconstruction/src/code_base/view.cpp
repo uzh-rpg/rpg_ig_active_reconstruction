@@ -19,18 +19,6 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <limits>
 #include <iostream>
 
-/*#include "ig_active_reconstruction/octomap_ig_tree_world_representation.hpp"
-#include "ig_active_reconstruction/octomap_ray_occlusion_calculator.hpp"
-#include "ig_active_reconstruction/octomap_std_pcl_input.hpp"
-#include "ig_active_reconstruction/octomap_basic_ray_ig_calculator.hpp"
-#include "ig_active_reconstruction/ig/occlusion_aware.hpp"
-#include "ig_active_reconstruction/ig/unobserved_voxel.hpp"
-#include "ig_active_reconstruction/ig/rear_side_voxel.hpp"
-#include "ig_active_reconstruction/ig/rear_side_entropy.hpp"
-#include "ig_active_reconstruction/ig/proximity_count.hpp"
-#include "ig_active_reconstruction/ig/vasquez_gomez_area_factor.hpp"
-#include "ig_active_reconstruction/ig/average_entropy.hpp"
-#include "ig_active_reconstruction/views_simple_view_space_module.hpp"*/
 
 namespace ig_active_reconstruction
 {
@@ -49,25 +37,7 @@ View::View():
   if( runningIndex_==std::numeric_limits<IdType>::max() )
     std::cerr<<"Attention::View::index_ is about to overflow! (Next: "<<runningIndex_<<", and the one after: "<<runningIndex_+1<<".";
   
-  /*using namespace world_representation::octomap;
   
-  IgTreeWorldRepresentation tree;
-  
-  auto std_input = tree.getLinkedObj<StdPclInput,pcl::PointCloud<pcl::PointXYZ> >();
-  std_input->setOcclusionCalculator<RayOcclusionCalculator>(0.3);
-  
-  auto ig_calculator = tree.getLinkedObj<BasicRayIgCalculator>();
-  ig_calculator->registerInformationGain<OcclusionAwareIg>();
-  ig_calculator->registerInformationGain<UnobservedVoxelIg>();
-  ig_calculator->registerInformationGain<RearSideVoxelIg>();
-  ig_calculator->registerInformationGain<RearSideEntropyIg>();
-  ig_calculator->registerInformationGain<ProximityCountIg>();
-  ig_calculator->registerInformationGain<VasquezGomezAreaFactorIg>();
-  ig_calculator->registerInformationGain<AverageEntropyIg>();
-  
-  SimpleViewSpaceModule viewspace("blah");
-  viewspace.loadFromFile("thetest");
-  viewspace.saveToFile("hahaha");*/
 }
 
 View::View( std::string source_frame )

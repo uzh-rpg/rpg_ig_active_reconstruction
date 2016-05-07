@@ -270,11 +270,15 @@ void ViewPlanner::run()
       // reset data
       planning_data_.clear();
       
+<<<<<<< Updated upstream:dense_reconstruction/src/dense_reconstruction/code_base/view_planner.cpp.orig
 <<<<<<< Updated upstream
       std::string stringFront = "Teapot48NewCostFinal";
 =======
       std::string stringFront = "Dragon48Cost";
 >>>>>>> Stashed changes
+=======
+      std::string stringFront = "Dragon48Cost";
+>>>>>>> Stashed changes:src/dense_reconstruction/code_base/view_planner.cpp
     // to make several runs
       switch(run_id)
       {

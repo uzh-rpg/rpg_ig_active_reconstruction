@@ -67,7 +67,8 @@ namespace octomap
      */
     virtual void availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )=0;
     
-    /*! Registers an information gains with optional constructor parameters that will then be available for
+    /*! (FUTURE FEATURE WHEN CPP11 is more widely supported in ROS)
+     * Registers an information gains with optional constructor parameters that will then be available for
      * calculations.
      * 
      * In order to allow multithreaded calculations, constructor and
@@ -78,8 +79,19 @@ namespace octomap
      * @param args (variadic) Constructor arguments to the created IG_METRIC_TYPE, used for custom configuration.
      * @return The identifier for the object type within the factory.
      */
-    template<template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS>
-    unsigned int registerInformationGain( IG_CONSTRUCTOR_ARGS ... args );
+    /*template<template<typename> class IG_METRIC_TYPE, typename ... IG_CONSTRUCTOR_ARGS>
+    unsigned int registerInformationGain( IG_CONSTRUCTOR_ARGS ... args );*/
+    
+    /*! Registers an information gain with an optional Utils type constructor parameter that will then be available for calculations. It must take the TREE_TYPE as its only template argument which is being set automatically.
+     */
+    template<template<typename> class IG_METRIC_TYPE>
+    unsigned int registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils = typename IG_METRIC_TYPE<TREE_TYPE>::Utils() );
+    
+  protected:
+    /*! Helper function for binding make shared.
+     */
+    template<template<typename> class IG_METRIC_TYPE>
+    boost::shared_ptr< InformationGain<TREE_TYPE> > makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils);
     
   protected:
     IgFactory ig_factory_; //! Information gain factory.

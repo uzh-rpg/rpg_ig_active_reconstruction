@@ -93,7 +93,7 @@ namespace octomap
   TEMPT
   void CSCOPE::includeMeasurement( typename TREE_TYPE::NodeType* node )
   {
-    if( node==nullptr || !node->hasMeasurement() )
+    if( node==NULL || !node->hasMeasurement() )
     {
       previous_voxel_unknown_=true;
       return;

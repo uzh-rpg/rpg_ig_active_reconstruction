@@ -87,7 +87,7 @@ namespace octomap
   {
     if( previous_voxel_unknown_ )
     {
-      if( node==nullptr || !node->hasMeasurement() ) // end point in free area...
+      if( node==NULL || !node->hasMeasurement() ) // end point in free area...
 	return;
     }
     double p_occ = utils_.pOccupancy(node);

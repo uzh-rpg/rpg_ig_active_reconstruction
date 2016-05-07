@@ -18,9 +18,13 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>movements</build_depend>
   <build_depend>ig_active_reconstruction</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>ig_active_reconstruction_ros</build_depend>
   
   <run_depend>movements</run_depend>
   <run_depend>ig_active_reconstruction</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>ig_active_reconstruction_ros</run_depend>
 
 
 </package>

@@ -136,7 +136,7 @@ namespace octomap
     }
     
     double occ;
-    if( node==nullptr )
+    if( node==NULL )
     {
         occ=utils_.config.p_unknown_prior_; // default for unknown
         if( no_known_voxel_so_far_ )

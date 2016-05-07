@@ -51,21 +51,21 @@ namespace ig_active_reconstruction
     
     /*! Sets the world representation communication interface with which the utility function corresponds.
      */
-    virtual void setWorldCommUnit( std::shared_ptr<world_representation::CommunicationInterface> world_comm_unit );
+    virtual void setWorldCommUnit( boost::shared_ptr<world_representation::CommunicationInterface> world_comm_unit );
     
     /*! Sets the robot communication interface with which the utility function corresponds.
      */
-    virtual void setRobotCommUnit( std::shared_ptr<robot::CommunicationInterface> robot_comm_unit );
+    virtual void setRobotCommUnit( boost::shared_ptr<robot::CommunicationInterface> robot_comm_unit );
     
     /*! Returns the view id of the best view within the given subset of the viewspace.
      * @param id_set Id-subset of views that shall be considered.
      * @param viewspace The complete viewspace object
      */
-    virtual views::View::IdType getNbv( views::ViewSpace::IdSet& id_set, std::shared_ptr<views::ViewSpace> viewspace );  
+    virtual views::View::IdType getNbv( views::ViewSpace::IdSet& id_set, boost::shared_ptr<views::ViewSpace> viewspace );  
     
   protected:
-    std::shared_ptr<world_representation::CommunicationInterface> world_comm_unit_; //! Interface to world representation.
-    std::shared_ptr<robot::CommunicationInterface> robot_comm_unit_; //! Interface to robot.
+    boost::shared_ptr<world_representation::CommunicationInterface> world_comm_unit_; //! Interface to world representation.
+    boost::shared_ptr<robot::CommunicationInterface> robot_comm_unit_; //! Interface to robot.
     
     world_representation::CommunicationInterface::IgRetrievalConfig ig_retrieval_config_; //! Will be used for ig retrieval.
     

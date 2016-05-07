@@ -27,7 +27,7 @@ namespace ig_active_reconstruction
 namespace robot
 {
   
-  RosServerCI::RosServerCI( ros::NodeHandle nh, std::shared_ptr<CommunicationInterface> linked_interface )
+  RosServerCI::RosServerCI( ros::NodeHandle nh, boost::shared_ptr<CommunicationInterface> linked_interface )
   : nh_(nh)
   , linked_interface_(linked_interface)
   {

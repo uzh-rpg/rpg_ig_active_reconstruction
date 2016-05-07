@@ -38,7 +38,7 @@ namespace views
      * @param nh ROS node handle defines the namespace in which ROS communication will be carried out.
      * @param linked_interface (optional) directly add the interface that is linked internally (to which requests are forwarded.
      */
-    RosServerCI( ros::NodeHandle nh, std::shared_ptr<CommunicationInterface> linked_interface = nullptr );
+    RosServerCI( ros::NodeHandle nh, boost::shared_ptr<CommunicationInterface> linked_interface = nullptr );
   
     /*! Returns the view space that is available for planning.
       * @param _space pointer to the ViewSpace object that should be filled
@@ -82,7 +82,7 @@ namespace views
   protected:
     ros::NodeHandle nh_;
     
-    std::shared_ptr<CommunicationInterface> linked_interface_; //! Linked interface.
+    boost::shared_ptr<CommunicationInterface> linked_interface_; //! Linked interface.
     
     ros::ServiceServer viewspace_service_;
     ros::ServiceServer views_adder_service_;

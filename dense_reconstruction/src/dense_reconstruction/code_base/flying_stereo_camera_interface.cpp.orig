@@ -201,11 +201,15 @@ bool FlyingStereoCameraInterface::retrieveDataService( dense_reconstruction::Ret
   ROS_INFO("Data retrieval service called.");
   //_res.receive_info = data_retreiver_->retrieveData();
   std::stringstream pclFile;
+<<<<<<< Updated upstream:dense_reconstruction/src/dense_reconstruction/code_base/flying_stereo_camera_interface.cpp.orig
 <<<<<<< Updated upstream
   pclFile<<"/home/stefan/catkin_ws/src/dense_reconstruction/data/bunny_pcl/bunny_set_"<<current_view_;//<<".bag";
 =======
   pclFile<<"/home/stewess/dragon_48/dragon_"<<current_view_<<".bag";
 >>>>>>> Stashed changes
+=======
+  pclFile<<"/home/stewess/dragon_48/dragon_"<<current_view_<<".bag";
+>>>>>>> Stashed changes:src/dense_reconstruction/code_base/flying_stereo_camera_interface.cpp
   _res.receive_info = data_retreiver_->retrieveData( pclFile.str() );
   return true;
 }

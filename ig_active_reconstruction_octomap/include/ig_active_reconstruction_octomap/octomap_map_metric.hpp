@@ -44,7 +44,7 @@ namespace octomap
     /*! Calculates the metric on the given octree.
      * @param octree Pointer to the octree on which the metric will be calculated.
      */
-    Result calculateOn( std::shared_ptr<TREE_TYPE> octree )=0;
+    Result calculateOn( boost::shared_ptr<TREE_TYPE> octree )=0;
   };
   
 }

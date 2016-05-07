@@ -56,17 +56,17 @@ namespace world_representation
      * @param sensor_pose Position from which rays are cast.
      * @return Pointer to a set of rays.
      */
-    virtual std::shared_ptr<RaySet> getRaySet( movements::Pose& sensor_pose )=0;
+    virtual boost::shared_ptr<RaySet> getRaySet( movements::Pose& sensor_pose )=0;
     
     /*! Returns the set of ray directions as the would be cast from the given sensor_pose with the current configuration.
      * @param sensor_pose Position from which rays are cast.
      * @return Pointer to a set of ray directions.
      */
-    virtual std::shared_ptr<RayDirectionSet> getRayDirectionSet( movements::Pose& sensor_pose )=0;
+    virtual boost::shared_ptr<RayDirectionSet> getRayDirectionSet( movements::Pose& sensor_pose )=0;
     
     /*! Returns the set of ray directions as cast for the current configuration, relative to the sensor.
      */
-    virtual std::shared_ptr<const RayDirectionSet> getRelRayDirectionSet() const=0;
+    virtual boost::shared_ptr<const RayDirectionSet> getRelRayDirectionSet() const=0;
   };
 
   

@@ -14,11 +14,15 @@
     <param name="random_nbv" value="false" />
     
     <!-- the cost weight should be positive since it is internally counted negative -->
+<<<<<<< Updated upstream:dense_reconstruction/launch/view_planner.launch.orig
 <<<<<<< Updated upstream
     <param name="cost_weight" value="0.5" />
 =======
     <param name="cost_weight" value="0.2" />
 >>>>>>> Stashed changes
+=======
+    <param name="cost_weight" value="0.15" />
+>>>>>>> Stashed changes:launch/view_planner.launch
     <param name="information_weight" value="1.0" />
     
     <!-- If the number of occupied voxels changes less than this percentage, then the iteration aborts -->
@@ -47,7 +51,7 @@
     <param name="information/ray_resolution_x" value="0.1" />
     <param name="information/ray_resolution_y" value="0.1" />
     <param name="information/ray_step_size" value="1" /><!--currently deactivated-->
-    <param name="information/subwindow_width_percentage" value="0.6" /><!--0.6-->
+    <param name="information/subwindow_width_percentage" value="0.6" />
     <param name="information/subwindow_height_percentage" value="0.6" />
     <param name="information/min_ray_depth" value="0.05" />
     <param name="information/max_ray_depth" value="1.0" /><!--2-->

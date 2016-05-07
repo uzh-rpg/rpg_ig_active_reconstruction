@@ -16,6 +16,8 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #include <ros/ros.h>
 #include <ig_active_reconstruction/basic_view_planner.hpp>
@@ -64,9 +66,9 @@ int main(int argc, char **argv)
   
   // robot, viewspace module and world representation are external
   // ...................................................................................................................
-  std::shared_ptr<iar::robot::CommunicationInterface> robot_comm = std::make_shared<iar::robot::RosClientCI>(nh);
-  std::shared_ptr<iar::views::CommunicationInterface> views_comm = std::make_shared<iar::views::RosClientCI>(nh);
-  std::shared_ptr<iar::world_representation::CommunicationInterface> world_comm = std::make_shared<iar::world_representation::RosClientCI>(nh);
+  boost::shared_ptr<iar::robot::CommunicationInterface> robot_comm = boost::make_shared<iar::robot::RosClientCI>(nh);
+  boost::shared_ptr<iar::views::CommunicationInterface> views_comm = boost::make_shared<iar::views::RosClientCI>(nh);
+  boost::shared_ptr<iar::world_representation::CommunicationInterface> world_comm = boost::make_shared<iar::world_representation::RosClientCI>(nh);
   
   view_planner.setRobotCommUnit(robot_comm);
   view_planner.setViewsCommUnit(views_comm);
@@ -75,7 +77,7 @@ int main(int argc, char **argv)
   
   // want to use the weighted linear utility calculator, which directly interacts with world and robot comms too
   // ...................................................................................................................
-  std::shared_ptr<iar::WeightedLinearUtility> utility_calculator = std::make_shared<iar::WeightedLinearUtility>(cost_weight);
+  boost::shared_ptr<iar::WeightedLinearUtility> utility_calculator = boost::make_shared<iar::WeightedLinearUtility>(cost_weight);
   utility_calculator->setRobotCommUnit(robot_comm);
   utility_calculator->setWorldCommUnit(world_comm);
   
@@ -84,14 +86,46 @@ int main(int argc, char **argv)
   
   // using a simple max. number of calls termination critera
   // ...................................................................................................................
-  std::shared_ptr<iar::GoalEvaluationModule> termination_criteria = std::make_shared<iar::MaxCallsTerminationCriteria>(max_calls);
+  boost::shared_ptr<iar::GoalEvaluationModule> termination_criteria = boost::make_shared<iar::MaxCallsTerminationCriteria>(max_calls);
   
   view_planner.setGoalEvaluationModule(termination_criteria);
   
+  bool keepReading = true;
+  std::function<void()> status_readout = [&view_planner, &keepReading]()
+  {    
+    while(keepReading)
+    {
+      iar::BasicViewPlanner::Status status = view_planner.status();
+      
+      switch(status)
+      {
+	case iar::BasicViewPlanner::Status::UNINITIALIZED:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::UNINITIALIZED");
+	  break;
+	case iar::BasicViewPlanner::Status::IDLE:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::IDLE");
+	  break;
+	case iar::BasicViewPlanner::Status::PAUSED:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::PAUSED");
+	  break;
+	case iar::BasicViewPlanner::Status::DEMANDING_NEW_DATA:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::DEMANDING_NEW_DATA");
+	  break;
+	case iar::BasicViewPlanner::Status::DEMANDING_VIEWSPACE:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::DEMANDING_VIEWSPACE");
+	  break;
+	case iar::BasicViewPlanner::Status::NBV_CALCULATIONS:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::NBV_CALCULATIONS");
+	  break;
+	case iar::BasicViewPlanner::Status::DEMANDING_MOVE:
+	  ROS_INFO_STREAM("BasicViewPlanner::Status::DEMANDING_MOVE");
+	  break;
+      };
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+  }; 
   
-  
-  
-  
+  std::thread status_reading_thread(status_readout);
   
   
   // Simple command line user interface.
@@ -123,6 +157,7 @@ int main(int argc, char **argv)
 	  std::cin>>user_input;
 	  if(user_input=='y')
 	  {
+	    std::cout<<"Stopping...";
 	    view_planner.stop();
 	    break;
 	  }
@@ -138,6 +173,7 @@ int main(int argc, char **argv)
 	  std::cin>>user_input;
 	  if(user_input=='y')
 	  {
+	    std::cout<<"Quitting...";
 	    view_planner.stop();
 	    return 0;
 	  }
@@ -148,6 +184,9 @@ int main(int argc, char **argv)
 	break;
     };
   }
+  
+  keepReading = false;
+  status_reading_thread.join();
   
   return 0;
 }

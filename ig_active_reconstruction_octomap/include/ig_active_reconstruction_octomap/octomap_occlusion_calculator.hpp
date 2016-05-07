@@ -16,11 +16,11 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "ig_active_reconstruction_octomap/octomap_world_representation.hpp"
+
 #include <pcl/common/projection_matrix.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-
-#include "ig_active_reconstruction_octomap/octomap_world_representation.hpp"
 
 namespace ig_active_reconstruction
 {
@@ -47,7 +47,7 @@ namespace octomap
     
     /*! Sets the octree in which occlusions will be marked.
      */
-    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree )=0;
+    virtual void setOctree( boost::shared_ptr<TREE_TYPE> octree )=0;
   };
   
 }

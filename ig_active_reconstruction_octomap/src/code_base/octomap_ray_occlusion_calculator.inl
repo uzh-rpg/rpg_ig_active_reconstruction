@@ -28,8 +28,8 @@ namespace world_representation
 namespace octomap
 {
   TEMPT
-  CSCOPE::RayOcclusionCalculator( double occlusion_update_dist_m )
-  : occlusion_update_dist_m_(occlusion_update_dist_m)
+  CSCOPE::RayOcclusionCalculator( Options options )
+  : occlusion_update_dist_m_(options.occlusion_update_dist_m)
   {
     
   }
@@ -37,7 +37,7 @@ namespace octomap
   TEMPT
   void CSCOPE::insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )
   {
-    if( this->link_.octree==nullptr )
+    if( this->link_.octree==NULL )
       return;
     
     using ::octomap::point3d;
@@ -89,7 +89,7 @@ namespace octomap
   }
   
   TEMPT
-  void CSCOPE::setOctree( std::shared_ptr<TREE_TYPE> octree )
+  void CSCOPE::setOctree( boost::shared_ptr<TREE_TYPE> octree )
   {
     this->link_.octree = octree;
   }

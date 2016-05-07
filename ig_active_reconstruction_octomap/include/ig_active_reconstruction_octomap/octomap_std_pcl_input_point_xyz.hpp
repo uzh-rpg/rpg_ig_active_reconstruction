@@ -16,20 +16,25 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "ig_active_reconstruction_octomap/octomap_world_representation.hpp"
-#include "ig_active_reconstruction_octomap/octomap_ig_tree.hpp"
-
+#include "ig_active_reconstruction_octomap/octomap_std_pcl_input.hpp"
 
 namespace ig_active_reconstruction
 {
-
+  
 namespace world_representation
 {
 
 namespace octomap
 {
-  
-  typedef WorldRepresentation<IgTree> IgTreeWorldRepresentation;
+  // (cpp03 version...)
+  template<class TREE_TYPE>
+  struct StdPclInputPointXYZ
+  {
+    typedef pcl::PointCloud<pcl::PointXYZ> PclType;
+    typedef TREE_TYPE TreeType;
+    typedef StdPclInput< TreeType, PclType > Type;
+    typedef boost::shared_ptr< StdPclInput< TreeType, PclType > > Ptr;
+  };
   
 }
 

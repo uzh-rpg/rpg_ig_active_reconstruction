@@ -30,7 +30,7 @@ namespace world_representation
 {
 
 namespace octomap
-{
+{  
   /*! Base class for pointcloud type input to octomap. Provides setOcclusionCalculator() functionality. Inherits setLink() property from LinkedObject class.
    */
   template<class TREE_TYPE, class POINTCLOUD_TYPE>
@@ -41,7 +41,7 @@ namespace octomap
     
     /*! Sets the octree in which occlusions will be marked.
      */
-    virtual void setOctree( std::shared_ptr<TREE_TYPE> octree );
+    virtual void setOctree( boost::shared_ptr<TREE_TYPE> octree );
     
     /*! Inserts a new pointcloud. If an occlusion calculator was set, it is called at the end.
      * 
@@ -50,7 +50,7 @@ namespace octomap
      */
     virtual void push( const Eigen::Transform<double,3,Eigen::Affine>& sensor_to_world, POINTCLOUD_TYPE& pcl )=0;
     
-    /*! Adds an occlusion calculator that will be called at the end of pointcloud insertions. 
+    /*! (for when cpp11 is enabled) Adds an occlusion calculator that will be called at the end of pointcloud insertions. 
      * It is expected to derive from OcclusionCalculator and to take two template arguments: TREE_TYPE and POINTCLOUD_TYPE.
      * 
      * Usage of the function is similar to std::make_shared, but you can omit the two template arguments.
@@ -61,11 +61,17 @@ namespace octomap
      * 
      * @param args Whichever arguments the occlusion calculator expects. (variadic template)
      */
-    template< template<typename,typename> class OCCLUSION_CALC_TYPE, class ... Types >
-    void setOcclusionCalculator( Types ... args );
+    /*template< template<typename,typename> class OCCLUSION_CALC_TYPE, class ... Types >
+    void setOcclusionCalculator( Types ... args );*/
+    
+    /*! Adds an occlusion calculator that will be called at the end of pointcloud insertions. 
+     * It is expected to derive from OcclusionCalculator and to take two template arguments: TREE_TYPE and POINTCLOUD_TYPE which will be set automatically. It must have an Options member type which it takes a construction argument.
+     */
+    template< template<typename,typename> class OCCLUSION_CALC_TYPE>
+    void setOcclusionCalculator( typename OCCLUSION_CALC_TYPE<TREE_TYPE,POINTCLOUD_TYPE>::Options options = typename OCCLUSION_CALC_TYPE<TREE_TYPE,POINTCLOUD_TYPE>::Options() );
     
   protected:
-    std::shared_ptr< OcclusionCalculator<TREE_TYPE,POINTCLOUD_TYPE> > occlusion_calculator_; //! Calculates occlusions
+    boost::shared_ptr< OcclusionCalculator<TREE_TYPE,POINTCLOUD_TYPE> > occlusion_calculator_; //! Calculates occlusions
   };
 }
 

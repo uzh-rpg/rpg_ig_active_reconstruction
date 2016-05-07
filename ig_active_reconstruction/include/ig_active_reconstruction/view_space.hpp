@@ -20,7 +20,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <Eigen/StdVector>
 #include "ig_active_reconstruction/view.hpp"
 
-#include <unordered_map>
+#include <map> //TODO use unordered map as soon as cpp03 is not needed anymore
 
 namespace ig_active_reconstruction
 {
@@ -145,7 +145,7 @@ protected:
   
 private:
   std::vector<View, Eigen::aligned_allocator<View> > view_space_; //! Actual storage, used for iterations.
-  std::unordered_map<View::IdType, View*> views_index_map_; //! For access by index.
+  std::map<View::IdType, View*> views_index_map_; //! For access by index.
 };
 
 }

@@ -16,6 +16,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "ig_active_reconstruction/world_representation_pinhole_cam_raycaster.hpp"
 
+#include <boost/smart_ptr.hpp>
 
 namespace ig_active_reconstruction
 {
@@ -56,7 +57,7 @@ namespace world_representation
   
   PinholeCamRayCaster::PinholeCamRayCaster( Config config )
   : config_(config)
-  , ray_directions_( std::make_shared<RayDirectionSet>() )
+  , ray_directions_( boost::make_shared<RayDirectionSet>() )
   {
     computeRelRayDirections();
   }
@@ -89,12 +90,12 @@ namespace world_representation
     return dir;
   }
   
-  std::shared_ptr<PinholeCamRayCaster::RaySet> PinholeCamRayCaster::getRaySet( movements::Pose& sensor_pose )
+  boost::shared_ptr<PinholeCamRayCaster::RaySet> PinholeCamRayCaster::getRaySet( movements::Pose& sensor_pose )
   {
     Ray ray;
     ray.origin = sensor_pose.position;
     
-    std::shared_ptr<PinholeCamRayCaster::RaySet> ray_set = std::make_shared<PinholeCamRayCaster::RaySet>();
+    boost::shared_ptr<PinholeCamRayCaster::RaySet> ray_set = boost::make_shared<PinholeCamRayCaster::RaySet>();
     
     for( RayDirection& rel_dir: *ray_directions_ )
     {
@@ -105,9 +106,9 @@ namespace world_representation
     return ray_set;
   }
   
-  std::shared_ptr<PinholeCamRayCaster::RayDirectionSet> PinholeCamRayCaster::getRayDirectionSet( movements::Pose& sensor_pose )
+  boost::shared_ptr<PinholeCamRayCaster::RayDirectionSet> PinholeCamRayCaster::getRayDirectionSet( movements::Pose& sensor_pose )
   {
-    std::shared_ptr<PinholeCamRayCaster::RayDirectionSet> ray_dirs = std::make_shared<PinholeCamRayCaster::RayDirectionSet>();
+    boost::shared_ptr<PinholeCamRayCaster::RayDirectionSet> ray_dirs = boost::make_shared<PinholeCamRayCaster::RayDirectionSet>();
     
     for( RayDirection& rel_dir: *ray_directions_ )
     {
@@ -118,9 +119,9 @@ namespace world_representation
     return ray_dirs;
   }
   
-  std::shared_ptr<const PinholeCamRayCaster::RayDirectionSet> PinholeCamRayCaster::getRelRayDirectionSet() const
+  boost::shared_ptr<const PinholeCamRayCaster::RayDirectionSet> PinholeCamRayCaster::getRelRayDirectionSet() const
   {
-    return std::const_pointer_cast<const RayDirectionSet>(ray_directions_);
+    return boost::const_pointer_cast<const RayDirectionSet>(ray_directions_);
   }
   
   void PinholeCamRayCaster::computeRelRayDirections()
