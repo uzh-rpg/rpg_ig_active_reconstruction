@@ -116,4 +116,37 @@ namespace ros_tools
       ROS_WARN_STREAM("Parameter '"<<path<<"' not provided, using default: '"<<output<<"'.");
     }
   }
+  
+  /*! Template function to load a parameter with included default value. If it wasn't found the value is not set.
+   * 
+   * Function is overloaded for one or two template parameters: the version with two provides the following functionality: If the target value is of a type that
+   * is not supported by ROS' getParam functions but can be (static_-)casted from another type that is supported, give the local ros-compliant
+   * type as second template argument. Don't forget to check in the output whether the result of the typecast is as expected. If the 
+   * type is ros-compliant, no template argument needs to be given as it can be deduced.
+   * 
+   * ATTENTION: Can't be used if PARAM_TYPE (first template argument type) can't be printed...
+   * 
+   * @param output (output) Where the parameter will be written
+   * @param path Path that will be read from the nodehandle
+   * @param defaultValue Default value that will be loaded if not provided
+   * @param nodeHandle Node handle (defaults to a private ROS node handle: ros::NodeHandle("~") )
+   */
+  template<class PARAM_TYPE, class LOCAL_ROS_COMPLIANT_TYPE>
+  void getParamIfAvailable( PARAM_TYPE& output, std::string path, ros::NodeHandle nodeHandle = ros::NodeHandle("~") )
+  {
+    LOCAL_ROS_COMPLIANT_TYPE local;
+    if( nodeHandle.getParam(path,local) )
+    {
+      output = static_cast<PARAM_TYPE>(local);
+      //ROS_INFO_STREAM("Loaded parameter '"<<path<<"': '"<<output<<"'.");
+    }
+  }
+  template<class PARAM_TYPE>
+  void getParamIfAvailable( PARAM_TYPE& output, std::string path, ros::NodeHandle nodeHandle = ros::NodeHandle("~") )
+  {
+    if( nodeHandle.getParam(path,output) )
+    {
+      //ROS_INFO_STREAM("Loaded parameter '"<<path<<"': '"<<output<<"'.");
+    }
+  }
 }

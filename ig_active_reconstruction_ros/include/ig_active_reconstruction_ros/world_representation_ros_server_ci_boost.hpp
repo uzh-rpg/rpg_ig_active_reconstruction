@@ -32,7 +32,6 @@ namespace world_representation
 
   /*! ROS server implementation of a world_representation::CommunicationInterface. Receives ROS service calls and forwards them to the linked interface.
    */
-  template<template<typename> class POINTER_TYPE>
   class RosServerCI: public CommunicationInterface
   {
   public:
@@ -40,7 +39,7 @@ namespace world_representation
      * @param nh ROS node handle defines the namespace in which ROS communication will be carried out.
      * @param linked_interface (optional) directly add the interface that is linked internally (to which requests are forwarded.
      */
-    RosServerCI( ros::NodeHandle nh, POINTER_TYPE<CommunicationInterface> linked_interface = NULL );
+    RosServerCI( ros::NodeHandle nh, std::shared_ptr<CommunicationInterface> linked_interface = nullptr );
     
     virtual ~RosServerCI(){};
     
@@ -74,7 +73,7 @@ namespace world_representation
   protected:
     ros::NodeHandle nh_;
     
-    POINTER_TYPE<CommunicationInterface> linked_interface_; //! Linked interface.
+    std::shared_ptr<CommunicationInterface> linked_interface_; //! Linked interface.
     
     ros::ServiceServer view_ig_computation_;
     ros::ServiceServer map_metric_computation_;
@@ -87,5 +86,3 @@ namespace world_representation
 
 
 }
-
-#include "../src/code_base/world_representation_ros_server_ci.inl"

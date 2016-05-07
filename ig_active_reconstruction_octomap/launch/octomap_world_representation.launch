@@ -1,1 +1,27 @@
- 
+<?xml version="1.0"?>
+<launch>
+  <node pkg="ig_active_reconstruction_octomap" type="octomap_world_representation" name="octomap_world_representation" clear_params="true" output="screen">
+    
+    <!--Octree configuration-->
+    <param name="resolution_m" value="0.01" />
+    <param name="occupancy_threshold" value="0.5" />
+    <param name="hit_probability" value="0.7" />
+    <param name="miss_probability" value="0.4" />
+    <param name="clamping_threshold_min" value="0.12" />
+    <param name="clamping_threshold_max" value="0.97" />
+    
+    <!-- PCL input configuration -->
+    <param name="use_bounding_box" value="false" />
+    <param name="bounding_box_min_point_m/x" value="-3.0" />
+    <param name="bounding_box_min_point_m/y" value="-3.0" />
+    <param name="bounding_box_min_point_m/z" value="-3.0" />
+    <param name="bounding_box_max_point_m/x" value="3.0" />
+    <param name="bounding_box_max_point_m/y" value="3.0" />
+    <param name="bounding_box_max_point_m/z" value="3.0" />
+    <param name="max_sensor_range_m" value="-1" />
+    
+    <!-- Occlusion calculation configuration -->
+    <param name="occlusion_update_dist_m" value="0.3" />
+    
+  </node>
+</launch>

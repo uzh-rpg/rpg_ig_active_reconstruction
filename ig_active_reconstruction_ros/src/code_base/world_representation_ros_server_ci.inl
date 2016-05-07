@@ -14,10 +14,14 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdexcept>
+#define TEMPT template<template<typename> class POINTER_TYPE>
+#define CSCOPE RosServerCI<POINTER_TYPE>
 
-#include "ig_active_reconstruction_ros/world_representation_ros_server_ci.hpp"
-#include "ig_active_reconstruction_ros/conversions.hpp"
+#include <stdexcept>
+#include <boost/foreach.hpp>
+
+//#include "ig_active_reconstruction_ros/world_representation_ros_server_ci.hpp"
+#include "ig_active_reconstruction_ros/world_conversions.hpp"
 
 
 namespace ig_active_reconstruction
@@ -25,52 +29,57 @@ namespace ig_active_reconstruction
   
 namespace world_representation
 {
-  
-  RosServerCI::RosServerCI( ros::NodeHandle nh, std::shared_ptr<CommunicationInterface> linked_interface )
+  TEMPT
+  CSCOPE::RosServerCI( ros::NodeHandle nh, POINTER_TYPE<CommunicationInterface> linked_interface )
   : nh_(nh)
   , linked_interface_(linked_interface)
   {
-    view_ig_computation_ = nh.advertiseService("world/information_gain", &RosServerCI::igComputationService, this );
-    map_metric_computation_ = nh.advertiseService("world/map_metric", &RosServerCI::mmComputationService, this );
-    available_ig_receiver_ = nh.advertiseService("world/ig_list", &RosServerCI::availableIgService, this );
-    available_mm_receiver_ = nh.advertiseService("world/mm_list", &RosServerCI::availableMmService, this );
+    view_ig_computation_ = nh.advertiseService("world/information_gain", &CSCOPE::igComputationService, this );
+    map_metric_computation_ = nh.advertiseService("world/map_metric", &CSCOPE::mmComputationService, this );
+    available_ig_receiver_ = nh.advertiseService("world/ig_list", &CSCOPE::availableIgService, this );
+    available_mm_receiver_ = nh.advertiseService("world/mm_list", &CSCOPE::availableMmService, this );
   }
   
-  RosServerCI::ResultInformation RosServerCI::computeViewIg(IgRetrievalCommand& command, ViewIgResult& output_ig)
+  TEMPT
+  typename CSCOPE::ResultInformation CSCOPE::computeViewIg(IgRetrievalCommand& command, ViewIgResult& output_ig)
   {
-    if( linked_interface_ == nullptr )
-      throw std::runtime_error("world_representation::RosServerCI::Interface not linked.");
+    if( linked_interface_ == NULL )
+      throw std::runtime_error("world_representation::CSCOPE::Interface not linked.");
     
     return linked_interface_->computeViewIg(command, output_ig);
   }
   
-  RosServerCI::ResultInformation RosServerCI::computeMapMetric(MapMetricRetrievalCommand& command, MapMetricRetrievalResultSet& output)
+  TEMPT
+  typename CSCOPE::ResultInformation CSCOPE::computeMapMetric(MapMetricRetrievalCommand& command, MapMetricRetrievalResultSet& output)
   {
-    if( linked_interface_ == nullptr )
-      throw std::runtime_error("world_representation::RosServerCI::Interface not linked.");
+    if( linked_interface_ == NULL )
+      throw std::runtime_error("world_representation::CSCOPE::Interface not linked.");
     
     return linked_interface_->computeMapMetric(command, output);
   }
   
-  void RosServerCI::availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )
+  TEMPT
+  void CSCOPE::availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )
   {
-    if( linked_interface_ == nullptr )
-      throw std::runtime_error("world_representation::RosServerCI::Interface not linked.");
+    if( linked_interface_ == NULL )
+      throw std::runtime_error("world_representation::CSCOPE::Interface not linked.");
     
     return linked_interface_->availableIgMetrics( available_ig_metrics );
   }
   
-  void RosServerCI::availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )
+  TEMPT
+  void CSCOPE::availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )
   {
-    if( linked_interface_ == nullptr )
-      throw std::runtime_error("world_representation::RosServerCI::Interface not linked.");
+    if( linked_interface_ == NULL )
+      throw std::runtime_error("world_representation::CSCOPE::Interface not linked.");
     
     return linked_interface_->availableMapMetrics( available_map_metrics );
   }
   
-  bool RosServerCI::igComputationService( ig_active_reconstruction_msgs::InformationGainCalculation::Request& req, ig_active_reconstruction_msgs::InformationGainCalculation::Response& res )
+  TEMPT
+  bool CSCOPE::igComputationService( ig_active_reconstruction_msgs::InformationGainCalculation::Request& req, ig_active_reconstruction_msgs::InformationGainCalculation::Response& res )
   {
-    if( linked_interface_ == nullptr )
+    if( linked_interface_ == NULL )
     {
       ig_active_reconstruction_msgs::InformationGain failed;
       failed.predicted_gain = 0;
@@ -88,16 +97,17 @@ namespace world_representation
     IgRetrievalCommand command = ros_conversions::igRetrievalCommandFromMsg(req.command);
     linked_interface_->computeViewIg(command,result);
     
-    for(IgRetrievalResult& ig_res: result)
+    BOOST_FOREACH(IgRetrievalResult& ig_res, result)
     {
       res.expected_information.push_back( ros_conversions::igRetrievalResultToMsg(ig_res) );
     }
     return true;
   }
   
-  bool RosServerCI::mmComputationService( ig_active_reconstruction_msgs::MapMetricCalculation::Request& req, ig_active_reconstruction_msgs::MapMetricCalculation::Response& res )
+  TEMPT
+  bool CSCOPE::mmComputationService( ig_active_reconstruction_msgs::MapMetricCalculation::Request& req, ig_active_reconstruction_msgs::MapMetricCalculation::Response& res )
   {
-    if( linked_interface_ == nullptr )
+    if( linked_interface_ == NULL )
     {
       ig_active_reconstruction_msgs::InformationGain failed;
       failed.predicted_gain = 0;
@@ -113,13 +123,13 @@ namespace world_representation
     
     MapMetricRetrievalResultSet result;
     MapMetricRetrievalCommand command;
-    for(std::string& name: req.metric_names)
+    BOOST_FOREACH(std::string& name, req.metric_names)
     {
       command.metric_names.push_back(name);
     }
     linked_interface_->computeMapMetric(command,result);
     
-    for(MapMetricRetrievalResult& ig_res: result)
+    BOOST_FOREACH(MapMetricRetrievalResult& ig_res, result)
     {
       ig_active_reconstruction_msgs::InformationGain gain;
       gain.predicted_gain = ig_res.value;
@@ -129,9 +139,10 @@ namespace world_representation
     return true;
   }
   
-  bool RosServerCI::availableIgService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
+  TEMPT
+  bool CSCOPE::availableIgService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
   {
-    if( linked_interface_ == nullptr )
+    if( linked_interface_ == NULL )
     {
       return true;
     }
@@ -139,7 +150,7 @@ namespace world_representation
     std::vector<MetricInfo> metric_list;
     linked_interface_->availableIgMetrics(metric_list);
     
-    for(MetricInfo& metric: metric_list)
+    BOOST_FOREACH(MetricInfo& metric, metric_list)
     {
       res.names.push_back(metric.name);
       res.ids.push_back(metric.id);
@@ -147,9 +158,10 @@ namespace world_representation
     return true;
   }
   
-  bool RosServerCI::availableMmService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
+  TEMPT
+  bool CSCOPE::availableMmService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
   {
-    if( linked_interface_ == nullptr )
+    if( linked_interface_ == NULL )
     {
       return true;
     }
@@ -157,7 +169,7 @@ namespace world_representation
     std::vector<MetricInfo> metric_list;
     linked_interface_->availableMapMetrics(metric_list);
     
-    for(MetricInfo& metric: metric_list)
+    BOOST_FOREACH(MetricInfo& metric, metric_list)
     {
       res.names.push_back(metric.name);
       res.ids.push_back(metric.id);
@@ -168,3 +180,6 @@ namespace world_representation
 }
 
 }
+
+#undef CSCOPE
+#undef TEMPT
