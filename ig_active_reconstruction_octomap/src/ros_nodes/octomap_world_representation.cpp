@@ -35,6 +35,7 @@ along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "ig_active_reconstruction_ros/param_loader.hpp"
 #include "ig_active_reconstruction_ros/world_representation_ros_server_ci.hpp"
 
+
 /*! Implements a ROS node holding an octomap world represenation and listening on a PCL topic.
  */
 int main(int argc, char **argv)
@@ -100,7 +101,10 @@ int main(int argc, char **argv)
   std_input->setOcclusionCalculator<RayOcclusionCalculator>(occlusion_config);
   
   // Expose input to ROS
-  iar::world_representation::octomap::RosPclInput<TreeType,PclType> ros_pcl_input(ros::NodeHandle("world"), std_input, world_frame);
+  RosPclInput<TreeType,PclType> ros_pcl_input(ros::NodeHandle("world"), std_input, world_frame);
+  // Publish map after inserting inputs
+  boost::function<void()> publish_map = boost::bind(&RosInterface<TreeType>::publishVoxelMap,world_ros_interface);
+  ros_pcl_input.addInputDoneSignalCall(publish_map);
   
   // Add information gain calculator
   // .............................................................................................
