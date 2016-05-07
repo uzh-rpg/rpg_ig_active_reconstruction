@@ -1,7 +1,0 @@
-dense_reconstruction/ViewMsg start_view
-dense_reconstruction/ViewMsg target_view
-
-# defines whether additional information shall be included in the response or not
-bool additional_information
----
-dense_reconstruction/MovementCostMsg movement_cost

@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  <!--ns="dense_reconstruction"-->
-  <node pkg="dense_reconstruction" type="youbot_fixed_waypoint_controller" name="youbot_fixed_waypoint_controller"  clear_params="true" output="screen">
-    <param name="data_folder" value="$(find dense_reconstruction)/data/" />
-  </node>
-
-  
-</launch>
