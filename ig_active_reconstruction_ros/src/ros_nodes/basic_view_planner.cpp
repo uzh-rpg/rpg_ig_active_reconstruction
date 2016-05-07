@@ -90,6 +90,11 @@ int main(int argc, char **argv)
   
   view_planner.setGoalEvaluationModule(termination_criteria);
   
+  
+  
+  
+  // Simple command line user interface.
+  // ...................................................................................................................
   bool keepReading = true;
   std::function<void()> status_readout = [&view_planner, &keepReading]()
   {    
@@ -127,9 +132,6 @@ int main(int argc, char **argv)
   
   std::thread status_reading_thread(status_readout);
   
-  
-  // Simple command line user interface.
-  // ...................................................................................................................
   ROS_INFO("Basic View Planner was successfully setup. As soon as other modules are running, we're ready to go.");
   
   std::string gui_info = "\n\n\nBASIC VIEW PLANNER SIMPLE UI\n********************************\nThe following actions are supported ('key toggle'):\n- 'g' (go) Start or unpause view planning.\n- 'p': (pause) Pause procedure.\n- 's' (stop) Stop procedure\n- 'q' (quit) Stop procedure and quit program.\n\n";

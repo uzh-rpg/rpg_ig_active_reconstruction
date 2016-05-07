@@ -53,3 +53,15 @@ target_link_libraries(basic_view_planner
 add_dependencies(basic_view_planner
  ${catkin_EXPORTED_TARGETS}
 )
+
+
+add_executable(simple_viewspace_module
+  src/ros_nodes/simple_viewspace_module.cpp
+  ${${PROJECT_NAME}_CODE_BASE}
+)
+target_link_libraries(simple_viewspace_module
+   ${catkin_LIBRARIES}
+)
+add_dependencies(simple_viewspace_module
+ ${catkin_EXPORTED_TARGETS}
+)
