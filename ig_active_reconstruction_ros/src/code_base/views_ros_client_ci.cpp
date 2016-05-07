@@ -17,7 +17,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <stdexcept>
 
 #include "ig_active_reconstruction_ros/views_ros_client_ci.hpp"
-#include "ig_active_reconstruction_ros/conversions.hpp"
+#include "ig_active_reconstruction_ros/views_conversions.hpp"
 
 #include "ig_active_reconstruction_msgs/DeleteViews.h"
 #include "ig_active_reconstruction_msgs/ViewSpaceRequest.h"

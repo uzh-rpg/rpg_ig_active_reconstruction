@@ -11,6 +11,7 @@
     <param name="clamping_threshold_max" value="0.97" />
     
     <!-- PCL input configuration -->
+    <param name="world_frame_name" value="world" />
     <param name="use_bounding_box" value="false" />
     <param name="bounding_box_min_point_m/x" value="-3.0" />
     <param name="bounding_box_min_point_m/y" value="-3.0" />

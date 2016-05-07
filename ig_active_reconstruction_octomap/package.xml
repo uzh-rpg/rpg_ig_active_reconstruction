@@ -2,7 +2,7 @@
 <package>
   <name>ig_active_reconstruction_octomap</name>
   <version>0.0.0</version>
-  <description>Package providing an octomap based world representation implementation for ig_active_reconstruction
+  <description>Package providing an octomap based world representation implementation for ig_active_reconstruction and ROS interfaces to go with it.
     
    "An Information Gain Formulation for Active Volumetric 3D Reconstruction"
    by S. Isler, R. Sabzevari, J. Delmerico and Davide Scaramuzza
@@ -20,11 +20,25 @@
   <build_depend>ig_active_reconstruction</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>ig_active_reconstruction_ros</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>ig_active_reconstruction_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
   
   <run_depend>movements</run_depend>
   <run_depend>ig_active_reconstruction</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>ig_active_reconstruction_ros</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>ig_active_reconstruction_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>pcl_ros</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>std_msgs</run_depend>
 
 
 </package>

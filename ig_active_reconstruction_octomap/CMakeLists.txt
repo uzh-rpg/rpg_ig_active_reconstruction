@@ -10,6 +10,13 @@ find_package(catkin REQUIRED COMPONENTS
   ig_active_reconstruction
   roscpp
   ig_active_reconstruction_ros
+  ig_active_reconstruction_msgs
+  sensor_msgs
+  tf
+  pcl_ros
+  visualization_msgs
+  geometry_msgs
+  std_msgs
 )
 
 find_package(Boost REQUIRED)
@@ -25,6 +32,13 @@ catkin_package(
     ig_active_reconstruction
     roscpp
     ig_active_reconstruction_ros
+    ig_active_reconstruction_msgs
+    sensor_msgs
+    tf
+    pcl_ros
+    visualization_msgs
+    geometry_msgs
+    std_msgs
   DEPENDS
     PCL
     Eigen

@@ -14,6 +14,8 @@ You should have received a copy of the GNU Lesser General Public License
 along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#if 0
+
 #include "ig_active_reconstruction_ros/conversions.hpp"
 #include "movements/ros_movements.h"
 #include <stdexcept>
@@ -267,3 +269,5 @@ namespace ros_conversions
 }
 
 }
+
+#endif

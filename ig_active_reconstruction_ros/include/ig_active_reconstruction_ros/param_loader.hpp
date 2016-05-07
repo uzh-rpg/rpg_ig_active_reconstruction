@@ -140,6 +140,10 @@ namespace ros_tools
       output = static_cast<PARAM_TYPE>(local);
       //ROS_INFO_STREAM("Loaded parameter '"<<path<<"': '"<<output<<"'.");
     }
+    else
+    {
+      ROS_WARN_STREAM("Parameter '"<<path<<"' not provided, using default: '"<<output<<"'.");
+    }
   }
   template<class PARAM_TYPE>
   void getParamIfAvailable( PARAM_TYPE& output, std::string path, ros::NodeHandle nodeHandle = ros::NodeHandle("~") )
@@ -147,6 +151,10 @@ namespace ros_tools
     if( nodeHandle.getParam(path,output) )
     {
       //ROS_INFO_STREAM("Loaded parameter '"<<path<<"': '"<<output<<"'.");
+    }
+    else
+    {
+      ROS_WARN_STREAM("Parameter '"<<path<<"' not provided, using default: '"<<output<<"'.");
     }
   }
 }

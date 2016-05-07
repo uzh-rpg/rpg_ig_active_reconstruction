@@ -17,7 +17,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <stdexcept>
 
 #include "ig_active_reconstruction_ros/world_representation_ros_client_ci.hpp"
-#include "ig_active_reconstruction_ros/conversions.hpp"
+#include "ig_active_reconstruction_ros/world_conversions.hpp"
 
 #include "ig_active_reconstruction_msgs/InformationGainCalculation.h"
 #include "ig_active_reconstruction_msgs/MapMetricCalculation.h"

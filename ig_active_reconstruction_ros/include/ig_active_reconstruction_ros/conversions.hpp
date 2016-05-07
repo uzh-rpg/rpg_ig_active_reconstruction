@@ -16,6 +16,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#if 0
+
 #include "ig_active_reconstruction_msgs/MovementCostMsg.h"
 #include "ig_active_reconstruction_msgs/ViewMsg.h"
 #include "ig_active_reconstruction_msgs/InformationGainRetrievalCommand.h"
@@ -83,3 +85,5 @@ namespace ros_conversions
 }
 
 }
+
+#endif

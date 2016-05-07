@@ -17,7 +17,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include <stdexcept>
 
 #include "ig_active_reconstruction_ros/robot_ros_client_ci.hpp"
-#include "ig_active_reconstruction_ros/conversions.hpp"
+#include "ig_active_reconstruction_ros/robot_conversions.hpp"
+#include "ig_active_reconstruction_ros/views_conversions.hpp"
 
 #include "ig_active_reconstruction_msgs/ViewRequest.h"
 #include "ig_active_reconstruction_msgs/RetrieveData.h"

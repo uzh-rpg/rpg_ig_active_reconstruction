@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   message_generation
   geometry_msgs
+  sensor_msgs
 )
 add_message_files(
   FILES
@@ -35,12 +36,14 @@ add_service_files(
   ViewSpaceUpdate.srv
   StringList.srv
   MapMetricCalculation.srv
+  PclInput.srv
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 catkin_package(
