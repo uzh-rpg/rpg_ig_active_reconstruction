@@ -15,43 +15,65 @@ along with it. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "flying_gazebo_stereo_cam/pcl_rerouter.hpp"
+#include "ig_active_reconstruction_msgs/PclInput.h"
 
 namespace ros_tools
 {
   
   PclRerouter::PclRerouter( ros::NodeHandle nh )
   : nh_(nh)
-  , forwardOne_(false)
-  , hasPublishedOne_(false)
+  , forward_one_(false)
+  , has_published_one_(false)
+  , one_to_srv_(false)
   {
     pcl_subscriber_ = nh_.subscribe( "in",1, &PclRerouter::pclCallback, this );
     pcl_publisher_ = nh_.advertise<sensor_msgs::PointCloud2>("out", 1);
+    pcl_service_caller_ = nh_.serviceClient<ig_active_reconstruction_msgs::PclInput>("out");
   }
   
-  bool PclRerouter::rerouteOne(ros::Duration max_wait_time)
+  bool PclRerouter::rerouteOneToTopic(ros::Duration max_wait_time)
   {
-    hasPublishedOne_ = false;
-    forwardOne_ = true;
+    has_published_one_ = false;
+    forward_one_ = true;
     
     ros::Time time_limit = ros::Time::now() + max_wait_time;
     ros::Duration sleep_time;
     sleep_time.fromNSec(max_wait_time.toNSec()/10);
     
-    while(!hasPublishedOne_ && ros::Time::now()<time_limit)
+    while(!has_published_one_ && ros::Time::now()<time_limit)
     {
       sleep_time.sleep();
     }
+    forward_one_ = false;
     
-    return hasPublishedOne_;
+    return has_published_one_;
+  }
+  
+  bool PclRerouter::rerouteOneToSrv()
+  {
+    has_published_one_ = false;
+    one_to_srv_ = true;
+    while( one_to_srv_ && nh_.ok() )
+    {
+      ros::Duration(0.01).sleep();
+    }
+    return service_response_;
   }
   
   void PclRerouter::pclCallback( const sensor_msgs::PointCloud2ConstPtr& msg )
   {
-    if(forwardOne_)
+    if(forward_one_)
     {
       pcl_publisher_.publish(msg);
-      hasPublishedOne_ = true;
-      forwardOne_ = false;
+      has_published_one_ = true;
+      forward_one_ = false;
+    }
+    else if(one_to_srv_)
+    {
+      ig_active_reconstruction_msgs::PclInput call;
+      call.request.pointcloud = *msg;
+      bool service_response_ = pcl_service_caller_.call(call);
+      one_to_srv_ = false;
     }
     
     return;

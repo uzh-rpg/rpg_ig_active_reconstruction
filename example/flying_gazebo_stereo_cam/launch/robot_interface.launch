@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <!-- Start gazebo and load world -->
+  <param name="/use_sim_time" value="true" />
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">	    
+    <!--<arg name="world_name" value="$(find dense_reconstruction)/gazebo/worlds/world_teapot.xml"/>-->
+    <arg name="gui" value="true"/>	  
+  </include>
+  
+  <!-- send flying_stereo_cam urdf to param server -->
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find flying_gazebo_stereo_cam)/model/flying_stereo_cam.xacro'"/>
+  
+  <!-- push robot_description to factory and spawn robot in gazebo -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_robot" respawn="false" output="screen"
+  args="-param robot_description
+	-urdf
+	-x 0
+	-y -1
+	-z 0.4
+	-R 0
+	-P 0
+	-Y 1.570796327
+	-model flying_stereo_cam">
+  </node>
+  
+  <!-- stereo image processing node -->
+  <include file="$(find flying_gazebo_stereo_cam)/launch/stereo_processing.launch" />
+  
+  <!-- Viewspace module -->
+  <include file="$(find flying_gazebo_stereo_cam)/launch/simple_viewspace_module.launch" />
+  
+  <!-- Robot interface with configuration -->
+  <node pkg="flying_gazebo_stereo_cam" type="robot_interface" name="robot_interface" clear_params="true" output="screen">
+    
+    <param name="model_name" value="flying_stereo_cam" />
+    <param name="camera_frame_name" value="cam_pos" />
+    <param name="world_frame_name" value="world" />
+    
+  </node>
+</launch>

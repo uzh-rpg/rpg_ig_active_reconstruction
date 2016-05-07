@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <!-- stereo image processing node -->
+  <param name ="stereo_image_proc/camera_frame" value="cam_pos" />
+  <node pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" respawn="false" output="screen" clear_params="true" ns="camera">
+    <param name="speckle_size" value="490"/>
+    <param name="disparity_range" value="128"/>
+  </node>
+    
+</launch>

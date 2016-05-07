@@ -19,7 +19,7 @@ along with it. If not, see <http://www.gnu.org/licenses/>.
 
 namespace ros_tools
 {
-  /*! Class that listens on a pcl topic and reroutes what it receives to another pcl topic.
+  /*! Class that listens on a pcl topic and reroutes what it receives to another pcl topic or to a service.
    * Current implementation forwards single packages on demand.
    * 
    * Listens to "in", publishes to "out"
@@ -33,7 +33,14 @@ namespace ros_tools
      * @param max_wait_time Max wait time before rerouting is considered to have failed.
      * @return True if a data packet was rerouted.
      */
-    bool rerouteOne(ros::Duration max_wait_time = ros::Duration(0.01));
+    bool rerouteOneToTopic(ros::Duration max_wait_time = ros::Duration(0.01));
+    
+    
+    /*! Reroutes the next incoming pointcloud to the service.
+     * @param max_wait_time Max wait time before rerouting is considered to have failed.
+     * @return True if a data packet was rerouted.
+     */
+    bool rerouteOneToSrv();
     
   protected:
     /*! Called for incoming pointclouds.
@@ -44,9 +51,13 @@ namespace ros_tools
     ros::NodeHandle nh_;
     ros::Subscriber pcl_subscriber_;
     ros::Publisher pcl_publisher_;
+    ros::ServiceClient pcl_service_caller_;
     
-    bool forwardOne_;
-    bool hasPublishedOne_;
+    bool forward_one_;
+    bool has_published_one_;
+    
+    bool one_to_srv_;
+    bool service_response_;
   };
   
 }

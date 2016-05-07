@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   urdf
   ig_active_reconstruction
   ig_active_reconstruction_msgs
+  ig_active_reconstruction_ros
   movements
   tf
   gazebo_msgs
@@ -26,6 +27,7 @@ catkin_package(
     urdf
     ig_active_reconstruction
     ig_active_reconstruction_msgs
+    ig_active_reconstruction_ros
     movements
     geometry_msgs
     sensor_msgs
@@ -48,4 +50,17 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
+)
+
+# Executables...........................................................
+
+add_executable(robot_interface
+  src/ros_nodes/robot_interface.cpp
+  ${${PROJECT_NAME}_CODE_BASE}
+)
+target_link_libraries(robot_interface
+   ${catkin_LIBRARIES}
+)
+add_dependencies(robot_interface
+ ${catkin_EXPORTED_TARGETS}
 )

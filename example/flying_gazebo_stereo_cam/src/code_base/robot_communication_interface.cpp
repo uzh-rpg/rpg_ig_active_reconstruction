@@ -45,7 +45,7 @@ namespace flying_gazebo_stereo_cam
   
   CommunicationInterface::ReceptionInfo CommunicationInterface::retrieveData()
   {
-    if( pcl_rerouter_.rerouteOne() )
+    if( pcl_rerouter_.rerouteOneToTopic() )
     {
       return ReceptionInfo::SUCCEEDED;
     }

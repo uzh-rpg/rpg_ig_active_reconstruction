@@ -6,9 +6,9 @@
   <xacro:property name="cameraSize" value="0.05"/>
   <xacro:property name="cameraMass" value="0.1"/>
   
-  <xacro:include filename="$(find flying_stereo_cam)/flying_stereo_cam.gazebo" />
-  <xacro:include filename="$(find flying_stereo_cam)/materials.xacro" />
-  <xacro:include filename="$(find flying_stereo_cam)/macros.xacro" />
+  <xacro:include filename="$(find flying_gazebo_stereo_cam)/model/flying_stereo_cam.gazebo" />
+  <xacro:include filename="$(find flying_gazebo_stereo_cam)/model/materials.xacro" />
+  <xacro:include filename="$(find flying_gazebo_stereo_cam)/model/macros.xacro" />
   
   
   
