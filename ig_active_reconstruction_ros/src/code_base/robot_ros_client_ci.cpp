@@ -44,6 +44,8 @@ namespace robot
   views::View RosClientCI::getCurrentView()
   {
     ig_active_reconstruction_msgs::ViewRequest request;
+    
+    ROS_INFO("Demanding current view");
     bool response = current_view_retriever_.call(request);
     
     if( !response )
@@ -55,6 +57,8 @@ namespace robot
   RosClientCI::ReceptionInfo RosClientCI::retrieveData()
   {
     ig_active_reconstruction_msgs::RetrieveData request;
+    
+    ROS_INFO("Retrieving data");
     bool response = data_retriever_.call(request);
     
     if( !response )
@@ -72,6 +76,8 @@ namespace robot
     request.request.target_view = ros_conversions::viewToMsg(target_view);
     request.request.additional_information = true;
     
+    
+    ROS_INFO("Retrieving movement cost");
     bool response = cost_retriever_.call(request);
     
     MovementCost cost = ros_conversions::movementCostFromMsg(request.response.movement_cost);
@@ -91,6 +97,8 @@ namespace robot
     request.request.target_view = ros_conversions::viewToMsg(target_view);
     request.request.additional_information = fill_additional_information;
     
+    
+    ROS_INFO("Retrieving movement cost");
     bool response = cost_retriever_.call(request);
     
     MovementCost cost = ros_conversions::movementCostFromMsg(request.response.movement_cost);
@@ -107,6 +115,8 @@ namespace robot
     ig_active_reconstruction_msgs::MoveToOrder request;
     request.request.target_view = ros_conversions::viewToMsg(target_view);
     
+    
+    ROS_INFO("Demanding robot to move.");
     bool response = robot_mover_.call(request);
     if( !response )
     {

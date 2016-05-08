@@ -7,12 +7,7 @@ it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 ig_active_reconstruction is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY
-  {
-    
-  }
-  
-  TEMPT without even the implied warranty of
+but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
@@ -40,7 +35,7 @@ namespace octomap
   }
   
   TEMPT
-  CSCOPE::VasquezGomezAreaFactorIg( Utils utils )
+  CSCOPE::VasquezGomezAreaFactorIg( Config utils )
   : utils_(utils)
   , voxel_count_(0)
   , no_known_voxel_so_far_(true)
@@ -138,7 +133,7 @@ namespace octomap
     double occ;
     if( node==NULL )
     {
-        occ=utils_.config.p_unknown_prior_; // default for unknown
+        occ=utils_.config.p_unknown_prior; // default for unknown
         if( no_known_voxel_so_far_ )
         {
             previous_voxel_free_ = true; // treat unknown at beginning of ray, starting from sensor position as p_free

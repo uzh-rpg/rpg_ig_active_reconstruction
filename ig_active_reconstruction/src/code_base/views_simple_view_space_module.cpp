@@ -53,7 +53,7 @@ namespace views
     
   }
   
-  void SimpleViewSpaceModule::getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status)
+  void SimpleViewSpaceModule::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
   {
     viewspace = &viewspace_;
     

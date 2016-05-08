@@ -44,7 +44,7 @@ namespace octomap
   
   TEMPT
   template<template<typename> class IG_METRIC_TYPE>
-  unsigned int CSCOPE::registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils )
+  unsigned int CSCOPE::registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils::Config utils )
   {
     boost::shared_ptr< InformationGain<TREE_TYPE> > prototype = boost::make_shared< IG_METRIC_TYPE<TREE_TYPE> >(utils);
     std::string name = prototype->type();
@@ -57,7 +57,7 @@ namespace octomap
   
   TEMPT
   template<template<typename> class IG_METRIC_TYPE>
-  boost::shared_ptr< InformationGain<TREE_TYPE> > CSCOPE::makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils)
+  boost::shared_ptr< InformationGain<TREE_TYPE> > CSCOPE::makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils::Config utils)
   {
     return boost::shared_ptr< InformationGain<TREE_TYPE> >( new IG_METRIC_TYPE<TREE_TYPE>(utils) );
   }

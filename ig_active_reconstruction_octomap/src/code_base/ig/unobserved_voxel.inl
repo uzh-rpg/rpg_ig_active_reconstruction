@@ -32,7 +32,7 @@ namespace world_representation
 namespace octomap
 {  
   TEMPT
-  CSCOPE::UnobservedVoxelIg( Utils utils )
+  CSCOPE::UnobservedVoxelIg( Config utils )
   : utils_(utils)
   , ig_(0)
   , p_vis_(1)
@@ -82,9 +82,9 @@ namespace octomap
   TEMPT
   void CSCOPE::informAboutVoidRay()
   {
-    voxel_count_ += utils_.config.voxels_in_void_ray_;
+    voxel_count_ += utils_.config.voxels_in_void_ray;
     // no approximation needed, can be exactly calculated using the geometric series formula
-    ig_ += utils_.entropy(utils_.config.p_unknown_prior_)/(1-utils_.config.p_unknown_prior_); // information in void ray...
+    ig_ += utils_.entropy(utils_.config.p_unknown_prior)/(1-utils_.config.p_unknown_prior); // information in void ray...
   }
   
   TEMPT

@@ -59,16 +59,20 @@ namespace ros_conversions
     {
       msg.views.push_back( viewToMsg(view) );
     }
+    
+    return msg;
   }
   
   views::ViewSpace viewSpaceFromMsg( ig_active_reconstruction_msgs::ViewSpaceMsg& msg )
   {
     views::ViewSpace view_space;
+    std::cout<<"\n\n size: "<<msg.views.size();
     
     for( auto& view: msg.views )
     {
       view_space.push_back( viewFromMsg(view) );
     }
+    return view_space;
   }
   
   views::CommunicationInterface::ViewSpaceStatus viewSpaceStatusFromMsg( int& msg )

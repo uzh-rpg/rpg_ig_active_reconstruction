@@ -79,6 +79,7 @@ namespace world_representation
   TEMPT
   bool CSCOPE::igComputationService( ig_active_reconstruction_msgs::InformationGainCalculation::Request& req, ig_active_reconstruction_msgs::InformationGainCalculation::Response& res )
   {
+    ROS_INFO("Received 'ig computation' call.");
     if( linked_interface_ == NULL )
     {
       ig_active_reconstruction_msgs::InformationGain failed;
@@ -107,6 +108,7 @@ namespace world_representation
   TEMPT
   bool CSCOPE::mmComputationService( ig_active_reconstruction_msgs::MapMetricCalculation::Request& req, ig_active_reconstruction_msgs::MapMetricCalculation::Response& res )
   {
+    ROS_INFO("Received 'map metric computation' call.");
     if( linked_interface_ == NULL )
     {
       ig_active_reconstruction_msgs::InformationGain failed;
@@ -142,6 +144,7 @@ namespace world_representation
   TEMPT
   bool CSCOPE::availableIgService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
   {
+    ROS_INFO("Received 'available information gain metric' call.");
     if( linked_interface_ == NULL )
     {
       return true;
@@ -161,6 +164,7 @@ namespace world_representation
   TEMPT
   bool CSCOPE::availableMmService( ig_active_reconstruction_msgs::StringList::Request& req, ig_active_reconstruction_msgs::StringList::Response& res )
   {
+    ROS_INFO("Received 'available map metric' call.");
     if( linked_interface_ == NULL )
     {
       return true;

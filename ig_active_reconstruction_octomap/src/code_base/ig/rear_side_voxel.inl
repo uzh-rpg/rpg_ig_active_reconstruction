@@ -32,7 +32,7 @@ namespace world_representation
 namespace octomap
 {  
   TEMPT
-  CSCOPE::RearSideVoxelIg( Utils utils )
+  CSCOPE::RearSideVoxelIg( Config utils )
   : utils_(utils)
   , rear_side_voxel_count_(0)
   , previous_voxel_unknown_(false)

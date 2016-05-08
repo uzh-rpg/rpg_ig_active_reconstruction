@@ -19,9 +19,9 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 namespace flying_gazebo_stereo_cam
 {
   
-  CommunicationInterface::CommunicationInterface( ros::NodeHandle nh, std::shared_ptr<Controller> controller )
+  CommunicationInterface::CommunicationInterface( ros::NodeHandle nh, std::shared_ptr<Controller> controller, std::string in_name, std::string out_name )
   : cam_controller_(controller)
-  , pcl_rerouter_(nh)
+  , pcl_rerouter_(nh,in_name,out_name)
   {
     
   }

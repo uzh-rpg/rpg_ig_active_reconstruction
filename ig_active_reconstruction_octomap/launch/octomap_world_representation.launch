@@ -24,5 +24,26 @@
     <!-- Occlusion calculation configuration -->
     <param name="occlusion_update_dist_m" value="0.3" />
     
+    <!-- Raycaster configuration -->
+    <param name="img_width_px" value="480" />
+    <param name="img_height_px" value="752" />
+    <param name="camera/fx" value="448.1008985853343" />
+    <param name="camera/fy" value="448.1008985853343" />
+    <param name="camera/cx" value="376.5" />
+    <param name="camera/cy" value="240.5" />
+    
+    <param name="raycasting/resolution_x" value="0.1" />
+    <param name="raycasting/resolution_y" value="0.1" />
+    <param name="raycasting/min_x_perc" value="0.25" />
+    <param name="raycasting/min_y_perc" value="0.25" />
+    <param name="raycasting/max_x_perc" value="0.75" />
+    <param name="raycasting/max_y_perc" value="0.75" />
+    
+    <!-- Information gain config -->
+    <param name="ig/p_unknown_prior" value="0.5" />
+    <param name="ig/p_unknown_upper_bound" value="0.8" />
+    <param name="ig/p_unknown_lower_bound" value="0.2" />
+    <param name="ig/voxels_in_void_ray" value="100" />
+    
   </node>
 </launch>

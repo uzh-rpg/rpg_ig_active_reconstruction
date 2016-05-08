@@ -32,10 +32,12 @@ int main(int argc, char **argv)
   
   // Load parameters
   //------------------------------------------------------------------
-  std::string model_name, camera_frame_name, world_frame_name;
+  std::string model_name, camera_frame_name, world_frame_name, sensor_in_topic, sensor_out_name;
   ros_tools::getExpParam(model_name,"model_name");
   ros_tools::getExpParam(camera_frame_name,"camera_frame_name");
   ros_tools::getExpParam(world_frame_name,"world_frame_name");
+  ros_tools::getExpParam(sensor_in_topic,"sensor_in_topic");
+  ros_tools::getExpParam(sensor_out_name,"sensor_out_name");
   
   using namespace flying_gazebo_stereo_cam;
   
@@ -47,7 +49,7 @@ int main(int argc, char **argv)
   
   // Iar communication interface
   //------------------------------------------------------------------
-  boost::shared_ptr<CommunicationInterface> robot_interface = boost::make_shared<CommunicationInterface>(nh,controller);
+  boost::shared_ptr<CommunicationInterface> robot_interface = boost::make_shared<CommunicationInterface>(nh,controller,sensor_in_topic,sensor_out_name);
   
   // Expose communication interface to ROS
   //------------------------------------------------------------------

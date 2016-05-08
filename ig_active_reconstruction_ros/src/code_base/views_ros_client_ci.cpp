@@ -42,6 +42,7 @@ namespace views
   {
     ig_active_reconstruction_msgs::ViewSpaceRequest call;
     
+    ROS_INFO("Demanding viewspace.");
     bool response = planning_space_receiver_.call(call);
     
     if( !response )
@@ -52,7 +53,7 @@ namespace views
     return ros_conversions::viewSpaceStatusFromMsg(call.response.viewspace_status);
   }
   
-  void RosClientCI::getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status)
+  void RosClientCI::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
   {
     status = ViewSpaceStatus::NONE_AVAILABLE;
     
@@ -68,6 +69,8 @@ namespace views
       call.request.views.push_back( ros_conversions::viewToMsg(view) );
     }
     
+    
+    ROS_INFO("Demanding to add view(s).");
     bool response = views_adder_.call(call);
     
     if( !response )
@@ -82,6 +85,8 @@ namespace views
     
     call.request.views.push_back( ros_conversions::viewToMsg(new_view) );
     
+    
+    ROS_INFO("Demanding to add view.");
     bool response = views_adder_.call(call);
     
     if( !response )
@@ -99,6 +104,8 @@ namespace views
       call.request.ids.push_back(id);
     }
     
+    
+    ROS_INFO("Demanding to delete view(s).");
     bool response = views_deleter_.call(call);
     if( !response )
       return ViewSpaceUpdateResult::FAILED;
@@ -112,6 +119,8 @@ namespace views
     
     call.request.ids.push_back(view_id);
     
+    
+    ROS_INFO("Demanding to delete view.");
     bool response = views_deleter_.call(call);
     if( !response )
       return ViewSpaceUpdateResult::FAILED;

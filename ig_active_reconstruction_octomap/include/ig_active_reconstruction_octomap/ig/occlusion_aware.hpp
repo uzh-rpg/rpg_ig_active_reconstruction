@@ -36,13 +36,14 @@ namespace octomap
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
+    typedef typename InformationGain<TREE_TYPE>::Utils::Config Config;
     typedef typename InformationGain<TREE_TYPE>::GainType GainType;
     
   public:
     
     /*! Constructor
      */
-    OcclusionAwareIg( Utils utils = Utils() );
+    OcclusionAwareIg( Config config = Config() );
     
     /*! Returns the name of the method.
      */

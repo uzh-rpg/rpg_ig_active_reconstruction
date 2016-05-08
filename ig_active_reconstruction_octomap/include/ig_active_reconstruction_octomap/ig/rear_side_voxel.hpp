@@ -35,13 +35,14 @@ namespace octomap
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
+    typedef typename InformationGain<TREE_TYPE>::Utils::Config Config;
     typedef typename InformationGain<TREE_TYPE>::GainType GainType;
     
   public:
     
     /*! Constructor
      */
-    RearSideVoxelIg( Utils utils = Utils() );
+    RearSideVoxelIg( Config config = Config() );
     
     /*! Returns the name of the method.
      */

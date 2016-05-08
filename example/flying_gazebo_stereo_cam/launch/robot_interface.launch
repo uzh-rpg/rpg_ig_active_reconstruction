@@ -36,6 +36,8 @@
     <param name="model_name" value="flying_stereo_cam" />
     <param name="camera_frame_name" value="cam_pos" />
     <param name="world_frame_name" value="world" />
+    <param name="sensor_in_topic" value="/camera/points2" />
+    <param name="sensor_out_name" value="world/pcl_input" />
     
   </node>
 </launch>

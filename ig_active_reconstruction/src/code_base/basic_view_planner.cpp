@@ -179,7 +179,7 @@ namespace ig_active_reconstruction
       pausePoint();
       
     }while( viewspace_status!=views::CommunicationInterface::ViewSpaceStatus::OK );
-      
+    
     do
     {
       // determine view candidate subset of viewspace .....................

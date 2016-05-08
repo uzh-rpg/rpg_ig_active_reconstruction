@@ -41,10 +41,10 @@ namespace world_representation
     public:
       double ray_resolution_x; //! How many rays are cast per pixel on the image's x-axis to obtain the information. [rays/px] Default: 1.0
       double ray_resolution_y; //! How many rays are cast per pixel on the image's y-axis to obtain the information. [rays/px] Default: 1.0
-      unsigned int min_x_perc; //! Minimum x to be cast [%of image width]. Default:0.
-      unsigned int min_y_perc; //! Minimum y to be cast [%of image height]. Default:0.
-      unsigned int max_x_perc; //! Maximum x to be cast [%of image width]. Default:1.
-      unsigned int max_y_perc; //! Maximum y to be cast [%of image height]. Default:1.
+      double min_x_perc; //! Minimum x to be cast [%of image width]. Default:0.
+      double min_y_perc; //! Minimum y to be cast [%of image height]. Default:0.
+      double max_x_perc; //! Maximum x to be cast [%of image width]. Default:1.
+      double max_y_perc; //! Maximum y to be cast [%of image height]. Default:1.
     };
     
     /*! Configuration structure.

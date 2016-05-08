@@ -69,7 +69,7 @@ namespace views
     
     /*! Returns a pointer to the internal viewspace
      */
-    virtual void getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status);
+    virtual void getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status);
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.

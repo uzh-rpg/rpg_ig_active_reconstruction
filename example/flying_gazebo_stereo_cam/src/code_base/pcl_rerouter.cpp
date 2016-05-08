@@ -20,15 +20,15 @@ along with it. If not, see <http://www.gnu.org/licenses/>.
 namespace ros_tools
 {
   
-  PclRerouter::PclRerouter( ros::NodeHandle nh )
+  PclRerouter::PclRerouter( ros::NodeHandle nh, std::string in_name, std::string out_name  )
   : nh_(nh)
   , forward_one_(false)
   , has_published_one_(false)
   , one_to_srv_(false)
   {
-    pcl_subscriber_ = nh_.subscribe( "in",1, &PclRerouter::pclCallback, this );
-    pcl_publisher_ = nh_.advertise<sensor_msgs::PointCloud2>("out", 1);
-    pcl_service_caller_ = nh_.serviceClient<ig_active_reconstruction_msgs::PclInput>("out");
+    pcl_subscriber_ = nh_.subscribe( in_name,1, &PclRerouter::pclCallback, this );
+    pcl_publisher_ = nh_.advertise<sensor_msgs::PointCloud2>(out_name, 1);
+    pcl_service_caller_ = nh_.serviceClient<ig_active_reconstruction_msgs::PclInput>(out_name);
   }
   
   bool PclRerouter::rerouteOneToTopic(ros::Duration max_wait_time)

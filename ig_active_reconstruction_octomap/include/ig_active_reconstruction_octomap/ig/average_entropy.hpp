@@ -34,13 +34,14 @@ namespace octomap
   {
   public:
     typedef typename InformationGain<TREE_TYPE>::Utils Utils;
+    typedef typename InformationGain<TREE_TYPE>::Utils::Config Config;
     typedef typename InformationGain<TREE_TYPE>::GainType GainType;
     
   public:
     
     /*! Constructor
      */
-    AverageEntropyIg( Utils utils = Utils() );
+    AverageEntropyIg( Config config = Config() );
     
     /*! Returns the name of the method.
      */

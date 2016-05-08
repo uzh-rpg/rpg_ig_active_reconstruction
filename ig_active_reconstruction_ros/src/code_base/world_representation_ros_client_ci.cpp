@@ -43,6 +43,8 @@ namespace world_representation
   {
     ig_active_reconstruction_msgs::InformationGainCalculation call;
     call.request.command = ros_conversions::igRetrievalCommandToMsg(command);
+    
+    ROS_INFO("Demanding information gain.");
     bool response = view_ig_computation_.call(call);
     
     if(!response)
@@ -77,6 +79,8 @@ namespace world_representation
     {
       call.request.metric_names.push_back(name);
     }
+    
+    ROS_INFO("Demanding map metric.");
     bool response = map_metric_computation_.call(call);
     
     if(!response)
@@ -105,6 +109,8 @@ namespace world_representation
   
   void RosClientCI::availableIgMetrics( std::vector<MetricInfo>& available_ig_metrics )
   {
+    
+    ROS_INFO("Demanding available information gains.");
     ig_active_reconstruction_msgs::StringList call;
     bool response = available_ig_receiver_.call(call);
     
@@ -122,6 +128,8 @@ namespace world_representation
   
   void RosClientCI::availableMapMetrics( std::vector<MetricInfo>& available_map_metrics )
   {
+    
+    ROS_INFO("Demanding available map metrics.");
     ig_active_reconstruction_msgs::StringList call;
     bool response = available_mm_receiver_.call(call);
     

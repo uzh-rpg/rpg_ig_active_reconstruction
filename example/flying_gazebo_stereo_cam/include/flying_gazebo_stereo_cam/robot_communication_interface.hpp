@@ -34,8 +34,10 @@ namespace flying_gazebo_stereo_cam
     /*! Constructor
      * @param nh Sets the ros node handle used for data subscription and publication.
      * @param controller Sets the controller of the camera that will be moved.
+     * @param in_name Input name (Where pcl input is retrieved, relative to node namespace)
+     * @param out_name How outputs (srv/topic) are advertised (relative to node namespace)
      */
-    CommunicationInterface( ros::NodeHandle nh, std::shared_ptr<Controller> controller );
+    CommunicationInterface( ros::NodeHandle nh, std::shared_ptr<Controller> controller, std::string in_name="in", std::string out_name="out" );
     
     /*! returns the current view */
     virtual View getCurrentView();

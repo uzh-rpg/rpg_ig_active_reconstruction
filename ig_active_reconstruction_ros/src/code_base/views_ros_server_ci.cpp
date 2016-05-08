@@ -43,7 +43,7 @@ namespace views
     return linked_interface_->getPlanningSpace(space);
   }
   
-  void RosServerCI::getViewSpacePtr(ViewSpace* viewspace, ViewSpaceStatus& status)
+  void RosServerCI::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
   {
     if( linked_interface_ == nullptr )
     {
@@ -88,6 +88,7 @@ namespace views
   
   bool RosServerCI::viewspaceService( ig_active_reconstruction_msgs::ViewSpaceRequest::Request& req, ig_active_reconstruction_msgs::ViewSpaceRequest::Response& res )
   {
+    ROS_INFO("Received 'viewspace' call.");
     if( linked_interface_ == nullptr )
     {
       ViewSpaceStatus status = ViewSpaceStatus::BAD;
@@ -99,6 +100,7 @@ namespace views
     ViewSpaceStatus status;
     linked_interface_->getViewSpacePtr(viewspace,status);
     
+    res.viewspace = ros_conversions::viewSpaceToMsg(*viewspace);
     res.viewspace_status = ros_conversions::viewSpaceStatusToMsg(status);
     
     return true;
@@ -106,6 +108,7 @@ namespace views
   
   bool RosServerCI::viewsAdderService( ig_active_reconstruction_msgs::ViewSpaceUpdate::Request& req, ig_active_reconstruction_msgs::ViewSpaceUpdate::Response& res )
   {
+    ROS_INFO("Received 'add view(s)' call.");
     if( linked_interface_ == nullptr )
     {
       ViewSpaceUpdateResult result = ViewSpaceUpdateResult::NOT_AVAILABLE;
@@ -126,6 +129,7 @@ namespace views
   
   bool RosServerCI::viewsDeleterService( ig_active_reconstruction_msgs::DeleteViews::Request& req, ig_active_reconstruction_msgs::DeleteViews::Response& res )
   {
+    ROS_INFO("Received 'delete view(s)' call.");
     if( linked_interface_ == nullptr )
     {
       ViewSpaceUpdateResult result = ViewSpaceUpdateResult::NOT_AVAILABLE;

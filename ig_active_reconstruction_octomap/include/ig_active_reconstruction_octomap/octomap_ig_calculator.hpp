@@ -85,13 +85,13 @@ namespace octomap
     /*! Registers an information gain with an optional Utils type constructor parameter that will then be available for calculations. It must take the TREE_TYPE as its only template argument which is being set automatically.
      */
     template<template<typename> class IG_METRIC_TYPE>
-    unsigned int registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils = typename IG_METRIC_TYPE<TREE_TYPE>::Utils() );
+    unsigned int registerInformationGain( typename IG_METRIC_TYPE<TREE_TYPE>::Utils::Config utils = typename IG_METRIC_TYPE<TREE_TYPE>::Utils() );
     
   protected:
     /*! Helper function for binding make shared.
      */
     template<template<typename> class IG_METRIC_TYPE>
-    boost::shared_ptr< InformationGain<TREE_TYPE> > makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils utils);
+    boost::shared_ptr< InformationGain<TREE_TYPE> > makeShared(typename IG_METRIC_TYPE<TREE_TYPE>::Utils::Config utils);
     
   protected:
     IgFactory ig_factory_; //! Information gain factory.

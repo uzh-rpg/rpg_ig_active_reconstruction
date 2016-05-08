@@ -32,7 +32,7 @@ namespace world_representation
 namespace octomap
 {  
   TEMPT
-  CSCOPE::AverageEntropyIg( Utils utils )
+  CSCOPE::AverageEntropyIg( Config utils )
   : utils_(utils)
   , voxel_count_(0)
   , current_ray_entropy_(0)

@@ -53,13 +53,14 @@ namespace octomap
 	Config();
 	
       public:
-	double p_unknown_prior_;//! Prior occupancy likelihood for unknown voxels. Default: 0.5.
-	double p_unknown_upper_bound_; //! Upper bound for voxels to still be considered uncertain. Default: 0.8.
-	double p_unknown_lower_bound_; //! Lower bound for voxels to still be considered uncertain. Default: 0.2.
-	unsigned int voxels_in_void_ray_; //! How many voxels are considered to be part of a void ray. Default: 100.
+	double p_unknown_prior;//! Prior occupancy likelihood for unknown voxels. Default: 0.5.
+	double p_unknown_upper_bound; //! Upper bound for voxels to still be considered uncertain. Default: 0.8.
+	double p_unknown_lower_bound; //! Lower bound for voxels to still be considered uncertain. Default: 0.2.
+	unsigned int voxels_in_void_ray; //! How many voxels are considered to be part of a void ray. Default: 100.
       } config;
       
     public:
+      Utils( Config a_config = Config() ):config(a_config){};
       
       /*! Returns the entropy for a voxel.
        */
@@ -97,6 +98,8 @@ namespace octomap
        */
       bool isFree( double likelihood);
     };
+    
+    typedef typename Utils::Config Config;
     
   public:
     

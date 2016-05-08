@@ -27,10 +27,10 @@ namespace octomap
 {  
   TEMPT
   CSCOPE::Utils::Config::Config()
-  : p_unknown_prior_(0.5)
-  , p_unknown_upper_bound_(0.8)
-  , p_unknown_lower_bound_(0.2)
-  , voxels_in_void_ray_(100)
+  : p_unknown_prior(0.5)
+  , p_unknown_upper_bound(0.8)
+  , p_unknown_lower_bound(0.2)
+  , voxels_in_void_ray(100)
   {
     
   }
@@ -63,7 +63,7 @@ namespace octomap
   TEMPT
   bool CSCOPE::Utils::isUnknown( double likelihood)
   {
-    return likelihood<=config.p_unknown_upper_bound_ && likelihood>=config.p_unknown_lower_bound_;
+    return likelihood<=config.p_unknown_upper_bound && likelihood>=config.p_unknown_lower_bound;
   }
   
   TEMPT
@@ -75,7 +75,7 @@ namespace octomap
   TEMPT
   bool CSCOPE::Utils::isOccupied( double likelihood )
   {
-    return likelihood>config.p_unknown_upper_bound_;
+    return likelihood>config.p_unknown_upper_bound;
   }
   
   TEMPT
@@ -87,7 +87,7 @@ namespace octomap
   TEMPT
   bool CSCOPE::Utils::isFree( double likelihood )
   {
-    return likelihood<config.p_unknown_lower_bound_;
+    return likelihood<config.p_unknown_lower_bound;
   }
   
   TEMPT
@@ -97,11 +97,11 @@ namespace octomap
     
     if( voxel==NULL )
     {
-      p_occ=config.p_unknown_prior_; // default for unknown
+      p_occ=config.p_unknown_prior; // default for unknown
     }
     else if( !voxel->hasMeasurement() )
     {
-	p_occ=config.p_unknown_prior_; // default for unknown
+	p_occ=config.p_unknown_prior; // default for unknown
     }
     else
     {

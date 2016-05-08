@@ -21,13 +21,16 @@ namespace ros_tools
 {
   /*! Class that listens on a pcl topic and reroutes what it receives to another pcl topic or to a service.
    * Current implementation forwards single packages on demand.
-   * 
-   * Listens to "in", publishes to "out"
    */
   class PclRerouter
   {
   public:
-    PclRerouter( ros::NodeHandle nh );
+    /*! Constructor.
+     * @param nh Node handle through which ROS communication is registered
+     * @param in_name Input name (Where pcl input is retrieved, relative to node namespace)
+     * @param out_name How outputs (srv/topic) are advertised (relative to node namespace)
+     */
+    PclRerouter( ros::NodeHandle nh, std::string in_name="in", std::string out_name="out" );
     
     /*! Reroutes the next incoming pointcloud to the output.
      * @param max_wait_time Max wait time before rerouting is considered to have failed.

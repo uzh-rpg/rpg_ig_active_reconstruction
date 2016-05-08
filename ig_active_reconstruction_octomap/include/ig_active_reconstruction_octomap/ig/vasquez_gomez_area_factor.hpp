@@ -32,6 +32,9 @@ namespace octomap
   class VasquezGomezAreaFactorIg: public InformationGain<TREE_TYPE>
   {
   public:
+    typedef typename InformationGain<TREE_TYPE>::GainType GainType;
+    typedef typename InformationGain<TREE_TYPE>::Utils::Config Config;
+    
     class Utils: public InformationGain<TREE_TYPE>::Utils
     {
     public:
@@ -45,15 +48,16 @@ namespace octomap
 	double p_occplane_des_; //! Desired occplane percentage. Default: 0.8
       } vasquez_config;
       
+    public:
+      Utils( Config a_config = Config() ):InformationGain<TREE_TYPE>::Utils(a_config){};
     };
     
-    typedef typename InformationGain<TREE_TYPE>::GainType GainType;
     
   public:
     
     /*! Constructor
      */
-    VasquezGomezAreaFactorIg( Utils utils = Utils() );
+    VasquezGomezAreaFactorIg( Config config = Config() );
     
     /*! Returns the name of the method.
      */

@@ -32,7 +32,7 @@ namespace world_representation
 namespace octomap
 {  
   TEMPT
-  CSCOPE::ProximityCountIg( Utils utils )
+  CSCOPE::ProximityCountIg( Config utils )
   : utils_(utils)
   , ig_(0)
   , voxel_count_(0)

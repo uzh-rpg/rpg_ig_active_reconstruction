@@ -80,6 +80,8 @@ namespace robot
   
   bool RosServerCI::currentViewService( ig_active_reconstruction_msgs::ViewRequest::Request& req, ig_active_reconstruction_msgs::ViewRequest::Response& res )
   {
+    
+    ROS_INFO("Received current view call.");
     if( linked_interface_ == nullptr )
     {
       return false;
@@ -93,6 +95,7 @@ namespace robot
   
   bool RosServerCI::retrieveDataService( ig_active_reconstruction_msgs::RetrieveData::Request& req, ig_active_reconstruction_msgs::RetrieveData::Response& res )
   {
+    ROS_INFO("Received 'retrieve data' call.");
     if( linked_interface_ == nullptr )
     {
       ReceptionInfo inf = ReceptionInfo::FAILED;
@@ -108,6 +111,7 @@ namespace robot
   
   bool RosServerCI::movementCostService( ig_active_reconstruction_msgs::MovementCostCalculation::Request& req, ig_active_reconstruction_msgs::MovementCostCalculation::Response& res )
   {
+    ROS_INFO("Received 'movement cost' call.");
     MovementCost cost;
     
     if( linked_interface_ == nullptr )
@@ -129,6 +133,7 @@ namespace robot
   
   bool RosServerCI::moveToService( ig_active_reconstruction_msgs::MoveToOrder::Request& req, ig_active_reconstruction_msgs::MoveToOrder::Response& res )
   {
+    ROS_INFO("Received 'move to position' call.");
     if( linked_interface_ == nullptr )
     {
       res.success = false;
