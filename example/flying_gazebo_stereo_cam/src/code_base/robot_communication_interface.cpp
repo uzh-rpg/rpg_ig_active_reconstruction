@@ -16,6 +16,8 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include "flying_gazebo_stereo_cam/robot_communication_interface.hpp"
 
+#include <thread>
+
 namespace flying_gazebo_stereo_cam
 {
   
@@ -85,7 +87,10 @@ namespace flying_gazebo_stereo_cam
   
   bool CommunicationInterface::moveTo( View& target_view )
   {
-    return cam_controller_->moveTo(target_view.pose());
+    bool success = cam_controller_->moveTo(target_view.pose());
+    
+    std::this_thread::sleep_for(std::chrono::seconds(3)); // give gazebo time to execute movement command (TODO test: maybe just wait until current pose has changed?)
+    return success;
   }
   
   

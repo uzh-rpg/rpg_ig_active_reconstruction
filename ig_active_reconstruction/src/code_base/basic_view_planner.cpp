@@ -217,7 +217,7 @@ namespace ig_active_reconstruction
       // check termination criteria ...............................................
       if( goal_evaluation_module_->isDone() )
       {
-	std::cout<<"\n\nTerminatin criteria was fulfilled. Reconstruction procedure ends.\n\n";
+	std::cout<<"\n\nTermination criteria was fulfilled. Reconstruction procedure ends.\n\n";
 	break;
       }
       

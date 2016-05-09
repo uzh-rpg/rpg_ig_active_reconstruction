@@ -71,10 +71,11 @@ namespace flying_gazebo_stereo_cam
       throw std::runtime_error("flying_gazebo_stereo_cam::Controller::currentPose:: Couldn't get camera pose.");
     
     movements::Pose current_pose_model = movements::fromROS(current_state.response.pose);
-    movements::Pose current_pose_cam;
-    current_pose_cam.orientation = cam_to_image_*current_pose_model.orientation;
     
-    return current_pose_cam;
+    
+    current_pose_model.orientation = current_pose_model.orientation*(cam_to_image_.inverse());
+    
+    return current_pose_model;
   }
   
   void Controller::startTfPublisher(std::string camera_frame_name, std::string world_frame_name)
