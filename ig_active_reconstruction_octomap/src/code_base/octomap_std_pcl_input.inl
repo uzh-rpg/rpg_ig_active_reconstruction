@@ -34,7 +34,7 @@ namespace octomap
   TEMPT
   CSCOPE::Config::Config()
   : use_bounding_box(false)
-  , bounding_box_min_point_m( std::numeric_limits<double>::min(), std::numeric_limits<double>::min(), std::numeric_limits<double>::min() )
+  , bounding_box_min_point_m( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest() )
   , bounding_box_max_point_m( std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max() )
   , max_sensor_range_m(-1)
   {

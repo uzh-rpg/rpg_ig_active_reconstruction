@@ -110,7 +110,7 @@ namespace ig_active_reconstruction
     
     // calculate utility and choose nbv
     views::View::IdType nbv;
-    double best_util = std::numeric_limits<double>::min();
+    double best_util = std::numeric_limits<double>::lowest();
     
     double cost_factor;
     
@@ -125,12 +125,14 @@ namespace ig_active_reconstruction
     for( unsigned int i=0; i<id_set.size(); ++i )
     {
       double utility = ig_vector[i]/total_ig - cost_factor*cost_vector[i];
+      //std::cout<<"\nutility of view "<<id_set[i]<<": "<<utility;
       if( utility>best_util )
       {
 	best_util = utility;
 	nbv = id_set[i];
       }
     }
+    
     return nbv;
   }
     
