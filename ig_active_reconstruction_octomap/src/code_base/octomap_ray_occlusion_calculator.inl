@@ -45,11 +45,14 @@ namespace octomap
     
     point3d sensor_origin(origin(0),origin(1),origin(2));
     KeyRay ray;
-    
+    std::cout<<"\nCalculating occlusion for "<<valid_indices.size()<<" points.";
     //typename POINTCLOUD_TYPE::const_iterator it, end;    
     //for(it = pcl.begin(), end = pcl.end(); it != end; ++it)
     for( size_t i = 0; i<valid_indices.size(); ++i )
     {
+      if( i%1000==0)
+	std::cout<<"\ncalculating occlusion for point "<<i<<"/"<<valid_indices.size();
+      
       //point3d point(it->x, it->y, it->z);
       point3d point(pcl.points[valid_indices[i]].x, pcl.points[valid_indices[i]].y, pcl.points[valid_indices[i]].z);
       point3d curr_ray = point - sensor_origin;
@@ -62,7 +65,7 @@ namespace octomap
 	  
 	  if(occ!=end)
 	  {
-	      for( unsigned int i=0; occ!=end; ++i, ++occ )
+	      for( unsigned int dist=0; occ!=end; ++dist, ++occ )
 	      {
 		  typename TREE_TYPE::NodeType* voxel = this->link_.octree->search(*occ);
 				  
@@ -70,7 +73,7 @@ namespace octomap
 		  {
 		      if( !voxel->hasMeasurement() )
 		      {
-			  voxel->updateOccDist( i );
+			  voxel->updateOccDist( dist );
 		      }
 		      else
 		      {
@@ -79,10 +82,10 @@ namespace octomap
 		  }
 		  else
 		  {
-		      voxel = this->link_.octree->updateNode(*occ, false, 0.1); //random distance
+		      voxel = this->link_.octree->updateNode(*occ, false, 0.1);
 		      // the occupancy probability will be ignored during an actual update with the following call:
 		      voxel->updateHasMeasurement(false);
-		      voxel->updateOccDist( i );
+		      voxel->updateOccDist( dist );
 		  }
 	      }
 	  }

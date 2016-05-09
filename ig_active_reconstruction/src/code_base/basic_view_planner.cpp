@@ -216,14 +216,17 @@ namespace ig_active_reconstruction
       
       // check termination criteria ...............................................
       if( goal_evaluation_module_->isDone() )
+      {
+	std::cout<<"\n\nTerminatin criteria was fulfilled. Reconstruction procedure ends.\n\n";
 	break;
+      }
       
       // move to next best view....................................................
       bool successfully_moved = false;
       do
       {
 	status_ = Status::DEMANDING_MOVE;
-	robot_comm_unit_->moveTo(nbv);
+	successfully_moved = robot_comm_unit_->moveTo(nbv);
 	
 	if( !runProcedure_ ) // exit point
 	{

@@ -19,7 +19,7 @@
     <param name="bounding_box_max_point_m/x" value="3.0" />
     <param name="bounding_box_max_point_m/y" value="3.0" />
     <param name="bounding_box_max_point_m/z" value="3.0" />
-    <param name="max_sensor_range_m" value="-1" />
+    <param name="max_sensor_range_m" value="1.5" />
     
     <!-- Occlusion calculation configuration -->
     <param name="occlusion_update_dist_m" value="0.3" />

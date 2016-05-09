@@ -34,7 +34,7 @@ namespace octomap
   TEMPT
   CSCOPE::Config::Config()
   : use_bounding_box(false)
-  , bounding_box_min_point_m( std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest() )
+  , bounding_box_min_point_m( -std::numeric_limits<double>::max(), -std::numeric_limits<double>::max(), -std::numeric_limits<double>::max() )
   , bounding_box_max_point_m( std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max() )
   , max_sensor_range_m(-1)
   {
@@ -82,6 +82,9 @@ namespace octomap
     
     pcl::removeNaNFromPointCloud(*pc_cpy,valid_indices);
     
+    std::cout<<"Inserting "<<pc_cpy->points.size()<<" valid points.";
+    
+    
     // insert points into octree through raycasting
     Eigen::Vector3d sensor_position = sensor_to_world.translation();
     
@@ -106,6 +109,8 @@ namespace octomap
       // maxrange check
       point3d curr_ray = point - sensor_origin;
       
+      if(i%100==0)
+	std::cout<<"\nBuilding iterator set: "<<i<<"/"<<valid_indices.size();
       
       if ((config_.max_sensor_range_m< 0.0) || (curr_ray.norm() <= (config_.max_sensor_range_m+0.000001)) )
       {
@@ -135,8 +140,12 @@ namespace octomap
     // update occupancy likelihoods
     
     // mark free cells only if not seen occupied in this cloud - attention: voxels may already exist even though no actual measurement has yet been received at their position (e.g. if their occlusion distance was calculated) - need to check hasMeasurement()!
+    size_t count = 0;
     for(KeySet::iterator it = free_cells.begin(), end=free_cells.end(); it!= end; ++it)
     {
+      if( count++%1000==0)
+	std::cout<<"\nInserting free: "<<count<<"/"<<free_cells.size();
+      
       if( occupied_cells.find(*it) == occupied_cells.end() )
       {
 	typename TREE_TYPE::NodeType* voxel = this->link_.octree->search(*it);
@@ -162,9 +171,13 @@ namespace octomap
       }
     }
     
+    count = 0;
     // now mark all occupied cells:
     for (KeySet::iterator it = occupied_cells.begin(), end=free_cells.end(); it!= end; ++it)
     {
+      if( count++%100==0)
+	std::cout<<"\nInserting occupied: "<<count<<"/"<<occupied_cells.size();
+      
       typename TREE_TYPE::NodeType* voxel = this->link_.octree->search(*it);
       
       if( voxel==NULL )
@@ -186,7 +199,11 @@ namespace octomap
 	}
       }
     }
+    std::cout<<"\nCalling occlusion calculator";
+    std::cout<<"\nCalling occlusion calculator";
     this->occlusion_calculator_->insert(sensor_position,*pc_cpy,valid_indices);
+    std::cout<<"\nFinsihed calculations";
+    std::cout<<"\nFinsihed calculations";
   }
   
   
