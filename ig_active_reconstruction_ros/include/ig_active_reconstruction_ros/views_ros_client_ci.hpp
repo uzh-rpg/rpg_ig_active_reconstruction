@@ -34,16 +34,11 @@ namespace views
      * @param nh ROS node handle defines the namespace in which ROS communication will be carried out.
      */
     RosClientCI( ros::NodeHandle nh );
-  
+    
     /*! Returns the view space that is available for planning.
       * @param _space pointer to the ViewSpace object that should be filled
-      * @return false if it failed or the robot does not provide such a service.
       */
-    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* _space );
-    
-    /*! Returns a pointer to the internal viewspace
-     */
-    virtual void getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status);
+    virtual const ViewSpace& getViewSpace();
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.
@@ -73,6 +68,8 @@ namespace views
     ros::ServiceClient planning_space_receiver_;
     ros::ServiceClient views_adder_;
     ros::ServiceClient views_deleter_;
+    
+    ViewSpace viewspace_;
   };
   
 }

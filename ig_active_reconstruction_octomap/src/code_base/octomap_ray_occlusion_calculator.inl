@@ -35,7 +35,7 @@ namespace octomap
   }
   
   TEMPT
-  void CSCOPE::insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )
+  void CSCOPE::insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl, std::vector<int>& valid_indices  )
   {
     if( this->link_.octree==NULL )
       return;
@@ -46,10 +46,12 @@ namespace octomap
     point3d sensor_origin(origin(0),origin(1),origin(2));
     KeyRay ray;
     
-    typename POINTCLOUD_TYPE::const_iterator it, end;    
-    for(it = pcl.begin(), end = pcl.end(); it != end; ++it)
+    //typename POINTCLOUD_TYPE::const_iterator it, end;    
+    //for(it = pcl.begin(), end = pcl.end(); it != end; ++it)
+    for( size_t i = 0; i<valid_indices.size(); ++i )
     {
-      point3d point(it->x, it->y, it->z);
+      //point3d point(it->x, it->y, it->z);
+      point3d point(pcl.points[valid_indices[i]].x, pcl.points[valid_indices[i]].y, pcl.points[valid_indices[i]].z);
       point3d curr_ray = point - sensor_origin;
       
       point3d new_end = point + curr_ray.normalized() * occlusion_update_dist_m_;

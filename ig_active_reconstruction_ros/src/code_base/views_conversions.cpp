@@ -24,7 +24,7 @@ namespace ig_active_reconstruction
 namespace ros_conversions
 {
   
-  ig_active_reconstruction_msgs::ViewMsg viewToMsg( views::View& view )
+  ig_active_reconstruction_msgs::ViewMsg viewToMsg( const views::View& view )
   {
     ig_active_reconstruction_msgs::ViewMsg msg;
     msg.pose = movements::toROS( view.pose() );
@@ -52,10 +52,10 @@ namespace ros_conversions
     return view;
   }
   
-  ig_active_reconstruction_msgs::ViewSpaceMsg viewSpaceToMsg( views::ViewSpace& view_space )
+  ig_active_reconstruction_msgs::ViewSpaceMsg viewSpaceToMsg( const views::ViewSpace& view_space )
   {
     ig_active_reconstruction_msgs::ViewSpaceMsg msg;
-    for( views::View& view: view_space )
+    for( views::View const & view: view_space )
     {
       msg.views.push_back( viewToMsg(view) );
     }

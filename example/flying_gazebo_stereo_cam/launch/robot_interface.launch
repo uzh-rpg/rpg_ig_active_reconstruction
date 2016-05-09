@@ -31,13 +31,5 @@
   <include file="$(find flying_gazebo_stereo_cam)/launch/simple_viewspace_module.launch" />
   
   <!-- Robot interface with configuration -->
-  <node pkg="flying_gazebo_stereo_cam" type="robot_interface" name="robot_interface" clear_params="true" output="screen">
-    
-    <param name="model_name" value="flying_stereo_cam" />
-    <param name="camera_frame_name" value="cam_pos" />
-    <param name="world_frame_name" value="world" />
-    <param name="sensor_in_topic" value="/camera/points2" />
-    <param name="sensor_out_name" value="world/pcl_input" />
-    
-  </node>
+  <include file="$(find flying_gazebo_stereo_cam)/launch/flying_gazebo_stereo_cam.launch" />
 </launch>

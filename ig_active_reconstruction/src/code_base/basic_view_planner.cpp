@@ -168,7 +168,7 @@ namespace ig_active_reconstruction
     do
     {
       status_ = Status::DEMANDING_VIEWSPACE;
-      viewspace_status = views_comm_unit_->getPlanningSpace( viewspace_.get() );
+      *viewspace_ = views_comm_unit_->getViewSpace();
       
       if( !runProcedure_ ) // exit point
 	{
@@ -178,7 +178,7 @@ namespace ig_active_reconstruction
 	}
       pausePoint();
       
-    }while( viewspace_status!=views::CommunicationInterface::ViewSpaceStatus::OK );
+    }while( viewspace_->empty() );
     
     do
     {

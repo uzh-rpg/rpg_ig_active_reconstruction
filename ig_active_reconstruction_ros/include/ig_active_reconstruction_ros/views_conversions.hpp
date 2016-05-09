@@ -32,7 +32,7 @@ namespace ros_conversions
   
     /*! Converts a view to a view message.
       */
-    ig_active_reconstruction_msgs::ViewMsg viewToMsg( views::View& view );
+    ig_active_reconstruction_msgs::ViewMsg viewToMsg( const views::View& view );
 
     /*! Constructs a new view from a view message.
       */
@@ -40,7 +40,7 @@ namespace ros_conversions
     
     /** Creates a view space msg with the content of the view space
     */
-    ig_active_reconstruction_msgs::ViewSpaceMsg viewSpaceToMsg( views::ViewSpace& view_space );
+    ig_active_reconstruction_msgs::ViewSpaceMsg viewSpaceToMsg( const views::ViewSpace& view_space );
     
     /** Construct view space from message */
     views::ViewSpace viewSpaceFromMsg( ig_active_reconstruction_msgs::ViewSpaceMsg& msg );

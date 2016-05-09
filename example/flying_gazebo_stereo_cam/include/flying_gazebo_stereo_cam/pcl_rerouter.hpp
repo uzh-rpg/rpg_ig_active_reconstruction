@@ -36,7 +36,7 @@ namespace ros_tools
      * @param max_wait_time Max wait time before rerouting is considered to have failed.
      * @return True if a data packet was rerouted.
      */
-    bool rerouteOneToTopic(ros::Duration max_wait_time = ros::Duration(0.01));
+    bool rerouteOneToTopic(ros::Duration max_wait_time = ros::Duration(1));
     
     
     /*! Reroutes the next incoming pointcloud to the service.

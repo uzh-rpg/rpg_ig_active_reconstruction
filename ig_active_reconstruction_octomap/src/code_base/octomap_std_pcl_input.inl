@@ -21,6 +21,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/filter_indices.h>
 
 namespace ig_active_reconstruction
 {
@@ -54,6 +55,8 @@ namespace octomap
     
     typename POINTCLOUD_TYPE::Ptr pc_cpy = pc.makeShared();
     
+    std::vector<int> valid_indices;
+    
     // filter out everything not within bounding box, also removes NANS
     if( config_.use_bounding_box )
     {
@@ -77,6 +80,8 @@ namespace octomap
       pass_y.filter(*pc_cpy);
     }
     
+    pcl::removeNaNFromPointCloud(*pc_cpy,valid_indices);
+    
     // insert points into octree through raycasting
     Eigen::Vector3d sensor_position = sensor_to_world.translation();
     
@@ -93,9 +98,11 @@ namespace octomap
     KeyRay key_ray_temp;
     
     typename POINTCLOUD_TYPE::const_iterator it, end;
-    for(it = pc_cpy->begin(), end = pc_cpy->end(); it != end; ++it)
+    //for(it = pc_cpy->begin(), end = pc_cpy->end(); it != end; ++it)
+    for( size_t i = 0; i<valid_indices.size(); ++i )
     {
-      point3d point(it->x, it->y, it->z);
+      //point3d point(it->x, it->y, it->z);
+      point3d point(pc_cpy->points[valid_indices[i]].x, pc_cpy->points[valid_indices[i]].y, pc_cpy->points[valid_indices[i]].z);
       // maxrange check
       point3d curr_ray = point - sensor_origin;
       
@@ -179,7 +186,7 @@ namespace octomap
 	}
       }
     }
-    this->occlusion_calculator_->insert(sensor_position,*pc_cpy);
+    this->occlusion_calculator_->insert(sensor_position,*pc_cpy,valid_indices);
   }
   
   

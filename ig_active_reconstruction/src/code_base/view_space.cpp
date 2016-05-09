@@ -36,8 +36,9 @@ std::vector<View, Eigen::aligned_allocator<View> > ViewSpace::getViewSpace()
 
 void ViewSpace::getGoodViewSpace( IdSet& out, bool ignore_visited )
 {
-  for( View& view: view_space_ )
+  for( auto& pair: views_index_map_ )
   {
+    View& view = pair.second;
     if( view.reachable() && (view.timesVisited()==0||!ignore_visited) && !view.bad() )
     {
       out.push_back(view.index());
@@ -49,24 +50,28 @@ View ViewSpace::getView( View::IdType index )
 {
   try
   {
-    return *(views_index_map_.at(index));
+      std::cout<<"\ngot viewspace index: "<<index;
+      std::cout<<"\ngot viewspace getView: "<<__LINE__;
+    return views_index_map_.at(index);
   }
   catch(...)
   {
+   std::cout<<"\nFailed index: "<<index;
+   std::cout<<"\nFailed index: "<<index;
     throw std::out_of_range("ViewSpace::getView: the given index is out of range");
   }
 }
 
 bool ViewSpace::deleteView( View::IdType index )
 {
-  decltype(view_space_)::iterator it = view_space_.begin();
-  decltype(view_space_)::iterator end = view_space_.end();
+  decltype(views_index_map_)::iterator it = views_index_map_.begin();
+  decltype(views_index_map_)::iterator end = views_index_map_.end();
   
   for( ; it!=end; ++it )
   {
-    if( it->index()==index )
+    if( it->second.index()==index )
     {
-      view_space_.erase(it);
+      views_index_map_.erase(it);
       recalculateIndexMap();
       return true;
     }
@@ -89,7 +94,7 @@ unsigned int ViewSpace::timesVisited( View::IdType index )
 {
   try
   {
-    return views_index_map_.at(index)->timesVisited();
+    return static_cast<View&>(views_index_map_.at(index)).timesVisited();
   }
   catch(...)
   {
@@ -101,7 +106,8 @@ void ViewSpace::setBad( View::IdType index )
 {
   try
   {
-    views_index_map_.at(index)->bad()=true;
+    static_cast<View&>(views_index_map_.at(index)).bad()=true;
+    return;
   }
   catch(...)
   {
@@ -113,7 +119,8 @@ void ViewSpace::setGood( View::IdType index )
 {
   try
   {
-    views_index_map_.at(index)->bad()=false;
+    static_cast<View&>(views_index_map_.at(index)).bad()=false;
+    return;
   }
   catch(...)
   {
@@ -125,7 +132,8 @@ void ViewSpace::setVisited( View::IdType index )
 {
   try
   {
-    views_index_map_.at(index)->timesVisited() += 1;
+    static_cast<View&>(views_index_map_.at(index)).timesVisited() += 1;
+    return;
   }
   catch(...)
   {
@@ -137,7 +145,8 @@ void ViewSpace::setUnReachable( View::IdType index )
 {
   try
   {
-    views_index_map_.at(index)->reachable() = false;
+    static_cast<View&>(views_index_map_.at(index)).reachable() = false;
+    return;
   }
   catch(...)
   {
@@ -149,7 +158,8 @@ void ViewSpace::setReachable( View::IdType index )
 {
   try
   {
-    views_index_map_.at(index)->reachable() = true;
+    static_cast<View&>(views_index_map_.at(index)).reachable() = true;
+    return;
   }
   catch(...)
   {
@@ -160,22 +170,24 @@ void ViewSpace::setReachable( View::IdType index )
 
 void ViewSpace::push_back( View new_vp )
 {
-  view_space_.push_back(new_vp);
-  views_index_map_[new_vp.index()] = &view_space_.back();
+  //view_space_.push_back(new_vp);
+  //View& view_ref = view_space_.back();
+  views_index_map_[new_vp.index()] = new_vp;//std::reference_wrapper<View>(view_ref);
 }
 
 View ViewSpace::getAClosestNeighbour( View& _view )
 {
-  if( view_space_.empty() )
+  if( views_index_map_.empty() )
     throw std::runtime_error("ViewSpace::getAClosestNeighbour::Cannot find a closest neighbour since the view space is empty.");
     
   Eigen::Vector3d probe = _view.pose().position;
-  View closest = view_space_[0];
+  View closest = (views_index_map_.begin())->second;//view_space_[0];
   Eigen::Vector3d dist_vec = probe - closest.pose().position;
   double distance = dist_vec.norm();
   
-  for( auto& view: view_space_ )
+  for( auto& pair: views_index_map_ )
   {
+    View& view = pair.second;
     dist_vec = probe - view.pose().position;
     double norm = dist_vec.norm();
     if( norm<distance )
@@ -189,13 +201,14 @@ View ViewSpace::getAClosestNeighbour( View& _view )
 
 unsigned int ViewSpace::size()
 {
-  return view_space_.size();
+  return views_index_map_.size();
 }
 
 void ViewSpace::getViewsInRange( View& _reference_view, double _distance, std::vector<View, Eigen::aligned_allocator<View> >& _sub_space )
 {
-  for( auto& view: view_space_ )
+  for( auto& pair: views_index_map_ )
   {
+    View& view = pair.second;
     Eigen::Vector3d dist_vec = view.pose().position - _reference_view.pose().position;
     if( dist_vec.norm()<=_distance )
     {
@@ -208,12 +221,14 @@ void ViewSpace::saveToFile( std::string _filename )
 {
   std::ofstream out( _filename, std::ofstream::trunc );
   
-  out<<view_space_.size();
+  out<<views_index_map_.size();
   
-  for( unsigned int i=0; i<view_space_.size(); ++i )
+  //for( unsigned int i=0; i<view_space_.size(); ++i )
+  for( auto& pair: views_index_map_)
   {
+    View& view = pair.second;
     out<<"\n";
-    movements::Pose pose = view_space_[i].pose();
+    movements::Pose pose = view.pose();//view_space_[i].pose();
     out << pose.position.x();
     out << " " << pose.position.y();
     out << " " << pose.position.z();
@@ -254,35 +269,166 @@ void ViewSpace::loadFromFile( std::string _filename )
     new_pose.reachable() = true;
     new_pose.timesVisited() = 0;
     
-    view_space_.push_back(new_pose);
-    views_index_map_[new_pose.index()] = &view_space_.back();
+    //view_space_.push_back(new_pose);
+    views_index_map_[new_pose.index()] = new_pose;//view_space_.back();
   }
 }
 
 ViewSpace::Iterator ViewSpace::begin()
 {
-  return view_space_.begin();
+  return Iterator(views_index_map_.begin());
+}
+
+ViewSpace::ConstIterator ViewSpace::begin() const
+{
+  return ConstIterator(views_index_map_.begin());
 }
 
 ViewSpace::Iterator ViewSpace::end()
 {
-  return view_space_.end();
+  return Iterator(views_index_map_.end());
+}
+
+ViewSpace::ConstIterator ViewSpace::end() const
+{
+  return ConstIterator(views_index_map_.end());
 }
 
 bool ViewSpace::empty() const
 {
-  return view_space_.empty();
+  return views_index_map_.empty();
 }
 
 void ViewSpace::recalculateIndexMap()
 {
-  views_index_map_.clear();
+  /*views_index_map_.clear();
   
   for( View& view: view_space_ )
   {
-    views_index_map_[view.index()] = &view;
-  }
+    views_index_map_[view.index()] = view;
+  }*/
 }
+
+// Iterator ***************************************************************************
+  ViewSpace::Iterator::Iterator()
+  {
+    
+  }
+  
+  ViewSpace::Iterator::Iterator(InternalIteratorType it)
+  : it_(it)
+  {
+    
+  }
+  
+  bool ViewSpace::Iterator::operator==(const Iterator& it) const
+  {
+    return it_==it.it_;
+  }
+  
+  bool ViewSpace::Iterator::operator!=(const Iterator& it) const
+  {
+    return it_!=it.it_;
+  }
+  
+  
+  View& ViewSpace::Iterator::operator*() const
+  {
+    return it_->second;
+  }
+  
+  View* ViewSpace::Iterator::operator->() const
+  {
+    return &it_->second;
+  }
+  
+  
+  ViewSpace::Iterator& ViewSpace::Iterator::operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  
+  ViewSpace::Iterator ViewSpace::Iterator::operator++(int)
+  {
+    Iterator copy = *this;
+    ++it_;
+    return copy;
+  }
+  
+  
+  ViewSpace::Iterator& ViewSpace::Iterator::operator--()
+  {
+    --it_;
+    return *this;
+  }
+  
+  ViewSpace::Iterator ViewSpace::Iterator::operator--(int)
+  {
+    Iterator copy = *this;
+    --it_;
+    return copy;
+  }
+/* const iterator: */
+  ViewSpace::ConstIterator::ConstIterator()
+  {
+    
+  }
+  
+  ViewSpace::ConstIterator::ConstIterator(InternalIteratorType it)
+  : it_(it)
+  {
+    
+  }
+  
+  bool ViewSpace::ConstIterator::operator==(const ConstIterator& it) const
+  {
+    return it_==it.it_;
+  }
+  
+  bool ViewSpace::ConstIterator::operator!=(const ConstIterator& it) const
+  {
+    return it_!=it.it_;
+  }
+  
+  
+  const View& ViewSpace::ConstIterator::operator*() const
+  {
+    return it_->second;
+  }
+  
+  const View* ViewSpace::ConstIterator::operator->() const
+  {
+    return &it_->second;
+  }
+  
+  
+  ViewSpace::ConstIterator& ViewSpace::ConstIterator::operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  
+  ViewSpace::ConstIterator ViewSpace::ConstIterator::operator++(int)
+  {
+    ConstIterator copy = *this;
+    ++it_;
+    return copy;
+  }
+  
+  
+  ViewSpace::ConstIterator& ViewSpace::ConstIterator::operator--()
+  {
+    --it_;
+    return *this;
+  }
+  
+  ViewSpace::ConstIterator ViewSpace::ConstIterator::operator--(int)
+  {
+    ConstIterator copy = *this;
+    --it_;
+    return copy;
+  }
 
 }
 

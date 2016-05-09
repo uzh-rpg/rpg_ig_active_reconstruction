@@ -35,6 +35,7 @@ namespace ros_tools
   {
     has_published_one_ = false;
     forward_one_ = true;
+    ros::spinOnce();
     
     ros::Time time_limit = ros::Time::now() + max_wait_time;
     ros::Duration sleep_time;
@@ -42,6 +43,7 @@ namespace ros_tools
     
     while(!has_published_one_ && ros::Time::now()<time_limit)
     {
+      ros::spinOnce();
       sleep_time.sleep();
     }
     forward_one_ = false;
@@ -53,8 +55,11 @@ namespace ros_tools
   {
     has_published_one_ = false;
     one_to_srv_ = true;
+    ros::spinOnce();
+    
     while( one_to_srv_ && nh_.ok() )
     {
+      ros::spinOnce();
       ros::Duration(0.01).sleep();
     }
     return service_response_;

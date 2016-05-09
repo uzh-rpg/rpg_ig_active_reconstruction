@@ -39,16 +39,10 @@ namespace views
      * @param linked_interface (optional) directly add the interface that is linked internally (to which requests are forwarded.
      */
     RosServerCI( ros::NodeHandle nh, boost::shared_ptr<CommunicationInterface> linked_interface = nullptr );
-  
-    /*! Returns the view space that is available for planning.
-      * @param _space pointer to the ViewSpace object that should be filled
-      * @return false if it failed or the robot does not provide such a service.
-      */
-    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* space );
     
-    /*! Returns a pointer to the internal viewspace
-     */
-    virtual void getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status);
+    /*! Returns the viewspace.
+      */
+    virtual const ViewSpace & getViewSpace();
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.

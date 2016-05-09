@@ -49,24 +49,30 @@ public:
   
   /*! grants access to the pose */
   movements::Pose& pose();
+  const movements::Pose& pose() const;
   
   /*! grants access to the source frame description */
   std::string& sourceFrame();
+  const std::string& sourceFrame() const;
   
   /*! whether this view is reachable by the robot
    */
   bool& reachable();
+  const bool& reachable() const;
   
   /*! how many times this view has already been visited */
   unsigned int& timesVisited();
+  const unsigned int& timesVisited() const;
   
   /*! this view has been bad, or not
    */
   bool& bad();
+  const bool& bad() const;
   
   /*! Whether this view is part of a viewspace or not.
    */
   bool& nonViewSpace();
+  const bool& nonViewSpace() const;
   
   /*! get the associated data */
   boost::shared_ptr<ViewInfo>& associatedData();
@@ -78,10 +84,12 @@ public:
   /*! Returns names of additional fields
    */
   std::vector<std::string>& additionalFieldsNames();
+  const std::vector<std::string>& additionalFieldsNames() const;
   
   /*! Returns values of additional fields.
    */
   std::vector<double>& additionalFieldsValues();
+  const std::vector<double>& additionalFieldsValues() const;
   
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   

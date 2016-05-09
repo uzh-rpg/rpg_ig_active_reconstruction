@@ -35,23 +35,12 @@ namespace views
     views_deleter_service_ = nh.advertiseService("views/delete", &RosServerCI::viewsDeleterService, this );
   }
     
-  RosServerCI::ViewSpaceStatus RosServerCI::getPlanningSpace( ViewSpace* space )
+  const ViewSpace& RosServerCI::getViewSpace()
   {
     if( linked_interface_ == nullptr )
       throw std::runtime_error("views::RosServerCI::Interface not linked.");
     
-    return linked_interface_->getPlanningSpace(space);
-  }
-  
-  void RosServerCI::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
-  {
-    if( linked_interface_ == nullptr )
-    {
-      status = views::CommunicationInterface::ViewSpaceStatus::NONE_AVAILABLE;
-      return;
-    }
-    
-    return linked_interface_->getViewSpacePtr(viewspace, status);
+    return linked_interface_->getViewSpace();
   }
   
   RosServerCI::ViewSpaceUpdateResult RosServerCI::addViews( std::vector<View>& new_views )
@@ -96,11 +85,11 @@ namespace views
       return true;
     }
     
-    ViewSpace* viewspace;
-    ViewSpaceStatus status;
-    linked_interface_->getViewSpacePtr(viewspace,status);
+    const ViewSpace& viewspace = linked_interface_->getViewSpace();
     
-    res.viewspace = ros_conversions::viewSpaceToMsg(*viewspace);
+    res.viewspace = ros_conversions::viewSpaceToMsg(viewspace);
+    
+    ViewSpaceStatus status = ViewSpaceStatus::OK;
     res.viewspace_status = ros_conversions::viewSpaceStatusToMsg(status);
     
     return true;

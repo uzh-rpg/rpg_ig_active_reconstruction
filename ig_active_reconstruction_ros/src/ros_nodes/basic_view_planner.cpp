@@ -38,9 +38,10 @@ int main(int argc, char **argv)
   
   namespace iar = ig_active_reconstruction;
   
+  /*std::vector<View, Eigen::aligned_allocator<View> > view_space_;
+  std::map<View::IdType, std::reference_wrapper<View> > views_index_map_;
   
-  
-  
+  return 0;*/
   // load parameter configuration
   // ...................................................................................................................
   

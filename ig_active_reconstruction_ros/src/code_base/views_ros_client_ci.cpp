@@ -38,26 +38,17 @@ namespace views
     views_deleter_ = nh.serviceClient<ig_active_reconstruction_msgs::DeleteViews>("views/delete");
   }
   
-  RosClientCI::ViewSpaceStatus RosClientCI::getPlanningSpace( ViewSpace* space )
+  const ViewSpace& RosClientCI::getViewSpace()
   {
     ig_active_reconstruction_msgs::ViewSpaceRequest call;
     
     ROS_INFO("Demanding viewspace.");
     bool response = planning_space_receiver_.call(call);
     
-    if( !response )
-      return ViewSpaceStatus::BAD;
+    if( response )
+      viewspace_ = ros_conversions::viewSpaceFromMsg(call.response.viewspace);
     
-    *space = ros_conversions::viewSpaceFromMsg(call.response.viewspace);
-    
-    return ros_conversions::viewSpaceStatusFromMsg(call.response.viewspace_status);
-  }
-  
-  void RosClientCI::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
-  {
-    status = ViewSpaceStatus::NONE_AVAILABLE;
-    
-    return;
+    return viewspace_;
   }
   
   RosClientCI::ViewSpaceUpdateResult RosClientCI::addViews( std::vector<View>& new_views )

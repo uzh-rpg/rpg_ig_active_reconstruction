@@ -21,6 +21,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 #include "ig_active_reconstruction/view.hpp"
 
 #include <map> //TODO use unordered map as soon as cpp03 is not needed anymore
+#include <iterator>
 
 namespace ig_active_reconstruction
 {
@@ -35,7 +36,11 @@ namespace views
 class ViewSpace
 {
 public:
-  typedef std::vector<View, Eigen::aligned_allocator<View> >::iterator Iterator;
+  //typedef std::map<View::IdType, View >::iterator Iterator;
+  class Iterator; // forward declaration for bidirectional iterator type to View
+  //typedef std::map<View::IdType, View >::const_iterator ConstIterator;
+  class ConstIterator; // forward declaration for bidirectional iterator type to const View
+  
   typedef std::vector<View::IdType> IdSet;
   
 public:
@@ -129,10 +134,12 @@ public:
   /*! Providing means to iterate over view space
    */
   Iterator begin();
+  ConstIterator begin() const;
   
   /*! Providing means to iterate over view space
    */
   Iterator end();
+  ConstIterator end() const;
   
   /*! Whether the viewspace is empty or not.
    */
@@ -145,7 +152,61 @@ protected:
   
 private:
   std::vector<View, Eigen::aligned_allocator<View> > view_space_; //! Actual storage, used for iterations.
-  std::map<View::IdType, View*> views_index_map_; //! For access by index.
+  std::map<View::IdType, View > views_index_map_; //! For access by index.
+};
+
+/*! Bidirectional iterator
+ */
+class ViewSpace::Iterator: public std::iterator<std::bidirectional_iterator_tag, View>
+{
+public:
+  typedef std::map<View::IdType, View >::iterator InternalIteratorType;
+  
+public:
+  Iterator();
+  Iterator(InternalIteratorType it);
+  
+  bool operator==(const Iterator&) const;
+  bool operator!=(const Iterator&) const;
+  
+  View& operator*() const;
+  View* operator->() const;
+  
+  Iterator& operator++();
+  Iterator operator++(int);
+  
+  Iterator& operator--();
+  Iterator operator--(int);
+  
+private:
+  InternalIteratorType it_;
+};
+
+/*! Bidirectional iterator
+ */
+class ViewSpace::ConstIterator
+{
+public:
+  typedef std::map<View::IdType, View >::const_iterator InternalIteratorType;
+  
+public:
+  ConstIterator();
+  ConstIterator(InternalIteratorType it);
+  
+  bool operator==(const ConstIterator&) const;
+  bool operator!=(const ConstIterator&) const;
+  
+  const View& operator*() const;
+  const View* operator->() const;
+  
+  ConstIterator& operator++();
+  ConstIterator operator++(int);
+  
+  ConstIterator& operator--();
+  ConstIterator operator--(int);
+  
+private:
+  InternalIteratorType it_;
 };
 
 }

@@ -67,7 +67,17 @@ movements::Pose& View::pose()
   return pose_;
 }
 
+const movements::Pose& View::pose() const
+{
+  return pose_;
+}
+
 std::string& View::sourceFrame()
+{
+  return source_frame_;
+}
+
+const std::string& View::sourceFrame() const
 {
   return source_frame_;
 }
@@ -77,7 +87,17 @@ bool& View::reachable()
   return is_reachable_;
 }
 
+const bool& View::reachable() const
+{
+  return is_reachable_;
+}
+
 unsigned int& View::timesVisited()
+{
+  return visited_;
+}
+
+const unsigned int& View::timesVisited() const
 {
   return visited_;
 }
@@ -87,7 +107,17 @@ bool& View::bad()
   return is_bad_;
 }
 
+const bool& View::bad() const
+{
+  return is_bad_;
+}
+
 bool& View::nonViewSpace()
+{
+  return non_viewspace_;
+}
+
+const bool& View::nonViewSpace() const
 {
   return non_viewspace_;
 }
@@ -102,7 +132,17 @@ std::vector<std::string>& View::additionalFieldsNames()
   return additional_fields_names_;
 }
 
+const std::vector<std::string>& View::additionalFieldsNames() const
+{
+  return additional_fields_names_;
+}
+
 std::vector<double>& View::additionalFieldsValues()
+{
+  return additional_fields_values_;
+}
+
+const std::vector<double>& View::additionalFieldsValues() const
 {
   return additional_fields_values_;
 }

@@ -41,28 +41,9 @@ namespace views
     viewspace_.saveToFile(filename);
   }
   
-  SimpleViewSpaceModule::ViewSpaceStatus SimpleViewSpaceModule::getPlanningSpace( ViewSpace* space )
+  const ViewSpace & SimpleViewSpaceModule::getViewSpace()
   {
-    if( !viewspace_.empty() )
-    {
-      *space = viewspace_;
-      return ViewSpaceStatus::OK;
-    }
-    else
-      return ViewSpaceStatus::NONE_AVAILABLE;
-    
-  }
-  
-  void SimpleViewSpaceModule::getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)
-  {
-    viewspace = &viewspace_;
-    
-    if( !viewspace_.empty() )
-      status = ViewSpaceStatus::OK;
-    else
-      status = ViewSpaceStatus::NONE_AVAILABLE;
-      
-    return;
+    return viewspace_;
   }
   
   SimpleViewSpaceModule::ViewSpaceUpdateResult SimpleViewSpaceModule::addViews( std::vector<View>& new_views )

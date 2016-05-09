@@ -50,20 +50,24 @@ namespace octomap
   TEMPT
   void CSCOPE::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud)
   {
+    ROS_INFO("Received new pointcloud. Inserting...");
     POINTCLOUD_TYPE pc;
     pcl::fromROSMsg(*cloud, pc);
     
     insertCloud(pc);
+    ROS_INFO("Inserted new pointcloud");
   }
   
   TEMPT
   bool CSCOPE::insertCloudService( ig_active_reconstruction_msgs::PclInput::Request& req, ig_active_reconstruction_msgs::PclInput::Response& res)
   {
+    ROS_INFO("Received new pointcloud. Inserting...");
     POINTCLOUD_TYPE pc;
     pcl::fromROSMsg(req.pointcloud, pc);
     
     insertCloud(pc);
     
+    ROS_INFO("Inserted new pointcloud");
     res.success = true;
     return true;
   }

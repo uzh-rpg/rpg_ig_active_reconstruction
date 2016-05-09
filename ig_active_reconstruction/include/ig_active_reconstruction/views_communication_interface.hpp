@@ -45,16 +45,11 @@ namespace views
     
   public:
     virtual ~CommunicationInterface(){};
-  
+    
     /*! Returns the view space that is available for planning.
       * @param _space pointer to the ViewSpace object that should be filled
-      * @return false if it failed or the robot does not provide such a service.
       */
-    virtual ViewSpaceStatus getPlanningSpace( ViewSpace* _space )=0;
-    
-    /*! Returns a pointer to the internal viewspace
-     */
-    virtual void getViewSpacePtr(ViewSpace*& viewspace, ViewSpaceStatus& status)=0;
+    virtual const ViewSpace& getViewSpace()=0;
     
     /*! Add a set of new views to the viewspace.
      * @param new_views New views to be added to the view space.

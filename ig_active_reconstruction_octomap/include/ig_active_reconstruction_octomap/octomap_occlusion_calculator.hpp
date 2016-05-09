@@ -42,8 +42,9 @@ namespace octomap
      * and sets the respective values within the octree
      * @param origin Origin of the sensor, position from which pointcloud was obtained.
      * @param pcl The pointcloud
+     * @param valid_indices Vector with the indices of all points in the pointcloud that should be considered
      */
-    virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl )=0;
+    virtual void insert( const Eigen::Vector3d& origin, const POINTCLOUD_TYPE& pcl, std::vector<int>& valid_indices )=0;
     
     /*! Sets the octree in which occlusions will be marked.
      */
