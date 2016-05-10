@@ -1,22 +1,18 @@
-/* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
-*
-This file is part of ig_active_reconstruction, a ROS package for...well,
-
-ig_active_reconstruction is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-ig_active_reconstruction is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY
-  {
-    
-  }
-  
-  TEMPT without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License
-along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
+/* Copyright (c) 2016, Stefan Isler, islerstefan@bluewin.ch
+ * (ETH Zurich / Robotics and Perception Group, University of Zurich, Switzerland)
+ *
+ * This file is part of ig_active_reconstruction, software for information gain based, active reconstruction.
+ *
+ * ig_active_reconstruction is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * ig_active_reconstruction is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * Please refer to the GNU Lesser General Public License for details on the license,
+ * on <http://www.gnu.org/licenses/>.
 */
 
 #define TEMPT template<class TYPE>
@@ -24,6 +20,7 @@ along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdexcept>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 namespace multikit
 {
@@ -37,7 +34,6 @@ namespace multikit
     new_entry.create = ig_creator;
     
     entries_.push_back(new_entry);
-    name_map_[new_entry.name] = &entries_.back();
     
     return new_entry.id;
   }
@@ -45,15 +41,14 @@ namespace multikit
   TEMPT
   boost::shared_ptr<TYPE> CSCOPE::get(std::string name)
   {
-    try
+    boost::shared_ptr<TYPE> new_object;
+    BOOST_FOREACH( Entry& entry, entries_ )
     {
-      Entry* entry = name_map_.at(name);
-      return entry->create();
+      if( entry.name==name )
+	new_object = entry.create();
     }
-    catch(std::out_of_range&)
-    {
-      return boost::shared_ptr<TYPE>();
-    }
+    
+    return new_object;
   }
   
   TEMPT
@@ -84,17 +79,17 @@ namespace multikit
   TEMPT
   unsigned int CSCOPE::idOf(std::string name)
   {
-    try
+    BOOST_FOREACH( Entry& entry, entries_ )
     {
-      Entry* entry = name_map_.at(name);
-      return entry->id;
+      if( entry.name==name )
+      {
+	return entry.id;
+      }
     }
-    catch(std::out_of_range&)
-    {
-      std::stringstream error_desc;
-      error_desc<<"Factory<TYPE>::idOf:: Passed argument name = "<<name<<" is invalid.";
-      throw std::invalid_argument( error_desc.str() );
-    }
+    // not found
+    std::stringstream error_desc;
+    error_desc<<"Factory<TYPE>::idOf:: Passed argument name = "<<name<<" is invalid.";
+    throw std::invalid_argument( error_desc.str() );
   }
   
   TEMPT

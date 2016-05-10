@@ -1,17 +1,18 @@
-/* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
-*
-This file is part of dense_reconstruction, a ROS package for...well,
-
-dense_reconstruction is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-dense_reconstruction is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License
-along with dense_reconstruction. If not, see <http://www.gnu.org/licenses/>.
+/* Copyright (c) 2016, Stefan Isler, islerstefan@bluewin.ch
+ * (ETH Zurich / Robotics and Perception Group, University of Zurich, Switzerland)
+ *
+ * This file is part of ig_active_reconstruction, software for information gain based, active reconstruction.
+ *
+ * ig_active_reconstruction is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * ig_active_reconstruction is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * Please refer to the GNU Lesser General Public License for details on the license,
+ * on <http://www.gnu.org/licenses/>.
 */
 
 #include <iostream>
@@ -53,6 +54,10 @@ int main(int argc, char **argv)
   // for the utility calculator
   double cost_weight;
   ros_tools::getParam( cost_weight, "cost_weight", 1.0 );
+  std::vector<std::string> ig_names;
+  std::vector<double> ig_weights;
+  ros_tools::getParamIfAvailableSilent( ig_names, "ig_names" );
+  ros_tools::getParamIfAvailableSilent( ig_weights, "ig_weights" );
   
   // for the termination critera
   unsigned int max_calls;
@@ -81,6 +86,12 @@ int main(int argc, char **argv)
   boost::shared_ptr<iar::WeightedLinearUtility> utility_calculator = boost::make_shared<iar::WeightedLinearUtility>(cost_weight);
   utility_calculator->setRobotCommUnit(robot_comm);
   utility_calculator->setWorldCommUnit(world_comm);
+  
+  for(unsigned int i=0;i<ig_names.size() && i<ig_weights.size(); ++i)
+  {
+    std::cout<<"\nUsing information gain '"<<ig_names[i]<<"' with weight '"<<ig_weights[i]<<"'.";
+    utility_calculator->useInformationGain(ig_names[i],ig_weights[i]);
+  }
   
   view_planner.setUtility(utility_calculator);
   

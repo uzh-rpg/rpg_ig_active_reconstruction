@@ -1,17 +1,18 @@
-/* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
-*
-This file is part of ig_active_reconstruction, a ROS package for...well,
-
-ig_active_reconstruction is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-ig_active_reconstruction is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License
-along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
+/* Copyright (c) 2016, Stefan Isler, islerstefan@bluewin.ch
+ * (ETH Zurich / Robotics and Perception Group, University of Zurich, Switzerland)
+ *
+ * This file is part of ig_active_reconstruction, software for information gain based, active reconstruction.
+ *
+ * ig_active_reconstruction is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * ig_active_reconstruction is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * Please refer to the GNU Lesser General Public License for details on the license,
+ * on <http://www.gnu.org/licenses/>.
 */
 
 #include "ig_active_reconstruction/weighted_linear_utility.hpp"
@@ -77,7 +78,8 @@ namespace ig_active_reconstruction
       double cost_val = 0;
       double ig_val = 0;
       
-      if( robot_comm_unit_!=nullptr )
+      // cost
+      if( robot_comm_unit_!=nullptr && cost_weight_!=0 )
       {
 	cost = robot_comm_unit_->movementCost(view);
 	
@@ -87,6 +89,7 @@ namespace ig_active_reconstruction
 	  cost_val = cost.cost;
       }
       
+      // information gain
       if( world_comm_unit_!=nullptr )
       {
 	command.path.clear();
@@ -97,9 +100,11 @@ namespace ig_active_reconstruction
 	{
 	  if( information_gains[i].status == world_representation::CommunicationInterface::ResultInformation::SUCCEEDED )
 	  {
+	    //std::cout<<"\nReturned gain of metric "<<i<<":"<<information_gains[i].predicted_gain;
 	    ig_val += ig_weights_[i]*information_gains[i].predicted_gain;
 	  }
 	}
+	//std::cout<<"\nReturned total information gain is: "<<ig_val;
       }
       
       total_cost += cost_val;
@@ -125,14 +130,14 @@ namespace ig_active_reconstruction
     for( unsigned int i=0; i<id_set.size(); ++i )
     {
       double utility = ig_vector[i]/total_ig - cost_factor*cost_vector[i];
-      //std::cout<<"\nutility of view "<<id_set[i]<<": "<<utility;
+      std::cout<<"\nutility of view "<<id_set[i]<<": "<<utility;
       if( utility>best_util )
       {
 	best_util = utility;
 	nbv = id_set[i];
       }
     }
-    
+    //std::cout<<"\nChoosing view "<<nbv<<".";
     return nbv;
   }
     

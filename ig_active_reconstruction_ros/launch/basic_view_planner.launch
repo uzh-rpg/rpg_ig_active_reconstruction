@@ -4,8 +4,10 @@
     
     <param name="discard_visited" value="true" />
     <param name="max_visits" value="-1" />
-    <param name="cost_weight" value="1" />
+    <param name="cost_weight" value="0" />
     <param name="max_calls" value="20" />
+    <rosparam param="ig_names">[OcclusionAwareIg, UnobservedVoxelIg, RearSideVoxelIg, RearSideEntropyIg, ProximityCountIg, VasquezGomezAreaFactorIg, AverageEntropyIg]</rosparam>
+      <rosparam param="ig_weights">[0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]</rosparam>
     
   </node>
 </launch>

@@ -9,34 +9,28 @@ find_package(catkin REQUIRED COMPONENTS
 )
 add_message_files(
   FILES
-  SubWindow.msg
   InformationGain.msg
-  InformationGainRetrievalConfig.msg
   InformationGainRetrievalCommand.msg
+  InformationGainRetrievalConfig.msg
+  MovementCostMsg.msg
+  SubWindow.msg
   ViewMsg.msg
   ViewSpaceMsg.msg
-  MovementCostMsg.msg
 )
 
 add_service_files(
   FILES
-  PoseSetter.srv
-  IsOk.srv
+  DeleteViews.srv
   InformationGainCalculation.srv
-  PlanningSpaceInitializationInfoMsg.srv
-  ViewSpaceRequest.srv
-  ViewRequest.srv
-  RetrieveData.srv
+  MapMetricCalculation.srv
   MovementCostCalculation.srv
   MoveToOrder.srv
-  SaveViewSpace.srv
-  SetScale.srv
-  Booleans.srv
-  DeleteViews.srv
-  ViewSpaceUpdate.srv
-  StringList.srv
-  MapMetricCalculation.srv
   PclInput.srv
+  RetrieveData.srv
+  StringList.srv
+  ViewRequest.srv
+  ViewSpaceRequest.srv
+  ViewSpaceUpdate.srv
 )
 
 generate_messages(

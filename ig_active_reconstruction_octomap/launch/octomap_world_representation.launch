@@ -12,13 +12,13 @@
     
     <!-- PCL input configuration -->
     <param name="world_frame_name" value="world" />
-    <param name="use_bounding_box" value="false" />
-    <param name="bounding_box_min_point_m/x" value="-3.0" />
-    <param name="bounding_box_min_point_m/y" value="-3.0" />
-    <param name="bounding_box_min_point_m/z" value="-3.0" />
-    <param name="bounding_box_max_point_m/x" value="3.0" />
-    <param name="bounding_box_max_point_m/y" value="3.0" />
-    <param name="bounding_box_max_point_m/z" value="3.0" />
+    <param name="use_bounding_box" value="true" />
+    <param name="bounding_box_min_point_m/x" value="-0.6" />
+    <param name="bounding_box_min_point_m/y" value="-0.6" />
+    <param name="bounding_box_min_point_m/z" value="-0.01" />
+    <param name="bounding_box_max_point_m/x" value="0.6" />
+    <param name="bounding_box_max_point_m/y" value="0.6" />
+    <param name="bounding_box_max_point_m/z" value="0.6" />
     <param name="max_sensor_range_m" value="1.5" />
     
     <!-- Occlusion calculation configuration -->
@@ -31,6 +31,7 @@
     <param name="camera/fy" value="448.1008985853343" />
     <param name="camera/cx" value="376.5" />
     <param name="camera/cy" value="240.5" />
+    <param name="max_ray_depth_m" value="1.5" />
     
     <param name="raycasting/resolution_x" value="0.1" />
     <param name="raycasting/resolution_y" value="0.1" />

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>ig_active_reconstruction_octomap</name>
-  <version>0.0.0</version>
+  <version>0.9.0</version>
   <description>Package providing an octomap based world representation implementation for ig_active_reconstruction and ROS interfaces to go with it.
     
    "An Information Gain Formulation for Active Volumetric 3D Reconstruction"

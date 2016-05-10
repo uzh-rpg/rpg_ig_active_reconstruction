@@ -3,11 +3,11 @@
   <name>flying_gazebo_stereo_cam</name>
   <description>A simple model for a static flying stereo camera in gazebo</description>
   
-  <version>0.0.0</version>
+  <version>0.9.0</version>
   
   <maintainer email="islerstefan@bluewin.ch">Stefan Isler</maintainer>
   <author>Stefan Isler</author>
-  <license>LGPL, BSD</license>
+  <license>LGPLv3</license>
   
   
   

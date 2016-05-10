@@ -1,9 +1,0 @@
-string[] specific_vector_names
-geometry_msgs/Vector3[] specific_vector_values
-string[] specific_double_names
-float64[] specific_double_values
-string[] specific_uint_names
-uint32[] specific_uint_values
----
-# whether the new planning space initialization info was accepted or not
-bool accepted

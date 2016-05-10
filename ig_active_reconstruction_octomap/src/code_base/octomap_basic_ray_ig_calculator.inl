@@ -1,17 +1,18 @@
-/* Copyright (c) 2015, Stefan Isler, islerstefan@bluewin.ch
-*
-This file is part of ig_active_reconstruction, a ROS package for...well,
-
-ig_active_reconstruction is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-ig_active_reconstruction is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Lesser General Public License for more details.
-You should have received a copy of the GNU Lesser General Public License
-along with ig_active_reconstruction. If not, see <http://www.gnu.org/licenses/>.
+/* Copyright (c) 2016, Stefan Isler, islerstefan@bluewin.ch
+ * (ETH Zurich / Robotics and Perception Group, University of Zurich, Switzerland)
+ *
+ * This file is part of ig_active_reconstruction, software for information gain based, active reconstruction.
+ *
+ * ig_active_reconstruction is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * ig_active_reconstruction is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ * Please refer to the GNU Lesser General Public License for details on the license,
+ * on <http://www.gnu.org/licenses/>.
 */
 
 #define TEMPT template<class TREE_TYPE>
@@ -38,8 +39,8 @@ namespace octomap
   TEMPT
   CSCOPE::BasicRayIgCalculator( Config config )
   : config_(config)
+  , ray_caster_(config.ray_caster_config)
   {
-    
   }
   
   TEMPT
@@ -53,7 +54,7 @@ namespace octomap
   {
     output_ig.clear();
     
-    // Can't calculate ig for no given metric.
+    // Can't calculate ig for no given view.
     if( command.path.empty() )
     {
       IgRetrievalResult res;
@@ -64,8 +65,9 @@ namespace octomap
       {
 	output_ig.push_back(res);
       }
+      return ResultInformation::FAILED;
     }
-    
+
     // compute rays
     PinholeCamRayCaster::ResolutionSettings ray_caster_config;
     ray_caster_config.ray_resolution_x = command.config.ray_resolution_x;
@@ -75,7 +77,7 @@ namespace octomap
     ray_caster_config.max_x_perc = command.config.ray_window.max_x_perc;
     ray_caster_config.max_y_perc = command.config.ray_window.max_y_perc;
     
-    ray_caster_.setResolution(ray_caster_config);
+    //ray_caster_.setResolution(ray_caster_config);
     boost::shared_ptr<RayCaster::RaySet> ray_set = ray_caster_.getRaySet(command.path[0]);
     
     // build ig metric set
@@ -102,24 +104,39 @@ namespace octomap
     }
     else
     {
+      IgRetrievalResult res;
+      res.predicted_gain = 0;
+      
       BOOST_FOREACH( std::string& name, command.metric_names)
       {
-	ig_set.push_back( this->ig_factory_.get(name) );
+	typename IgFactory::TypePtr ig_metric = this->ig_factory_.get(name);
+	if( ig_metric==NULL )
+	{
+	  res.status = ResultInformation::UNKNOWN_METRIC;
+	}
+	else
+	{
+	  res.status = ResultInformation::SUCCEEDED;
+	  ig_set.push_back(ig_metric);
+	}
+	output_ig.push_back(res);
       }
     }
     
     // cast rays
     RayCastSettings ray_cast_settings;
-    ray_cast_settings.max_ray_depth = command.config.max_ray_depth;
+    ray_cast_settings.max_ray_depth = config_.ray_caster_config.max_ray_depth_m;//command.config.max_ray_depth;
     
     for(unsigned int i=0;i<ray_set->size();++i)
     {
       RayCaster::Ray& ray = (*ray_set)[i];
-      
+      //std::cout<<"\norigin:\n"<<ray.origin<<"\ndirection:\n"<<ray.direction<<"\n";
       BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
       {
 	ig->makeReadyForNewRay();
       }
+      /*if(i%100==0)
+	std::cout<<"\nCalculating ray "<<i<<"/"<<ray_set->size();*/
       calculateIgsOnRay(ray,ig_set, ray_cast_settings);
     }
     
@@ -130,9 +147,12 @@ namespace octomap
       if( res.status == ResultInformation::SUCCEEDED )
       {
 	res.predicted_gain = (*ig_it)->getInformation();
+	std::cout<<"\nPredicted gain is: "<<res.predicted_gain;
 	++ig_it;
       }
     }
+    
+    return ResultInformation::SUCCEEDED;
   }
   
   TEMPT
@@ -180,7 +200,7 @@ namespace octomap
     using ::octomap::point3d;
     using ::octomap::KeyRay;
     using ::octomap::OcTreeKey;
-    
+    //std::cout<<"\norigin:\n"<<ray.origin<<"\ndirection:\n"<<ray.direction<<"\n";
     point3d origin( ray.origin(0),ray.origin(1),ray.origin(2) );
     point3d direction( ray.direction(0), ray.direction(1), ray.direction(2) );
     point3d end_point; // calculate endpoint (if any)
@@ -189,21 +209,20 @@ namespace octomap
     
     bool found_endpoint = this->link_.octree->castRay( origin, direction, end_point, true, max_range ); // ignore unknown cells
     
-    if( !found_endpoint ) // options: artificial endpoint, using max range -> but not interested in free space...
+    if( !found_endpoint ) // this is necessary for occlusion based metrics but not for the others. Excluding it leads to a great speed up.
     {
       end_point = origin + direction*max_range; // use max range instead of stopping at the unknown
+      found_endpoint = true;
     }
     
     if( found_endpoint )
     {
       KeyRay ray;
       this->link_.octree->computeRayKeys( origin, end_point, ray );
-      
       for( KeyRay::iterator it = ray.begin() ; it!=ray.end(); ++it )
       {
 	point3d coord = this->link_.octree->keyToCoord(*it);
 	typename TREE_TYPE::NodeType* traversedVoxel = this->link_.octree->search(*it);
-	
 	BOOST_FOREACH( typename InformationGain<TREE_TYPE>::Ptr& ig, ig_set )
 	{
 	  ig->includeRayMeasurement( traversedVoxel );

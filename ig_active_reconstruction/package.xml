@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>ig_active_reconstruction</name>
-  <version>0.0.0</version>
+  <version>0.9.0</version>
   <description>Package defining common interfaces and providing common tools for active 3D reconstruction as defined in the paper
     
    "An Information Gain Formulation for Active Volumetric 3D Reconstruction"
