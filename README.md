@@ -2,9 +2,9 @@
 
 ig_active_reconstruction is a set of catkin packages for **information gain based active reconstruction** as presented in the paper
 
-*An Information Gain Formulation for Active Volumetric 3D Reconstruction*<br/>
-S. Isler, R. Sabzevari, J. Delmerico and D. Scaramuzza (ICRA 2016)
-[Paper: http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf](http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf) <br/>
+*An Information Gain Formulation for Active Volumetric 3D Reconstruction*  
+S. Isler, R. Sabzevari, J. Delmerico and D. Scaramuzza (ICRA 2016)  
+[Paper: http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf](http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf)  
 [Video (Youtube)](https://www.youtube.com/watch?v=ZcJcsoGGqbA&feature=youtu.be) 
 
 The following functionality can be found in the different packages:
