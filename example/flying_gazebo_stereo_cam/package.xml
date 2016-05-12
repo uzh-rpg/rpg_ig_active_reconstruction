@@ -18,6 +18,7 @@
   <build_depend >ig_active_reconstruction</build_depend>
   <build_depend >ig_active_reconstruction_msgs</build_depend>
   <build_depend >ig_active_reconstruction_ros</build_depend>
+  <build_depend >ig_active_reconstruction_octomap</build_depend>
   <build_depend >movements</build_depend>
   <build_depend >tf</build_depend>
   <build_depend >gazebo_msgs</build_depend>
@@ -29,6 +30,7 @@
   <run_depend >ig_active_reconstruction</run_depend>
   <run_depend >ig_active_reconstruction_msgs</run_depend>
   <run_depend >ig_active_reconstruction_ros</run_depend>
+  <run_depend >ig_active_reconstruction_octomap</run_depend>
   <run_depend >movements</run_depend>
   <run_depend >tf</run_depend>
   <run_depend >gazebo_msgs</run_depend>
