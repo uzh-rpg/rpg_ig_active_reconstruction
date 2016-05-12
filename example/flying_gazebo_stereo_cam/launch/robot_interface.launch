@@ -29,7 +29,4 @@
   
   <!-- Viewspace module -->
   <include file="$(find flying_gazebo_stereo_cam)/launch/simple_viewspace_module.launch" />
-  
-  <!-- Robot interface with configuration -->
-  <include file="$(find flying_gazebo_stereo_cam)/launch/flying_gazebo_stereo_cam.launch" />
 </launch>
