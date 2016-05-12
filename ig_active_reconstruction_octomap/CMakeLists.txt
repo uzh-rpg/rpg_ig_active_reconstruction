@@ -75,7 +75,7 @@ target_link_libraries(${PROJECT_NAME}
    ${${PROJECT_NAME}_LIBRARIES}
 )
 
-add_dependencies(${PROJECT_NAME} STATIC
+add_dependencies(${PROJECT_NAME} 
  ${catkin_EXPORTED_TARGETS}
 )
 

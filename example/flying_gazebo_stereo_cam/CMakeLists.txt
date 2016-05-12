@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   ig_active_reconstruction
   ig_active_reconstruction_msgs
   ig_active_reconstruction_ros
+  ig_active_reconstruction_octomap
   movements
   tf
   gazebo_msgs
@@ -28,6 +29,7 @@ catkin_package(
     ig_active_reconstruction
     ig_active_reconstruction_msgs
     ig_active_reconstruction_ros
+    ig_active_reconstruction_octomap
     movements
     geometry_msgs
     sensor_msgs
