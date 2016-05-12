@@ -65,6 +65,18 @@ namespace ig_active_reconstruction
     virtual views::View::IdType getNbv( views::ViewSpace::IdSet& id_set, boost::shared_ptr<views::ViewSpace> viewspace );  
     
   protected:
+    /*! Helper function for multithreaded ig retrieval.
+     * @param ig_vector (output) Vector in which the ig values will be set, must already have correct size
+     * @param total_ig (output) total information gain calculated within this function
+     * @param command Prebuilt command structure, only lacking the path entry
+     * @param id_set Set of views for which getNbv was called.
+     * @param viewspace Corresponding viewspace
+     * @param base_index Which entry within the batch is processed by this function [0-(batch_size-1)]. All id's are separated into batches of size batch_size. This function will process every base_index-th of it. E.g. batch_size = 3, base_index=2: The function will process the 2th, 5th, 8th, 11th, etc entry...
+     * @param batch_size Size of the batch, matches the number of spawned threads.
+     */
+    void getIg(std::vector<double>& ig_vector, double& total_ig, world_representation::CommunicationInterface::IgRetrievalCommand command, views::ViewSpace::IdSet& id_set, boost::shared_ptr<views::ViewSpace> viewspace, unsigned int base_index, unsigned int batch_size );
+    
+  protected:
     boost::shared_ptr<world_representation::CommunicationInterface> world_comm_unit_; //! Interface to world representation.
     boost::shared_ptr<robot::CommunicationInterface> robot_comm_unit_; //! Interface to robot.
     

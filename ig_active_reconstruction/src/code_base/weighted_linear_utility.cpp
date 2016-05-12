@@ -17,6 +17,8 @@
 
 #include "ig_active_reconstruction/weighted_linear_utility.hpp"
 
+#include <thread>
+
 namespace ig_active_reconstruction
 {
   
@@ -89,8 +91,8 @@ namespace ig_active_reconstruction
 	  cost_val = cost.cost;
       }
       
-      // information gain
-      if( world_comm_unit_!=nullptr )
+      // information gain - non multithreaded version
+      /*if( world_comm_unit_!=nullptr )
       {
 	command.path.clear();
 	command.path.push_back( view.pose() );
@@ -105,12 +107,27 @@ namespace ig_active_reconstruction
 	  }
 	}
 	//std::cout<<"\nReturned total information gain is: "<<ig_val;
-      }
-      
-      total_cost += cost_val;
-      cost_vector.push_back(cost_val);
+      }      
       total_ig += ig_val;
       ig_vector.push_back(ig_val);
+      */
+      total_cost += cost_val;
+      cost_vector.push_back(cost_val);
+    }
+    
+    // multithreaded information gain retrieval
+    unsigned int number_of_threads = 8;
+    ig_vector.resize(id_set.size(),0);
+    std::vector<double> total_multitthread_ig(number_of_threads,0);
+    std::vector<std::thread> threads;
+    for( size_t i = 0; i<number_of_threads; ++i )
+    {
+      threads.push_back( std::thread(&WeightedLinearUtility::getIg,this,std::ref(ig_vector),std::ref(total_multitthread_ig[i]),command, std::ref(id_set), viewspace, i, number_of_threads ) );
+    }
+    for( size_t i = 0; i<number_of_threads; ++i )
+    {
+      threads[i].join();
+      total_ig += total_multitthread_ig[i];
     }
     
     // calculate utility and choose nbv
@@ -139,6 +156,41 @@ namespace ig_active_reconstruction
     }
     //std::cout<<"\nChoosing view "<<nbv<<".";
     return nbv;
+  }
+  
+  void WeightedLinearUtility::getIg(std::vector<double>& ig_vector,double& total_ig, world_representation::CommunicationInterface::IgRetrievalCommand command, views::ViewSpace::IdSet& id_set, boost::shared_ptr<views::ViewSpace> viewspace, unsigned int base_index, unsigned int batch_size )
+  {
+    
+    // information gain
+    if( world_comm_unit_!=nullptr )
+    {
+      for( size_t i = base_index; i<id_set.size(); i+=batch_size )
+      {	
+	views::View view = viewspace->getView( id_set[i] );
+	
+	world_representation::CommunicationInterface::ViewIgResult information_gains;
+	double ig_val = 0;
+	
+	command.path.clear();
+	command.path.push_back( view.pose() );
+	
+	world_comm_unit_->computeViewIg(command,information_gains);
+	
+	for( unsigned int i= 0; i<information_gains.size(); ++i )
+	{
+	  if( information_gains[i].status == world_representation::CommunicationInterface::ResultInformation::SUCCEEDED )
+	  {
+	    //std::cout<<"\nReturned gain of metric "<<i<<":"<<information_gains[i].predicted_gain;
+	    ig_val += ig_weights_[i]*information_gains[i].predicted_gain;
+	  }
+	}
+	total_ig += ig_val;
+	ig_vector[i] = ig_val;
+      }
+      return;
+    }
+    else
+      return;
   }
     
   

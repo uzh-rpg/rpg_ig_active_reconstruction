@@ -151,7 +151,8 @@ int main(int argc, char **argv)
   // start spinning
   // .............................................................................................
   ROS_INFO("octomap_world_representation is setup.");
-  ros::spin();
+  ros::MultiThreadedSpinner spinner;
+  spinner.spin();
   
   return 0;
 }
