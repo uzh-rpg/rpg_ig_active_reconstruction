@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen REQUIRED)
+find_package(Eigen REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -35,11 +36,13 @@ catkin_package(
     sensor_msgs
   DEPENDS
     Eigen
+    Boost
 )
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 file(GLOB ${PROJECT_NAME}_CODE_BASE
@@ -52,6 +55,7 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
 )
 
 # Executables...........................................................
@@ -62,6 +66,7 @@ add_executable(robot_interface
 )
 target_link_libraries(robot_interface
    ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
 )
 add_dependencies(robot_interface
  ${catkin_EXPORTED_TARGETS}

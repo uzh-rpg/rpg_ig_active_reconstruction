@@ -17,11 +17,15 @@ catkin_package(
     movements
   DEPENDS
     Eigen
+    Boost
 )
+
+find_package(Boost REQUIRED)
 
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 file(GLOB ${PROJECT_NAME}_CODE_BASE
@@ -35,6 +39,7 @@ add_library(${PROJECT_NAME} STATIC
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
 )
 
 add_dependencies(${PROJECT_NAME} 

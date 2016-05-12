@@ -18,6 +18,8 @@
 #include "flying_gazebo_stereo_cam/robot_communication_interface.hpp"
 
 #include <thread>
+#include <boost/thread/thread.hpp>
+#include <boost/chrono/include.hpp>
 
 namespace flying_gazebo_stereo_cam
 {
@@ -90,7 +92,7 @@ namespace flying_gazebo_stereo_cam
   {
     bool success = cam_controller_->moveTo(target_view.pose());
     
-    std::this_thread::sleep_for(std::chrono::seconds(3)); // give gazebo time to execute movement command (TODO test: maybe just wait until current pose has changed?)
+    boost::this_thread::sleep_for( boost::chrono::seconds(3) ); // give gazebo time to execute movement command (TODO test: maybe just wait until current pose has changed (if it is different from current)?)
     return success;
   }
   

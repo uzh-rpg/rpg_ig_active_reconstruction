@@ -20,6 +20,8 @@
 #include <chrono>
 #include <boost/smart_ptr.hpp>
 #include <iostream>
+#include <boost/thread/thread.hpp>
+#include <boost/chrono/include.hpp>
 
 namespace ig_active_reconstruction
 {
@@ -260,7 +262,7 @@ namespace ig_active_reconstruction
     while(pauseProcedure_)
     {
       status_ = Status::PAUSED;
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      boost::this_thread::sleep_for( boost::chrono::seconds(1) );
     }
   }
 }

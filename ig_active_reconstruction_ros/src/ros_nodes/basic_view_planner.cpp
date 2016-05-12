@@ -20,6 +20,9 @@
 #include <thread>
 #include <chrono>
 
+#include <boost/thread/thread.hpp>
+#include <boost/chrono/include.hpp>
+
 #include <ros/ros.h>
 #include <ig_active_reconstruction/basic_view_planner.hpp>
 #include <ig_active_reconstruction/weighted_linear_utility.hpp>
@@ -138,7 +141,7 @@ int main(int argc, char **argv)
 	  ROS_INFO_STREAM("BasicViewPlanner::Status::DEMANDING_MOVE");
 	  break;
       };
-      std::this_thread::sleep_for(std::chrono::seconds(2));
+      boost::this_thread::sleep_for( boost::chrono::seconds(2) );
     }
   }; 
   
