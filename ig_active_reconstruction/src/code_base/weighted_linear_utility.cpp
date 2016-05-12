@@ -18,6 +18,7 @@
 #include "ig_active_reconstruction/weighted_linear_utility.hpp"
 
 #include <thread>
+#include <iostream>
 
 namespace ig_active_reconstruction
 {

@@ -19,6 +19,7 @@
 
 #include <chrono>
 #include <boost/smart_ptr.hpp>
+#include <iostream>
 
 namespace ig_active_reconstruction
 {

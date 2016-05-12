@@ -78,7 +78,8 @@ namespace ros_tools
     {
       ig_active_reconstruction_msgs::PclInput call;
       call.request.pointcloud = *msg;
-      bool service_response_ = pcl_service_caller_.call(call);
+      pcl_service_caller_.call(call);
+      service_response_ = call.response.success;
       one_to_srv_ = false;
     }
     
