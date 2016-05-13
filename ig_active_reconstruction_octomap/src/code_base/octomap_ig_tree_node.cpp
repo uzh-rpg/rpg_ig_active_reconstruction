@@ -49,6 +49,54 @@ namespace octomap
       children[k]->setValue(value);
     }
   }
+  
+  bool IgTreeNode::pruneNode()
+  {
+    
+    if (!this->collapsible())
+      return false;
+
+    // set value to children's values (all assumed equal)
+    setValue(getChild(0)->getValue());
+
+    // delete children
+    for (unsigned int i=0;i<8;i++) {
+      delete children[i];
+    }
+    delete[] children;
+    children = NULL;
+
+    return true;
+  }
+  
+  bool IgTreeNode::operator==(const IgTreeNode& rhs) const
+  {
+    return rhs.value == value && rhs.occ_dist_ == occ_dist_ && rhs.has_no_measurement_==has_no_measurement_;
+  }
+  
+  bool IgTreeNode::collapsible() const
+  {
+    // all children must exist, must not have children of
+    // their own and have the same occupancy probability
+    if (!childExists(0) || getChild(0)->hasChildren())
+      return false;
+
+    for (unsigned int i = 1; i<8; i++) {
+      // comparison via getChild so that casts of derived classes ensure
+      // that the right == operator gets called
+      if (!childExists(i) || getChild(i)->hasChildren() || !(*(getChild(i)) == *(getChild(0))))
+        return false;
+    }
+    return true;
+  }
+  
+  void IgTreeNode::deleteChild(unsigned int i)
+  {
+    assert((i < 8) && (children != NULL));
+    assert(children[i] != NULL);
+    delete children[i];
+    children[i] = NULL;
+  }
 
   // TODO: Use Curiously Recurring Template Pattern instead of copying full function
   // (same for getChild)

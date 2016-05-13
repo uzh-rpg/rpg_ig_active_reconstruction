@@ -46,6 +46,11 @@ namespace octomap
     ~IgTreeNode();
     
     void expandNode();
+    bool pruneNode();
+    
+    bool operator==(const IgTreeNode& rhs) const;
+    bool collapsible() const;
+    void deleteChild(unsigned int i);
 
     bool createChild(unsigned int i);
 
