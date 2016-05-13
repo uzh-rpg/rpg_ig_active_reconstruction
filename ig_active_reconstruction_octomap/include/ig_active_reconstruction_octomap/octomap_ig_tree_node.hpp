@@ -44,6 +44,8 @@ namespace octomap
   public:
     IgTreeNode();
     ~IgTreeNode();
+    
+    void expandNode();
 
     bool createChild(unsigned int i);
 

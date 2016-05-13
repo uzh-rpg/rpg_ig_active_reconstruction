@@ -39,6 +39,16 @@ namespace octomap
   IgTreeNode::~IgTreeNode()
   {
   }
+  
+  void IgTreeNode::expandNode()
+  {
+    assert(!hasChildren());
+
+    for (unsigned int k=0; k<8; k++) {
+      createChild(k);
+      children[k]->setValue(value);
+    }
+  }
 
   // TODO: Use Curiously Recurring Template Pattern instead of copying full function
   // (same for getChild)
