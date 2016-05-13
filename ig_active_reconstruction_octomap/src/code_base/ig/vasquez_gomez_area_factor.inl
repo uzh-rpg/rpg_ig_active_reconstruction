@@ -38,6 +38,9 @@ namespace octomap
   TEMPT
   CSCOPE::VasquezGomezAreaFactorIg( Config utils )
   : utils_(utils)
+  , occupied_count_(0)
+  , occplane_count_(0)
+  , unobserved_count_(0)
   , voxel_count_(0)
   , no_known_voxel_so_far_(true)
   , previous_voxel_free_(true)
