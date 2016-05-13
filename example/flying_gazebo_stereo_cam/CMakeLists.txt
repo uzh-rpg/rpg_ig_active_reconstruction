@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(flying_gazebo_stereo_cam)
+set(CMAKE_BUILD_TYPE Release)
 
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
@@ -19,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Eigen REQUIRED)
-find_package(Eigen REQUIRED)
+find_package(Boost REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include

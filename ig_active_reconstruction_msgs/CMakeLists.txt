@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ig_active_reconstruction_msgs)
+set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED COMPONENTS
   cmake_modules

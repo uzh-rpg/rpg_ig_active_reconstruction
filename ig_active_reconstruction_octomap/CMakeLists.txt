@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ig_active_reconstruction_octomap)
+set(CMAKE_BUILD_TYPE Release)
 
 ## c++11 is preferred but ROS is built with c++03 and the PCL binaries are not compatible (boost)
 ##list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
@@ -19,10 +20,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+find_package(octomap REQUIRED)
 find_package(Boost REQUIRED)
 find_package(PCL 1.7 REQUIRED)
 find_package(Eigen REQUIRED)
-find_package(octomap REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include

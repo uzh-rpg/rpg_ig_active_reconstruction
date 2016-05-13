@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ig_active_reconstruction_ros)
+set(CMAKE_BUILD_TYPE Release)
 
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
