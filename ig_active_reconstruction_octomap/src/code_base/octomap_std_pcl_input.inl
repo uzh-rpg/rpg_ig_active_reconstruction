@@ -200,10 +200,12 @@ namespace octomap
 	}
       }
     }
-    std::cout<<"\nCalling occlusion calculator";
-    std::cout<<"\nCalling occlusion calculator";
-    this->occlusion_calculator_->insert(sensor_position,*pc_cpy,valid_indices);
-    std::cout<<"\nFinsihed calculations";
+    if( this->occlusion_calculator_!=NULL )
+    {
+      std::cout<<"\nCalling occlusion calculator";
+      this->occlusion_calculator_->insert(sensor_position,*pc_cpy,valid_indices);
+    }
+    
     std::cout<<"\nFinsihed calculations";
   }
   
