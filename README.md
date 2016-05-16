@@ -24,7 +24,10 @@ All packages are written to be compiled using *catkin*, just put them in your ca
 ## Example
 To get you started we provide the flying_gazebo_stereo_cam example. Note that we provide a Stanford bunny Gazebo model file which you can use to get started. Off course you can also use any other Gazebo model and put it in front of the stereo camera in Gazebo.
 
-To use our model, copy the "bunny" folder which contains the collada file, texture and Gazebo model definition to ~/.gazebo/models
+To use our model, either copy the "bunny" folder (which contains the collada file, texture and Gazebo model definition) to ~/.gazebo/models, or add its directory to your GAZEBO_MODEL_PATH environmental variable with e.g.:
+```
+export GAZEBO_MODEL_PATH=$HOME/catkin_ws/src/rpg_ig_active_reconstruction/example/flying_gazebo_stereo_cam/model:$GAZEBO_MODEL_PATH
+```
 
 If everything compiled, run the following in four different terminals to start the reconstruction procedure:
 * **roslaunch flying_gazebo_stereo_cam robot_interface.launch**  
