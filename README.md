@@ -26,9 +26,11 @@ To get you started we provide the flying_gazebo_stereo_cam example. Note that we
 
 To use our model, copy the "bunny" folder which contains the collada file, texture and Gazebo model definition to ~/.gazebo/models
 
-If everything compiled, run the following in three different terminals to start the reconstruction procedure:
+If everything compiled, run the following in four different terminals to start the reconstruction procedure:
 * **roslaunch flying_gazebo_stereo_cam robot_interface.launch**  
-Launches Gazebo and loads the bunny (if you put it in the models folder), spawns the stereo camera (You should see two small boxes pointing at the origin) in Gazebo, starts a viewspace model and a robot interface ROS node offering their services to other ig_active_reconstruction components
+Launches Gazebo and loads the bunny (if you put it in the models folder), starts a viewspace model and a robot interface ROS node offering their services to other ig_active_reconstruction components
+* **roslaunch flying_gazebo_stereo_cam flying_gazebo_stereo_cam.launch**
+Launches the node that spawns the stereo camera (You should see two small boxes pointing at the origin) in Gazebo. This needs to be started after robot_interface.
 * **roslaunch ig_active_reconstruction_octomap octomap_world_representation.launch**  
 Launches a world representation ROS node using Octomap as a container and offering information gain calculation capabilities.
 * **roslaunch ig_active_reconstruction_ros  	basic_view_planner.launch**  
