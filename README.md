@@ -14,12 +14,17 @@ The following functionality can be found in the different packages:
 * **example/flying_gazebo_stereo_cam** Example for how to use above classes to control a robot: A free-flying stereo camera for the Gazebo simulation environment and a controller for it that implements a robot interface as defined in ig_active_reconstruction, incl. the ROS binding from ig_active_reconstruction_ros.
 
 ## Installation/Dependencies
-All packages are written to be compiled using *catkin*, just put them in your catkin workspace. If you are using ROS, most dependencies should already be installed. Packages were tested on Ubuntu 14.04 under ROS Indigo, with gcc 4.7 and 4.8 (we are currently resolving some issues with gcc 4.9+).
+All packages are written to be compiled using *catkin*, just put them in your catkin workspace. If you are using ROS, most dependencies should already be installed. Packages were tested on Ubuntu 14.04 under ROS Indigo, with gcc 4.7 and 4.8 (we are currently resolving some issues that prevent compilation with gcc 4.9 and 5.0).
 
 * **ig_active_reconstruction:** Eigen
 * **ig_active_reconstruction_octomap:** Boost, PCL 1.7+, Eigen, Octomap
 * **ig_active_reconstruction_ros:** -
 *  **example/flying_gazebo_stereo_cam:** Gazebo, stereo_image_proc
+
+To install all of these dependencies as system packages, run:
+```
+sudo apt-get install ros-indigo-gazebo-ros-pkgs ros-indigo-gazebo-ros-control ros-indigo-stereo-image-proc ros-indigo-octomap TODO: eigen? boost? pcl?
+```
 
 ## Running the Example
 To get you started we provide the flying_gazebo_stereo_cam example. Note that we provide a Stanford bunny Gazebo model file which you can use to get started. Off course you can also use any other Gazebo model and put it in front of the stereo camera in Gazebo.
@@ -37,6 +42,6 @@ Launches the node that spawns the stereo camera (You should see two small boxes 
 * **roslaunch ig_active_reconstruction_octomap octomap_world_representation.launch**  
 Launches a world representation ROS node using Octomap as a container and offering information gain calculation capabilities.
 * **roslaunch ig_active_reconstruction_ros	basic_view_planner.launch**  
-Launches a basic view planner node with a simple command line user interface that allows you to start, pause and stop the procedure
+Launches a basic view planner node with a simple command line user interface that allows you to start, pause and stop the procedure.  **To start the demo, press 'g' and then 'Enter' in this terminal.**
 
 Play around with the parameters in the different launch files to see what effect they have.
