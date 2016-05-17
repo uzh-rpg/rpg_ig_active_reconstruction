@@ -23,7 +23,8 @@ All packages are written to be compiled using *catkin*, just put them in your ca
 
 To install all of these dependencies as system packages, run:
 ```
-sudo apt-get install ros-indigo-gazebo-ros-pkgs ros-indigo-gazebo-ros-control ros-indigo-stereo-image-proc ros-indigo-octomap TODO: eigen? boost? pcl?
+sudo apt-get install ros-indigo-gazebo-ros-pkgs ros-indigo-gazebo-ros-control \
+ros-indigo-stereo-image-proc ros-indigo-octomap libboost-all-dev libpcl-1.7-all-dev libeigen3-dev
 ```
 
 ## Running the Example
