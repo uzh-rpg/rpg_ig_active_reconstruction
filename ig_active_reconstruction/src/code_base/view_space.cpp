@@ -243,7 +243,7 @@ void ViewSpace::loadFromFile( std::string _filename )
   std::ifstream in(_filename, std::ifstream::in);
   
   unsigned int nr_of_views;
-  bool success = (in >> nr_of_views);
+  bool success = static_cast<bool>(in >> nr_of_views);
   
   if(!success)
     return;
