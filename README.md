@@ -1,12 +1,33 @@
 Information Gain Based Active Reconstruction
 ============================================
 
-This repository contains the code for **information gain based active reconstruction** as presented in the paper:
+This repository contains the code for **information gain based active reconstruction**, presented in the papers:
 
 *An Information Gain Formulation for Active Volumetric 3D Reconstruction*  
 S. Isler, R. Sabzevari, J. Delmerico and D. Scaramuzza (ICRA 2016)  
 [Paper: http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf](http://rpg.ifi.uzh.ch/docs/ICRA16_Isler.pdf)  
 [Video (Youtube)](https://www.youtube.com/watch?v=ZcJcsoGGqbA&feature=youtu.be) 
+
+and 
+
+*A comparison of volumetric information gain metrics for active 3D object reconstruction*  
+J. Delmerico, S. Isler, R. Sabzevari, and D. Scaramuzza (Autonomous Robots 2017)  
+[Paper: http://rpg.ifi.uzh.ch/docs/AURO17_Delmerico.pdf](http://rpg.ifi.uzh.ch/docs/AURO17_Delmerico.pdf)
+
+If you use this software in a scholarly work, please cite our journal paper:
+
+```
+@article{delmerico2018comparison,
+  title={A comparison of volumetric information gain metrics for active 3D object reconstruction},
+  author={Delmerico, Jeffrey and Isler, Stefan and Sabzevari, Reza and Scaramuzza, Davide},
+  journal={Autonomous Robots},
+  volume={42},
+  number={2},
+  pages={197--208},
+  year={2018},
+  publisher={Springer}
+}
+```
 
 #### Disclaimer
 
