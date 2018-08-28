@@ -21,13 +21,13 @@
 
 namespace ig_active_reconstruction
 {
-  
+
 namespace world_representation
 {
 
 namespace octomap
 {
-  
+
   IgTreeNode::IgTreeNode()
   : ::octomap::OcTreeNode()
   , occ_dist_(-1)
@@ -39,75 +39,17 @@ namespace octomap
   IgTreeNode::~IgTreeNode()
   {
   }
-  
-  void IgTreeNode::expandNode()
-  {
-    assert(!hasChildren());
 
-    for (unsigned int k=0; k<8; k++) {
-      createChild(k);
-      children[k]->setValue(value);
-    }
-  }
-  
-  bool IgTreeNode::pruneNode()
-  {
-    
-    if (!this->collapsible())
-      return false;
-
-    // set value to children's values (all assumed equal)
-    setValue(getChild(0)->getValue());
-
-    // delete children
-    for (unsigned int i=0;i<8;i++) {
-      delete children[i];
-    }
-    delete[] children;
-    children = NULL;
-
-    return true;
-  }
-  
   bool IgTreeNode::operator==(const IgTreeNode& rhs) const
   {
     return rhs.value == value && rhs.occ_dist_ == occ_dist_ && rhs.has_no_measurement_==has_no_measurement_;
   }
-  
-  bool IgTreeNode::collapsible() const
-  {
-    // all children must exist, must not have children of
-    // their own and have the same occupancy probability
-    if (!childExists(0) || getChild(0)->hasChildren())
-      return false;
 
-    for (unsigned int i = 1; i<8; i++) {
-      // comparison via getChild so that casts of derived classes ensure
-      // that the right == operator gets called
-      if (!childExists(i) || getChild(i)->hasChildren() || !(*(getChild(i)) == *(getChild(0))))
-        return false;
-    }
-    return true;
-  }
-  
-  void IgTreeNode::deleteChild(unsigned int i)
-  {
-    assert((i < 8) && (children != NULL));
-    assert(children[i] != NULL);
-    delete children[i];
-    children[i] = NULL;
-  }
-
-  // TODO: Use Curiously Recurring Template Pattern instead of copying full function
-  // (same for getChild)
-  bool IgTreeNode::createChild(unsigned int i)
-  {
-    if (children == NULL) {
-      allocChildren();
-    }
-    assert (children[i] == NULL);
-    children[i] = new IgTreeNode();
-    return true;
+  void IgTreeNode::copyData(const IgTreeNode& from){
+    value = from.value;
+    occ_dist_ = from.occ_dist_;
+    max_dist_ = from.max_dist_;
+    has_no_measurement_ = from.has_no_measurement_;
   }
 
   // ============================================================
@@ -118,12 +60,16 @@ namespace octomap
   {
     double mean = 0;
     char c = 0;
-    for (unsigned int i=0; i<8; i++)
+    if(children != NULL)
     {
-      if (childExists(i))
+      for (unsigned int i=0; i<8; i++)
       {
-        mean += getChild(i)->getOccupancy();
-        c++;
+        IgTreeNode* child = static_cast<IgTreeNode*>(children[i]);
+        if (child != NULL)
+        {
+          mean += child->getOccupancy();
+          c++;
+        }
       }
     }
     if (c)
@@ -135,23 +81,65 @@ namespace octomap
   float IgTreeNode::getMaxChildLogOdds() const
   {
     float max = -std::numeric_limits<float>::max();
-    for (unsigned int i=0; i<8; i++)
+    if(children != NULL)
     {
-      if (childExists(i))
+      for (unsigned int i=0; i<8; i++)
       {
-        float l = getChild(i)->getLogOdds();
-        if (l > max)
-          max = l;
+        IgTreeNode* child = static_cast<IgTreeNode*>(children[i]);
+        if (child != NULL)
+        {
+          float l = child->getLogOdds();
+          if (l > max)
+            max = l;
+        }
       }
     }
     return max;
+  }
+
+  double IgTreeNode::getMinChildOccDist() const
+  {
+    double min = std::numeric_limits<double>::max();
+    if(children != NULL)
+    {
+      for(unsigned int i=0; i<8; ++i)
+      {
+        IgTreeNode* child = static_cast<IgTreeNode*>(children[i]);
+        if(child != NULL)
+        {
+          double d = child->occDist();
+          if(d < min)
+            min = d;
+        }
+      }
+    }
+    return min;
+  }
+
+  double IgTreeNode::getMaxChildDist() const
+  {
+    double minmax = std::numeric_limits<double>::max();
+    if(children != NULL)
+    {
+      for (unsigned int i=0; i<8; i++)
+      {
+        IgTreeNode* child = static_cast<IgTreeNode*>(children[i]);
+        if (child != NULL)
+        {
+          double d = child->maxDist();
+          if (d < minmax)
+            minmax = d;
+        }
+      }
+    }
+    return minmax;
   }
 
   void IgTreeNode::addValue(const float& logOdds)
   {
     value += logOdds;
   }
-  
+
 }
 
 }
