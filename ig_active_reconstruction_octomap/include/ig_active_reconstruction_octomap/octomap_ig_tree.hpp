@@ -23,13 +23,13 @@
 
 namespace ig_active_reconstruction
 {
-  
+
 namespace world_representation
 {
 
 namespace octomap
 {
-  
+
   /*! Occupancy OcTree class that uses our IgTreeNode class
    * as node type
    */
@@ -37,14 +37,14 @@ namespace octomap
   {
   public:
     typedef IgTreeNode NodeType;
-    
+
     /*! Configuration for the IgTree
      */
     struct Config
     {
     public:
       Config();
-      
+
     public:
       double resolution_m; //! OcTree leaf node size, default: 0.1 [m].
       double occupancy_threshold; //! Occupancy probability over which nodes are considered occupied, default: 0.5 [range 0-1].
@@ -53,11 +53,11 @@ namespace octomap
       double clamping_threshold_min; //! Min probability threshold over which the probability is clamped, default: 0.12, range [0-1].
       double clamping_threshold_max; //! Max probability threshold over which the probability is clamped, default: 0.97, range [0-1].
     };
-    
+
   public:
     //! Default constructor, sets resolution of leafs
     IgTree(double resolution_m);
-    
+
     /*! Constructor with complete configuration
      */
     IgTree(Config config);
@@ -68,16 +68,35 @@ namespace octomap
     IgTree* create() const;
 
     std::string getTreeType() const;
-    
+
     /*! Returns the current configuration.
      */
     const Config& config() const;
-    
+
+    /**
+     * @return mean of all children's occupancy probabilities, in log odds
+     */
+    double getMeanChildLogOdds(IgTreeNode* node) const;
+
+    /**
+     * @return maximum of children's occupancy probabilities, in log odds
+     */
+    float getMaxChildLogOdds(IgTreeNode* node) const;
+
+    /// update this node's occupancy according to its children's maximum occupancy
+    inline void updateOccupancyChildren(IgTreeNode* node)
+    {
+      node->setLogOdds(node->getMaxChildLogOdds());  // conservative
+    }
+
+    void expandNode(IgTreeNode* node);
+    bool pruneNode(IgTreeNode* node);
+
   protected:
     /*! Sets octree options based on current configuration
      */
     void updateOctreeConfig();
-    
+
   protected:
     Config config_;
 
@@ -90,16 +109,16 @@ namespace octomap
     class StaticMemberInitializer{
     public:
     StaticMemberInitializer() {
-	IgTree* tree = new IgTree(0.1);
-	AbstractOcTree::registerTreeType(tree);
+      IgTree* tree = new IgTree(0.1);
+    	AbstractOcTree::registerTreeType(tree);
     }
     };
     //! to ensure static initialization (only once)
     static StaticMemberInitializer igTreeMemberInit;
 
   };
-  
-  
+
+
 }
 
 }

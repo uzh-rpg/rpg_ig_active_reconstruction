@@ -21,48 +21,41 @@
 #include <octomap/octomap_types.h>
 #include <octomap/octomap_utils.h>
 #include <octomap/OcTreeNode.h>
+#include <octomap/OccupancyOcTreeBase.h>
+
 
 #include <limits>
 
 namespace ig_active_reconstruction
 {
-  
+
 namespace world_representation
 {
 
 namespace octomap
 {
 
+  // forward declaraton for "friend"
+  class IgTree;
+
   /*!
    * The IgTreeNode is based on octomaps OcTreeNode class, adding
    * some functionality needed for information gain calculations.
    *
    */
+  //class IgTreeNode : public ::octomap::OcTreeNode
   class IgTreeNode : public ::octomap::OcTreeNode
   {
 
   public:
+    friend class IgTree; // needs access to node children (inherited)
+
     IgTreeNode();
     ~IgTreeNode();
-    
-    void expandNode();
-    bool pruneNode();
-    
+
     bool operator==(const IgTreeNode& rhs) const;
-    bool collapsible() const;
-    void deleteChild(unsigned int i);
 
-    bool createChild(unsigned int i);
-
-    // overloaded, so that the return type is correct:
-    inline IgTreeNode* getChild(unsigned int i)
-    {
-      return static_cast<IgTreeNode*> (::octomap::OcTreeDataNode<float>::getChild(i));
-    }
-    inline const IgTreeNode* getChild(unsigned int i) const
-    {
-      return static_cast<const IgTreeNode*> (::octomap::OcTreeDataNode<float>::getChild(i));
-    }
+    void copyData(const IgTreeNode& from);
 
     // -- node occupancy  ----------------------------
 
@@ -84,34 +77,31 @@ namespace octomap
      */
     float getMaxChildLogOdds() const;
 
-    /// update this node's occupancy according to its children's maximum occupancy
-    inline void updateOccupancyChildren()
-    {
-      this->setLogOdds(this->getMaxChildLogOdds());  // conservative
-    }
+    double getMinChildOccDist() const;
+    double getMaxChildDist() const;
 
     /// adds p to the node's logOdds value (with no boundary / threshold checking!)
     void addValue(const float& p);
-    
+
 
     double occDist(){return occ_dist_;};
     // sets occDist if it's smaller than the previous value
     void updateOccDist( double occDist )
     {
-	if(occ_dist_==-1)
-	    occ_dist_=occDist;
-	else
-	    occ_dist_=std::min(occ_dist_,occDist);
-	
+	    if(occ_dist_==-1)
+	      occ_dist_=occDist;
+	    else
+	      occ_dist_=std::min(occ_dist_,occDist);
+
     };
-    
+
     double maxDist(){return max_dist_;};
     void setMaxDist(double max_dist){max_dist_=max_dist;};
-    
+
     // whether this node has been measured or not
     bool hasMeasurement(){return !has_no_measurement_;};
     void updateHasMeasurement( bool hasMeasurement ){has_no_measurement_=!hasMeasurement;};
-    
+
   protected:
     double occ_dist_; //! if node is occluded this sets the shortest distance from an occupied node for which the occlusion was registered, -1 if not registered so far
     double max_dist_; //! Maximal occlusion update distance used when calculating occlusions.

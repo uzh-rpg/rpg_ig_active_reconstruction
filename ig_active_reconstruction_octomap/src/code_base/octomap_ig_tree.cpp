@@ -21,7 +21,7 @@
 
 namespace ig_active_reconstruction
 {
-  
+
 namespace world_representation
 {
 
@@ -35,33 +35,33 @@ namespace octomap
   , clamping_threshold_min(0.12)
   , clamping_threshold_max(0.97)
   {
-    
+
   }
-  
+
   IgTree::IgTree(double resolution_m)
   : ::octomap::OccupancyOcTreeBase<IgTreeNode>(resolution_m)
   {
     config_.resolution_m = resolution_m;
     updateOctreeConfig();
   }
-  
+
   IgTree::IgTree(Config config)
   : ::octomap::OccupancyOcTreeBase<IgTreeNode>(config.resolution_m)
   , config_(config)
   {
     updateOctreeConfig();
   }
-  
+
   IgTree* IgTree::create() const
   {
     return new IgTree(config_);
   }
-  
+
   const IgTree::Config& IgTree::config() const
   {
     return config_;
   }
-  
+
   void IgTree::updateOctreeConfig()
   {
     setOccupancyThres(config_.occupancy_threshold);
@@ -70,12 +70,47 @@ namespace octomap
     setClampingThresMin(config_.clamping_threshold_min);
     setClampingThresMax(config_.clamping_threshold_max);
   }
-  
+
   std::string IgTree::getTreeType() const
   {
     return "IgTree";
   }
-  
+
+  void IgTree::expandNode(IgTreeNode* node)
+  {
+    assert(!nodeHasChildren(node));
+
+    for (unsigned int k=0; k<8; k++) {
+      IgTreeNode* child = createNodeChild(node, k);
+      child->copyData(*node);
+    }
+  }
+
+  bool IgTree::pruneNode(IgTreeNode* node)
+  {
+
+    if (!isNodeCollapsible(node))
+      return false;
+
+    // set value to children's values (all assumed equal)
+    node->copyData(*(getNodeChild(node, 0)));
+
+    if (node->hasMeasurement()) // TODO check
+    {
+      node->updateOccDist(node->getMinChildOccDist());
+      node->setMaxDist(node->getMaxChildDist());
+    }
+
+    // delete children
+    for (unsigned int i=0;i<8;i++) {
+      deleteNodeChild(node, i);
+    }
+    delete[] node->children;
+    node->children = NULL;
+
+    return true;
+  }
+
 }
 
 }
